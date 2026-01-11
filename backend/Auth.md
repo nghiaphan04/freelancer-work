@@ -556,6 +556,10 @@ Request
    │
    ▼
 Response: 200 OK
+Headers:
+  Set-Cookie: accessToken=eyJ...; HttpOnly; Secure; Path=/; SameSite=Strict
+  Set-Cookie: refreshToken=abc...; HttpOnly; Secure; Path=/api/auth; SameSite=Strict
+Body:
 {
     "status": "SUCCESS",
     "data": {
@@ -623,6 +627,10 @@ Request
    │
    ▼
 Response: 200 OK
+Headers:
+  Set-Cookie: accessToken=eyJ...; HttpOnly; Secure; Path=/; SameSite=Strict
+  Set-Cookie: refreshToken=abc...; HttpOnly; Secure; Path=/api/auth; SameSite=Strict
+Body:
 {
     "status": "SUCCESS",
     "data": {
@@ -633,17 +641,21 @@ Response: 200 OK
 }
 
 ### /api/auth/refresh-token
-Request
+Request (Cookie hoặc Body)
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ FILE: controller/AuthController.java (dòng 41-44)                    │
+│ FILE: controller/AuthController.java                                 │
 ├──────────────────────────────────────────────────────────────────────┤
 │ @PostMapping("/refresh-token")                                       │
 │ public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(       │
-│     @Valid @RequestBody RefreshTokenRequest req                      │
+│     @CookieValue(name = "refreshToken", required = false) String c,  │
+│     @RequestBody(required = false) RefreshTokenRequest req,          │
+│     HttpServletResponse response                                     │
 │ ) {                                                                  │
-│     return ResponseEntity.ok(authService.refreshToken(req));         │
+│     String token = c != null ? c : req.getRefreshToken();            │
+│     // Ưu tiên đọc từ cookie, fallback sang body                     │
+│     ...                                                              │
 │ }                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
    │
@@ -684,6 +696,10 @@ Request
    │
    ▼
 Response: 200 OK
+Headers:
+  Set-Cookie: accessToken=eyJ...(MỚI); HttpOnly; Secure; Path=/; SameSite=Strict
+  Set-Cookie: refreshToken=abc...; HttpOnly; Secure; Path=/api/auth; SameSite=Strict
+Body:
 {
     "status": "SUCCESS",
     "data": {
@@ -788,38 +804,43 @@ Response: 200 OK
 }
 
 ### /api/auth/logout
-Request
+Request (Cookie hoặc Body, body không bắt buộc)
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ FILE: controller/AuthController.java (dòng 46-49)                    │
+│ FILE: controller/AuthController.java                                 │
 ├──────────────────────────────────────────────────────────────────────┤
 │ @PostMapping("/logout")                                              │
 │ public ResponseEntity<ApiResponse<Void>> logout(                     │
-│     @RequestBody RefreshTokenRequest req                             │
+│     @CookieValue(name = "refreshToken", required = false) String c,  │
+│     @RequestBody(required = false) RefreshTokenRequest req,          │
+│     HttpServletResponse response                                     │
 │ ) {                                                                  │
-│     return ResponseEntity.ok(authService.logout(req.getRefreshToken()));│
+│     String token = c != null ? c : req.getRefreshToken();            │
+│     clearTokenCookies(response);  // Xóa cookies                     │
+│     return ResponseEntity.ok(authService.logout(token));             │
 │ }                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ FILE: service/AuthService.java (dòng 93-97)                          │
+│ FILE: service/AuthService.java                                       │
 ├──────────────────────────────────────────────────────────────────────┤
 │ public ApiResponse<Void> logout(String refreshToken) {               │
-│                                                                      │
 │     // 1. Xóa refresh token khỏi PostgreSQL                          │
 │     refreshTokenService.deleteByToken(refreshToken);                 │
-│                                                                      │
 │     // 2. Clear security context                                     │
 │     SecurityContextHolder.clearContext();                            │
-│                                                                      │
 │     return ApiResponse.success("Đăng xuất thành công");              │
 │ }                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
    │
    ▼
 Response: 200 OK
+Headers:
+  Set-Cookie: accessToken=; HttpOnly; Path=/; Max-Age=0    (xóa cookie)
+  Set-Cookie: refreshToken=; HttpOnly; Path=/api/auth; Max-Age=0
+Body:
 {
     "status": "SUCCESS",
     "message": "Đăng xuất thành công"
@@ -839,26 +860,35 @@ Response: 200 OK
 ---
 ### /api/users/me
 GET /api/users/me - lấy thông tin user hiện tại
-Header: Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Auth: Cookie accessToken HOẶC Header Authorization: Bearer ...
 
 Request
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ FILE: security/jwt/JwtAuthFilter.java (dòng 31-57)                   │
+│ FILE: security/jwt/JwtAuthFilter.java                                │
 ├──────────────────────────────────────────────────────────────────────┤
 │ protected void doFilterInternal(HttpServletRequest request, ...) {   │
-│                                                                      │
-│     // 1. Lấy token từ header                                        │
 │     String jwt = parseJwt(request);                                  │
-│     // Header: "Authorization: Bearer eyJhbG..."                     │
-│     // jwt = "eyJhbG..."                                             │
-│                                                                      │
-│     // 2. Validate token                                             │
 │     if (jwt != null && jwtUtils.validateJwtToken(jwt)) {             │
-│                                                                      │
-│         // 3. Lấy email từ token                                     │
 │         String email = jwtUtils.getEmailFromJwtToken(jwt);           │
+│         ...                                                          │
+│     }                                                                │
+│ }                                                                    │
+│                                                                      │
+│ private String parseJwt(HttpServletRequest request) {                │
+│     // 1. Ưu tiên header                                             │
+│     String headerAuth = request.getHeader("Authorization");          │
+│     if (headerAuth != null && headerAuth.startsWith("Bearer "))      │
+│         return headerAuth.substring(7);                              │
+│     // 2. Fallback cookie                                            │
+│     Cookie[] cookies = request.getCookies();                         │
+│     if (cookies != null)                                             │
+│         for (Cookie c : cookies)                                     │
+│             if ("accessToken".equals(c.getName()))                   │
+│                 return c.getValue();                                 │
+│     return null;                                                     │
+│ }                                                                    │
 │                                                                      │
 │         // 4. Load user từ DB                                        │
 │         UserDetails userDetails = userDetailsService                 │

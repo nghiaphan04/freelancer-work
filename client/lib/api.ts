@@ -2,6 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function request(endpoint: string, options?: RequestInit) {
   const res = await fetch(`${API_URL}${endpoint}`, {
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
   });
@@ -27,6 +28,5 @@ export const api = {
   resetPassword: (data: { email: string; otp: string; newPassword: string }) =>
     request("/api/auth/reset-password", { method: "POST", body: JSON.stringify(data) }),
 
-  logout: (refreshToken: string) =>
-    request("/api/auth/logout", { method: "POST", body: JSON.stringify({ refreshToken }) }),
+  logout: () => request("/api/auth/logout", { method: "POST" }),
 };

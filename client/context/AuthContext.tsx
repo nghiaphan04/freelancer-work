@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { getUser, clearAuthData } from "@/constant/auth";
+import { api } from "@/lib/api";
 
 interface User {
   id: string;
@@ -33,7 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsHydrated(true);
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
+    await api.logout();
     clearAuthData();
     setUser(null);
     window.location.href = "/login";

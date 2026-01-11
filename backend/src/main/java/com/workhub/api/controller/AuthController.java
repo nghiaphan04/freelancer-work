@@ -5,9 +5,13 @@ import com.workhub.api.dto.response.ApiResponse;
 import com.workhub.api.dto.response.AuthResponse;
 import com.workhub.api.dto.response.OtpResponse;
 import com.workhub.api.service.AuthService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +21,24 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    
+    @Value("${app.jwt.expiration}")
+    private long accessTokenExpiry;
+    
+    @Value("${app.jwt.refresh-expiration}")
+    private long refreshTokenExpiry;
+    
+    private void setTokenCookies(HttpServletResponse response, AuthResponse auth) {
+        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("accessToken", auth.getAccessToken())
+                .httpOnly(true).secure(true).path("/").maxAge(accessTokenExpiry / 1000).sameSite("Strict").build().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", auth.getRefreshToken())
+                .httpOnly(true).secure(true).path("/api/auth").maxAge(refreshTokenExpiry / 1000).sameSite("Strict").build().toString());
+    }
+    
+    private void clearTokenCookies(HttpServletResponse response) {
+        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("accessToken", "").httpOnly(true).path("/").maxAge(0).build().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", "").httpOnly(true).path("/api/auth").maxAge(0).build().toString());
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<OtpResponse>> register(@Valid @RequestBody RegisterRequest req) {
@@ -24,8 +46,10 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<ApiResponse<AuthResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
-        return ResponseEntity.ok(authService.verifyOtp(req));
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyOtp(@Valid @RequestBody VerifyOtpRequest req, HttpServletResponse response) {
+        ApiResponse<AuthResponse> result = authService.verifyOtp(req);
+        if (result.getData() != null) setTokenCookies(response, result.getData());
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/resend-otp")
@@ -34,18 +58,27 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req) {
-        return ResponseEntity.ok(authService.login(req));
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest req, HttpServletResponse response) {
+        ApiResponse<AuthResponse> result = authService.login(req);
+        if (result.getData() != null) setTokenCookies(response, result.getData());
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest req) {
-        return ResponseEntity.ok(authService.refreshToken(req));
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@CookieValue(name = "refreshToken", required = false) String cookieToken,
+                                                                   @RequestBody(required = false) RefreshTokenRequest req, HttpServletResponse response) {
+        String token = cookieToken != null ? cookieToken : (req != null ? req.getRefreshToken() : null);
+        ApiResponse<AuthResponse> result = authService.refreshToken(new RefreshTokenRequest(token));
+        if (result.getData() != null) setTokenCookies(response, result.getData());
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody RefreshTokenRequest req) {
-        return ResponseEntity.ok(authService.logout(req.getRefreshToken()));
+    public ResponseEntity<ApiResponse<Void>> logout(@CookieValue(name = "refreshToken", required = false) String cookieToken,
+                                                     @RequestBody(required = false) RefreshTokenRequest req, HttpServletResponse response) {
+        String token = cookieToken != null ? cookieToken : (req != null ? req.getRefreshToken() : null);
+        clearTokenCookies(response);
+        return ResponseEntity.ok(authService.logout(token));
     }
 
     @PostMapping("/forgot-password")
