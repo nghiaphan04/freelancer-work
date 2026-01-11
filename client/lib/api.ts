@@ -29,4 +29,7 @@ export const api = {
     request("/api/auth/reset-password", { method: "POST", body: JSON.stringify(data) }),
 
   logout: () => request("/api/auth/logout", { method: "POST" }),
+
+  googleAuth: (credential: string) =>
+    request("/api/auth/google", { method: "POST", body: JSON.stringify({ credential }) }),
 };

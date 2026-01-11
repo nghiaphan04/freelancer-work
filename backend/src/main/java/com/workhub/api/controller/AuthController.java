@@ -90,4 +90,15 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
         return ResponseEntity.ok(authService.resetPassword(req));
     }
+
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleAuth(
+            @Valid @RequestBody GoogleAuthRequest req,
+            HttpServletResponse response) {
+        ApiResponse<AuthResponse> result = authService.googleAuth(req);
+        if (result.getData() != null) {
+            setTokenCookies(response, result.getData());
+        }
+        return ResponseEntity.ok(result);
+    }
 }

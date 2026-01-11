@@ -1,5 +1,9 @@
 package com.workhub.api.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.workhub.api.dto.request.*;
 import com.workhub.api.dto.response.ApiResponse;
 import com.workhub.api.dto.response.AuthResponse;
@@ -11,6 +15,8 @@ import com.workhub.api.exception.UserNotFoundException;
 import com.workhub.api.repository.RoleRepository;
 import com.workhub.api.security.jwt.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,9 +24,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -32,6 +40,12 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    
+    @Value("${app.google.client-id}")
+    private String googleClientId;
+    
+    @Value("${app.google.client-secret}")
+    private String googleClientSecret;
 
     @Transactional
     public ApiResponse<OtpResponse> register(RegisterRequest req) {
@@ -128,6 +142,67 @@ public class AuthService {
 
         return ApiResponse.success("Đã gửi lại OTP",
                 new OtpResponse(user.getEmail(), otpService.getOtpExpirationSeconds()));
+    }
+
+    @Transactional
+    public ApiResponse<AuthResponse> googleAuth(GoogleAuthRequest req) {
+        try {
+            String userInfoUrl = "https://www.googleapis.com/oauth2/v3/userinfo";
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(userInfoUrl))
+                    .header("Authorization", "Bearer " + req.getCredential())
+                    .GET()
+                    .build();
+
+            java.net.http.HttpResponse<String> response = client.send(request, 
+                    java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                return ApiResponse.error("Google token không hợp lệ");
+            }
+
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            java.util.Map<String, Object> userInfo = mapper.readValue(response.body(), 
+                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+
+            String email = (String) userInfo.get("email");
+            String fullName = (String) userInfo.get("name");
+            String avatarUrl = (String) userInfo.get("picture");
+
+            if (email == null) {
+                return ApiResponse.error("Không lấy được email từ Google");
+            }
+
+            User user = userService.findByEmail(email)
+                    .orElseGet(() -> createGoogleUser(email, fullName, avatarUrl));
+
+            if (!user.getEmailVerified()) {
+                user.verifyEmail();
+                userService.save(user);
+            }
+
+            return buildAuthResponse(user, "Đăng nhập Google thành công");
+        } catch (Exception e) {
+            log.error("Google auth failed", e);
+            return ApiResponse.error("Xác thực Google thất bại");
+        }
+    }
+
+    private User createGoogleUser(String email, String fullName, String avatarUrl) {
+        Role role = roleRepository.findByName(ERole.ROLE_FREELANCER)
+                .orElseThrow(() -> new RuntimeException("Role không tồn tại"));
+
+        User user = User.builder()
+                .email(email)
+                .password("")
+                .fullName(fullName != null ? fullName : email.split("@")[0])
+                .avatarUrl(avatarUrl)
+                .emailVerified(true)
+                .enabled(true)
+                .build();
+        user.assignRole(role);
+        return userService.save(user);
     }
 
     private ApiResponse<AuthResponse> buildAuthResponse(User user, String message) {

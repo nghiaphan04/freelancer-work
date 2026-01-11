@@ -285,7 +285,8 @@ backend/src/main/java/com/workhub/api/
 │   │   ├── ForgotPasswordRequest.java
 │   │   ├── ResetPasswordRequest.java
 │   │   ├── ResendOtpRequest.java
-│   │   └── RefreshTokenRequest.java
+│   │   ├── RefreshTokenRequest.java
+│   │   └── GoogleAuthRequest.java
 │   └── response/
 │       ├── ApiResponse.java
 │       ├── AuthResponse.java
@@ -330,6 +331,7 @@ backend/src/main/java/com/workhub/api/
 | `POST` | `/api/auth/logout` | Đăng xuất | ✅ | - |
 | `POST` | `/api/auth/forgot-password` | Yêu cầu reset password | ❌ | 3/hour/email |
 | `POST` | `/api/auth/reset-password` | Đặt lại mật khẩu | ❌ | 5/hour/email |
+| `POST` | `/api/auth/google` | Đăng nhập bằng Google OAuth | ❌ | - |
 
 ###/api/auth/register
 
@@ -845,6 +847,203 @@ Body:
     "status": "SUCCESS",
     "message": "Đăng xuất thành công"
 }
+
+### /api/auth/google
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ GOOGLE OAUTH FLOW                                                    │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐       │
+│  │  Client  │───>│  Google  │───>│  Client  │───>│  Server  │       │
+│  │(Frontend)│    │   OAuth  │    │(Frontend)│    │(Backend) │       │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘       │
+│       │               │               │               │              │
+│       │ Click Google  │               │               │              │
+│       │ Sign-In       │               │               │              │
+│       │──────────────>│               │               │              │
+│       │               │               │               │              │
+│       │               │ User login    │               │              │
+│       │               │ & consent     │               │              │
+│       │               │               │               │              │
+│       │               │<──────────────│               │              │
+│       │               │  ID Token     │               │              │
+│       │<──────────────│ (credential)  │               │              │
+│       │               │               │               │              │
+│       │               │               │ POST /google  │              │
+│       │               │               │ {credential}  │              │
+│       │               │               │──────────────>│              │
+│       │               │               │               │              │
+│       │               │               │               │ Verify token │
+│       │               │               │               │ with Google  │
+│       │               │               │               │              │
+│       │               │               │               │ Find/Create  │
+│       │               │               │               │ User         │
+│       │               │               │               │              │
+│       │               │               │<──────────────│              │
+│       │               │               │ JWT tokens    │              │
+│       │               │               │ + User info   │              │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/google")                                              │
+│ public ResponseEntity<ApiResponse<AuthResponse>> googleAuth(         │
+│     @Valid @RequestBody GoogleAuthRequest req,                       │
+│     HttpServletResponse response) {                                  │
+│                                                                      │
+│     ApiResponse<AuthResponse> result = authService.googleAuth(req);  │
+│     if (result.getData() != null) {                                  │
+│         setTokenCookies(response, result.getData());                 │
+│     }                                                                │
+│     return ResponseEntity.ok(result);                                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/GoogleAuthRequest.java                             │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Data                                                                │
+│ @NoArgsConstructor                                                   │
+│ @AllArgsConstructor                                                  │
+│ public class GoogleAuthRequest {                                     │
+│                                                                      │
+│     @NotBlank(message = "Google credential is required")             │
+│     private String credential;  // ID Token từ Google                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java                                       │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public ApiResponse<AuthResponse> googleAuth(GoogleAuthRequest req) { │
+│                                                                      │
+│     // 1. Tạo verifier với Google Client ID                          │
+│     GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier        │
+│         .Builder(new NetHttpTransport(), GsonFactory.getDefault())   │
+│         .setAudience(Collections.singletonList(googleClientId))      │
+│         .build();                                                    │
+│                                                                      │
+│     // 2. Verify ID Token                                            │
+│     GoogleIdToken idToken = verifier.verify(req.getCredential());    │
+│     if (idToken == null) {                                           │
+│         return ApiResponse.error("Google token không hợp lệ");       │
+│     }                                                                │
+│                                                                      │
+│     // 3. Lấy thông tin user từ token                                │
+│     GoogleIdToken.Payload payload = idToken.getPayload();            │
+│     String email = payload.getEmail();                               │
+│     String fullName = (String) payload.get("name");                  │
+│     String avatarUrl = (String) payload.get("picture");              │
+│                                                                      │
+│     // 4. Tìm hoặc tạo user mới                                      │
+│     User user = userService.findByEmail(email)                       │
+│             .orElseGet(() -> createGoogleUser(email, fullName,       │
+│                                               avatarUrl));           │
+│                                                                      │
+│     // 5. Đảm bảo email verified                                     │
+│     if (!user.getEmailVerified()) {                                  │
+│         user.verifyEmail();                                          │
+│         userService.save(user);                                      │
+│     }                                                                │
+│                                                                      │
+│     // 6. Tạo JWT tokens (giống login thường)                        │
+│     return buildAuthResponse(user, "Đăng nhập Google thành công");   │
+│ }                                                                    │
+│                                                                      │
+│ private User createGoogleUser(String email, String fullName,         │
+│                               String avatarUrl) {                    │
+│     Role role = roleRepository.findByName(ERole.ROLE_FREELANCER)     │
+│             .orElseThrow(() -> new RuntimeException("Role..."));     │
+│                                                                      │
+│     User user = User.builder()                                       │
+│             .email(email)                                            │
+│             .password("")       // Không cần password                │
+│             .fullName(fullName != null ? fullName : email.split("@")[0])│
+│             .avatarUrl(avatarUrl)                                    │
+│             .emailVerified(true)  // Google đã verify                │
+│             .enabled(true)                                           │
+│             .build();                                                │
+│     user.assignRole(role);                                           │
+│     return userService.save(user);                                   │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+Headers:
+  Set-Cookie: accessToken=eyJ...; HttpOnly; Secure; Path=/; SameSite=Strict
+  Set-Cookie: refreshToken=abc...; HttpOnly; Secure; Path=/api/auth; SameSite=Strict
+Body:
+{
+    "status": "SUCCESS",
+    "message": "Đăng nhập Google thành công",
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+        "refreshToken": "a1b2c3d4...",
+        "tokenType": "Bearer",
+        "expiresIn": 900,
+        "user": {
+            "id": 1,
+            "email": "user@gmail.com",
+            "fullName": "Nguyen Van A",
+            "phoneNumber": null,
+            "avatarUrl": "https://lh3.googleusercontent.com/...",
+            "emailVerified": true,
+            "enabled": true,
+            "roles": ["ROLE_FREELANCER"]
+        }
+    }
+}
+
+Error Response (Token không hợp lệ):
+{
+    "status": "ERROR",
+    "message": "Google token không hợp lệ"
+}
+
+#### Cấu hình Google OAuth
+
+**1. Tạo Google Cloud Project:**
+- Truy cập: https://console.cloud.google.com/
+- Tạo project mới hoặc chọn project có sẵn
+
+**2. Bật Google+ API:**
+- APIs & Services → Enable APIs → Google+ API
+
+**3. Tạo OAuth Client ID:**
+- APIs & Services → Credentials → Create Credentials → OAuth Client ID
+- Application type: Web application
+- Authorized JavaScript origins:
+  - `http://localhost:3000` (development)
+  - `https://yourdomain.com` (production)
+
+**4. Thêm vào .env:**
+```
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+**5. Frontend gửi credential:**
+```javascript
+// Sử dụng @react-oauth/google
+import { GoogleLogin } from "@react-oauth/google";
+
+<GoogleLogin
+  onSuccess={(response) => {
+    // response.credential chính là ID Token
+    api.googleAuth(response.credential);
+  }}
+/>
+```
 
 ### User Endpoints
 
