@@ -1,126 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Icon from "@/components/ui/Icon";
-
-const jobCategories = [
-  { 
-    id: 1, 
-    name: "Kinh doanh/Bán hàng",
-    popular: ["Nhân viên kinh doanh", "Nhân viên bán hàng", "Nhân viên tư vấn", "Telesales", "Sales Admin", "Tư vấn tuyển sinh", "Sales Online"],
-    subCategories: [
-      { name: "Sales Xuất nhập khẩu/Logistics", tags: ["Sales Logistics", "Sales Xuất nhập khẩu/Logistics khác"] },
-      { name: "Sales Bất động sản", tags: ["Sales bất động sản/Môi giới bất động sản", "Sales Bất động sản khác"] },
-      { name: "Sales Xây dựng", tags: ["Kinh doanh thiết bị/vật liệu xây dựng", "Kinh doanh nội thất", "Tư vấn thiết kế xây dựng", "Sales Xây dựng khác"] },
-    ]
-  },
-  { 
-    id: 2, 
-    name: "Marketing/PR/Quảng cáo",
-    popular: ["Marketing", "Digital Marketing", "Content Marketing", "SEO", "Graphic Design"],
-    subCategories: [
-      { name: "Marketing Online", tags: ["Facebook Ads", "Google Ads", "TikTok Marketing"] },
-      { name: "Content", tags: ["Content Writer", "Copywriter", "Content Creator"] },
-    ]
-  },
-  { 
-    id: 3, 
-    name: "Chăm sóc khách hàng (Customer Service)",
-    popular: ["Chăm sóc khách hàng", "Tổng đài viên", "CSKH Online"],
-    subCategories: []
-  },
-  { 
-    id: 4, 
-    name: "Nhân sự/Hành chính/Pháp chế",
-    popular: ["Nhân sự", "Hành chính", "Thư ký", "Lễ tân"],
-    subCategories: []
-  },
-  { 
-    id: 5, 
-    name: "Công nghệ Thông tin",
-    popular: ["Developer", "Tester", "BA", "DevOps", "AI Engineer"],
-    subCategories: [
-      { name: "Lập trình", tags: ["Frontend", "Backend", "Fullstack", "Mobile Dev"] },
-      { name: "Quản lý", tags: ["Project Manager", "Product Manager", "Scrum Master"] },
-    ]
-  },
-  { 
-    id: 6, 
-    name: "Lao động phổ thông",
-    popular: ["Công nhân", "Bảo vệ", "Lái xe", "Giao hàng"],
-    subCategories: []
-  },
-  { 
-    id: 7, 
-    name: "Tài chính/Kế toán",
-    popular: ["Kế toán", "Kiểm toán", "Tài chính", "Ngân hàng"],
-    subCategories: []
-  },
-  { 
-    id: 8, 
-    name: "Thiết kế/Đồ họa",
-    popular: ["Graphic Designer", "UI/UX Designer", "3D Designer"],
-    subCategories: []
-  },
-  { 
-    id: 9, 
-    name: "Giáo dục/Đào tạo",
-    popular: ["Giáo viên", "Gia sư", "Đào tạo viên"],
-    subCategories: []
-  },
-  { 
-    id: 10, 
-    name: "Y tế/Dược phẩm",
-    popular: ["Bác sĩ", "Y tá", "Dược sĩ", "Trình dược viên"],
-    subCategories: []
-  },
-  { 
-    id: 11, 
-    name: "Xây dựng/Kiến trúc",
-    popular: ["Kỹ sư xây dựng", "Kiến trúc sư", "Giám sát"],
-    subCategories: []
-  },
-  { 
-    id: 12, 
-    name: "Logistics/Vận tải",
-    popular: ["Logistics", "Xuất nhập khẩu", "Kho vận"],
-    subCategories: []
-  },
-];
-
-const provinces = [
-  { id: 1, name: "Hà Nội", districts: ["Ba Đình", "Hoàn Kiếm", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng"] },
-  { id: 2, name: "Hồ Chí Minh", districts: ["Quận 1", "Quận 3", "Quận 7", "Bình Thạnh", "Thủ Đức"] },
-  { id: 3, name: "Bình Dương", districts: ["Thủ Dầu Một", "Dĩ An", "Thuận An", "Tân Uyên"] },
-  { id: 4, name: "Bắc Ninh", districts: ["TP Bắc Ninh", "Từ Sơn", "Yên Phong", "Quế Võ"] },
-  { id: 5, name: "Đồng Nai", districts: ["Biên Hòa", "Long Khánh", "Nhơn Trạch", "Long Thành"] },
-  { id: 6, name: "Hưng Yên", districts: ["TP Hưng Yên", "Văn Lâm", "Văn Giang", "Mỹ Hào"] },
-  { id: 7, name: "Hải Dương", districts: ["TP Hải Dương", "Chí Linh", "Kinh Môn", "Nam Sách"] },
-  { id: 8, name: "Đà Nẵng", districts: ["Hải Châu", "Thanh Khê", "Sơn Trà", "Ngũ Hành Sơn"] },
-  { id: 9, name: "Cần Thơ", districts: ["Ninh Kiều", "Cái Răng", "Bình Thủy", "Ô Môn"] },
-  { id: 10, name: "Hải Phòng", districts: ["Hồng Bàng", "Lê Chân", "Ngô Quyền", "Kiến An"] },
-];
-
-const quickFilters = ["Ngẫu Nhiên", "Hà Nội", "Thành phố Hồ Chí Minh", "Miền Bắc", "Miền Nam"];
-
-const bannerSlides = [
-  { id: 1, src: "/landing/slide1.png", alt: "Banner 1" },
-  { id: 2, src: "/landing/slide2.png", alt: "Banner 2" },
-  { id: 3, src: "/landing/slide3.png", alt: "Banner 3" },
-  { id: 4, src: "/landing/slide4.png", alt: "Banner 4" },
-];
+import { LocationPicker } from "@/components/ui/location-picker";
+import { jobCategories, provinces, bannerSlides } from "@/constant/landing";
 
 export default function Hero() {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const [searchProvince, setSearchProvince] = useState("");
   const [selectedProvinces, setSelectedProvinces] = useState<number[]>([]);
-  const [selectedProvince, setSelectedProvince] = useState<number | null>(null);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -136,45 +29,6 @@ export default function Hero() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const filteredProvinces = provinces.filter(p => 
-    p.name.toLowerCase().includes(searchProvince.toLowerCase())
-  );
-
-  const today = new Date();
-  const formattedDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowLocationDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const toggleProvince = (id: number) => {
-    setSelectedProvinces(prev => 
-      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
-    );
-    setSelectedProvince(id);
-  };
-
-  const clearAll = () => {
-    setSelectedProvinces([]);
-    setSelectedDistricts([]);
-    setSelectedProvince(null);
-  };
-
-  const getSelectedLocationText = () => {
-    if (selectedProvinces.length === 0) return "Địa điểm";
-    if (selectedProvinces.length === 1) {
-      return provinces.find(p => p.id === selectedProvinces[0])?.name || "Địa điểm";
-    }
-    return `${selectedProvinces.length} địa điểm`;
-  };
 
   return (
     <section className="relative bg-gradient-to-br from-[#0d3d2e] via-[#0a4a37] to-[#063d2d] py-6 z-10">
@@ -203,132 +57,113 @@ export default function Hero() {
       <div className="max-w-6xl mx-auto px-4 relative z-[100]">
         
         {/* Search Bar */}
-        <div className="bg-white rounded-full p-1.5 flex items-center gap-2 mb-6 shadow-lg relative z-[9999]">
-          <div className="flex-1 flex items-center px-4">
-            <Icon name="search" size={20} className="text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Vị trí tuyển dụng, tên công ty"
-              className="w-full py-2 outline-none text-gray-700 placeholder-gray-400"
+        <div className="bg-white rounded-2xl md:rounded-full p-2 md:p-1.5 flex flex-col md:flex-row items-stretch md:items-center gap-2 mb-6 shadow-lg relative z-[9999]">
+          {/* Search input + Location picker row */}
+          <div className="flex-1 flex items-center">
+            <div className="flex-1 flex items-center px-3 md:px-4">
+              <Icon name="search" size={20} className="text-gray-400 mr-2 shrink-0" />
+              <input
+                type="text"
+                placeholder="Vị trí tuyển dụng, tên công ty"
+                className="w-full py-2 outline-none text-gray-700 placeholder-gray-400 text-sm md:text-base"
+              />
+            </div>
+            
+            <LocationPicker
+              provinces={provinces}
+              selectedProvinces={selectedProvinces}
+              selectedDistricts={selectedDistricts}
+              onProvincesChange={setSelectedProvinces}
+              onDistrictsChange={setSelectedDistricts}
             />
           </div>
-          
-          {/* Location Dropdown Trigger */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowLocationDropdown(!showLocationDropdown)}
-              className="hidden sm:flex items-center border-l border-gray-200 px-4 py-2 hover:bg-gray-50 transition-colors"
-            >
-              <Icon name="location_on" size={20} className="text-gray-400 mr-2" />
-              <span className="text-gray-700">{getSelectedLocationText()}</span>
-              <Icon name={showLocationDropdown ? "expand_less" : "expand_more"} size={20} className="text-gray-400 ml-1" />
-            </button>
 
-            {/* Location Dropdown */}
-            {showLocationDropdown && (
-              <div className="absolute top-full right-0 mt-2 w-[600px] bg-white rounded-xl shadow-2xl border border-gray-200 z-[9999] overflow-hidden">
-                <div className="flex">
-                  {/* Left Panel - Provinces */}
-                  <div className="w-1/2 border-r border-gray-200">
-                    {/* Search Input */}
-                    <div className="p-3 border-b border-gray-100">
-                      <div className="flex items-center bg-gray-50 rounded-full px-4 py-2">
-                        <Icon name="search" size={18} className="text-gray-400 mr-2" />
-                        <input
-                          type="text"
-                          placeholder="Nhập Tỉnh/Thành phố"
-                          value={searchProvince}
-                          onChange={(e) => setSearchProvince(e.target.value)}
-                          className="w-full bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Province List */}
-                    <div className="max-h-[300px] overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {filteredProvinces.map((province) => (
-                        <div
-                          key={province.id}
-                          className={`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${
-                            selectedProvince === province.id ? "bg-green-50" : ""
-                          }`}
-                          onClick={() => toggleProvince(province.id)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                              selectedProvinces.includes(province.id)
-                                ? "bg-[#00b14f] border-[#00b14f]"
-                                : "border-gray-300"
-                            }`}>
-                              {selectedProvinces.includes(province.id) && (
-                                <Icon name="check" size={14} className="text-white" />
-                              )}
-                            </div>
-                            <span className="text-gray-700 text-sm">{province.name}</span>
-                          </div>
-                          <Icon name="chevron_right" size={18} className="text-gray-400" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Right Panel - Districts */}
-                  <div className="w-1/2">
-                    <div className="p-3 border-b border-gray-100">
-                      <span className="text-[#00b14f] font-semibold text-sm">QUẬN/HUYỆN</span>
-                    </div>
-                    <div className="max-h-[300px] overflow-y-auto p-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                      {selectedProvince ? (
-                        <div className="space-y-2">
-                          {provinces.find(p => p.id === selectedProvince)?.districts.map((district, idx) => (
-                            <label key={idx} className="flex items-center gap-3 cursor-pointer py-2 hover:bg-gray-50 px-2 rounded">
-                              <input
-                                type="checkbox"
-                                checked={selectedDistricts.includes(district)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedDistricts([...selectedDistricts, district]);
-                                  } else {
-                                    setSelectedDistricts(selectedDistricts.filter(d => d !== district));
-                                  }
-                                }}
-                                className="w-4 h-4 accent-[#00b14f]"
-                              />
-                              <span className="text-gray-700 text-sm">{district}</span>
-                            </label>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full py-12 text-gray-400">
-                          <Icon name="location_city" size={48} className="mb-3 opacity-50" />
-                          <span className="text-sm">Vui lòng chọn Tỉnh/Thành phố</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-               
-
-       
-              </div>
-            )}
-          </div>
-
-          <button className="bg-[#00b14f] hover:bg-[#009643] text-white px-6 py-2.5 rounded-full font-medium flex items-center gap-2 transition-colors">
+          <button className="bg-[#00b14f] hover:bg-[#009643] text-white px-4 md:px-6 py-2.5 rounded-full font-medium flex items-center justify-center gap-2 transition-colors">
             <Icon name="search" size={18} />
             <span>Tìm kiếm</span>
           </button>
         </div>
 
+        {/* Mobile Job Categories Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden flex items-center justify-between w-full bg-white rounded-xl px-4 py-3 mb-4 shadow-lg"
+        >
+          <div className="flex items-center gap-2">
+            <Icon name="category" size={20} className="text-[#00b14f]" />
+            <span className="font-medium text-gray-700">Danh mục việc làm</span>
+          </div>
+          <Icon name={mobileMenuOpen ? "expand_less" : "expand_more"} size={20} className="text-gray-400" />
+        </button>
+
+        {/* Mobile Job Categories Panel */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white rounded-xl shadow-lg mb-4 overflow-hidden">
+            <div className="max-h-[400px] overflow-y-auto">
+              {jobCategories.map((category) => (
+                <div key={category.id} className="border-b border-gray-100 last:border-b-0">
+                  <button
+                    onClick={() => setExpandedCategory(expandedCategory === category.id ? null : category.id)}
+                    className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-gray-700">{category.name}</span>
+                    <Icon 
+                      name={expandedCategory === category.id ? "expand_less" : "expand_more"} 
+                      size={18} 
+                      className="text-gray-400" 
+                    />
+                  </button>
+                  
+                  {expandedCategory === category.id && (
+                    <div className="bg-gray-50 px-4 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        {category.popular.map((tag, idx) => (
+                          <a
+                            key={idx}
+                            href="#"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-xs text-gray-600 hover:border-[#00b14f] hover:text-[#00b14f] transition-colors"
+                          >
+                            <Icon name="check_circle" size={14} className="text-[#00b14f]" />
+                            {tag}
+                          </a>
+                        ))}
+                      </div>
+                      {category.subCategories.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          {category.subCategories.map((subCat, idx) => (
+                            <div key={idx} className="mb-2 last:mb-0">
+                              <p className="text-xs font-semibold text-gray-500 mb-1">{subCat.name}</p>
+                              <div className="flex flex-wrap gap-1">
+                                {subCat.tags.map((tag, tIdx) => (
+                                  <a
+                                    key={tIdx}
+                                    href="#"
+                                    className="px-2 py-1 bg-white rounded text-xs text-gray-600 hover:text-[#00b14f] transition-colors"
+                                  >
+                                    {tag}
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Main Content Grid */}
         <div 
-          className="grid grid-cols-1 lg:grid-cols-12 gap-4 relative z-10"
+          className="grid grid-cols-1 md:grid-cols-12 gap-4 relative z-10"
           onMouseLeave={() => setHoveredCategory(null)}
         >
           
-          {/* Left Sidebar - Job Categories */}
-          <div className="lg:col-span-3 bg-white rounded-xl shadow-lg overflow-visible relative z-20">
+          {/* Left Sidebar - Job Categories (Hidden on mobile) */}
+          <div className="hidden md:block md:col-span-4 lg:col-span-3 bg-white rounded-xl shadow-lg overflow-visible relative z-20">
             <div className="divide-y divide-gray-100 rounded-t-xl overflow-hidden">
               {currentCategories.map((category) => (
                 <div
@@ -377,10 +212,10 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Category Hover Dropdown - Covers Banner Area */}
+          {/* Category Hover Dropdown - Covers Banner Area (Tablet & Desktop) */}
           {hoveredCategory && (
             <div 
-              className="absolute left-[25%] top-0 right-0 bottom-0 bg-white rounded-r-xl shadow-xl border border-gray-200 z-[9999] hidden lg:flex flex-col overflow-hidden"
+              className="absolute left-[33%] md:left-[33%] lg:left-[25%] top-0 right-0 bottom-0 bg-white rounded-r-xl shadow-xl border border-gray-200 z-[9999] hidden md:flex flex-col overflow-hidden"
               onMouseEnter={() => {}}
               onMouseLeave={() => setHoveredCategory(null)}
             >
@@ -441,9 +276,9 @@ export default function Hero() {
             </div>
           )}
 
-          {/* Right Content - Banner Slider */}
-          <div className="lg:col-span-9">
-            <div className="relative rounded-xl overflow-hidden h-full min-h-[280px]">
+          {/* Right Content - Banner Slider (Full width on mobile) */}
+          <div className="col-span-1 md:col-span-8 lg:col-span-9">
+            <div className="relative rounded-xl overflow-hidden h-[200px] md:h-full md:min-h-[280px]">
               {/* Slides */}
               {bannerSlides.map((slide, index) => (
                 <div

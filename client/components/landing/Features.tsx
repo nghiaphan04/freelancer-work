@@ -1,29 +1,7 @@
 "use client";
 
 import Image from "next/image";
-
-const stats = [
-  { 
-    number: "540.000+", 
-    title: "Nhà tuyển dụng uy tín",
-    desc: "Các nhà tuyển dụng đến từ tất cả các ngành nghề và được xác thực"
-  },
-  { 
-    number: "200.000+", 
-    title: "Doanh nghiệp hàng đầu",
-    desc: "Samsung, Viettel, Vingroup, FPT, Techcombank,..."
-  },
-  { 
-    number: "2.000.000+", 
-    title: "Việc làm đã được kết nối",
-    desc: "Kết nối ứng viên với cơ hội việc làm từ doanh nghiệp uy tín"
-  },
-  { 
-    number: "1.200.000+", 
-    title: "Lượt tải ứng dụng",
-    desc: "60% là ứng viên có kinh nghiệm từ 3 năm trở lên"
-  },
-];
+import { stats } from "@/constant/landing";
 
 export default function Features() {
   return (

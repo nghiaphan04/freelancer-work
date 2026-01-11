@@ -4,6 +4,16 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
+import { useAuth } from "@/context/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const jobMenuLeft = [
   { 
@@ -85,21 +95,24 @@ const careerMenuArticles = [
 
 export default function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedMobileNav, setExpandedMobileNav] = useState<string | null>(null);
+  const { user, isAuthenticated, isHydrated, logout } = useAuth();
 
   const navItems = [
-    { label: "Việc làm", href: "/jobs", hasDropdown: true, dropdownId: "jobs" },
-    { label: "Tạo CV", href: "/cv-builder", hasDropdown: true, dropdownId: "cv" },
-    { label: "Công cụ", href: "/tools", hasDropdown: true, dropdownId: "tools" },
-    { label: "Cẩm nang nghề nghiệp", href: "/career-guide", hasDropdown: true, dropdownId: "career" },
+    { label: "Việc làm", hasDropdown: true, dropdownId: "jobs" },
+    { label: "Tạo CV", hasDropdown: true, dropdownId: "cv" },
+    { label: "Công cụ", hasDropdown: true, dropdownId: "tools" },
+    { label: "Cẩm nang nghề nghiệp", hasDropdown: true, dropdownId: "career" },
   ];
 
   return (
     <header className="bg-white text-gray-800 border-b border-gray-200 w-full sticky top-0 z-[9999]">
-      <div className="w-full px-8 lg:px-12">
+      <div className="w-full px-4 md:px-8 lg:px-12">
         <div className="flex items-center justify-between h-16">
           
           {/* Left: Logo + Nav */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             {/* Logo */}
             <Link href="/" className="flex flex-col items-start shrink-0">
               <Image
@@ -335,24 +348,260 @@ export default function Header() {
             </nav>
           </div>
 
-          {/* Right: Buttons */}
-          <div className="flex items-center gap-1">
-            <Link
-              href="/register"
-              className="flex items-center px-3 py-1.5 text-sm font-semibold text-[#00b14f] border border-[#00b14f] rounded hover:bg-[#00b14f] hover:text-white transition-colors whitespace-nowrap"
+          {/* Right: Avatar/Buttons + Hamburger */}
+          <div className="flex items-center gap-2">
+            {/* Desktop: Full buttons/avatar */}
+            <div className="hidden md:flex items-center gap-1">
+              {!isHydrated ? (
+                <div className="w-[140px] h-8 bg-gray-100 rounded animate-pulse" />
+              ) : isAuthenticated && user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors outline-none">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar} alt={user.fullName} />
+                        <AvatarFallback className="bg-[#00b14f] text-white text-sm">
+                          {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
+                        {user.fullName}
+                      </span>
+                      <Icon name="expand_more" size={16} className="text-gray-400" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel className="border-b border-gray-100 pb-2">
+                      <p className="truncate">{user.fullName}</p>
+                      <p className="text-xs text-gray-500 font-normal truncate">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">
+                        <Icon name="person" size={20} />
+                        Hồ sơ của tôi
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/settings">
+                        <Icon name="settings" size={20} />
+                        Cài đặt
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem variant="destructive" onClick={logout}>
+                      <Icon name="logout" size={20} />
+                      Đăng xuất
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Link
+                    href="/register"
+                    className="flex items-center px-3 py-1.5 text-sm font-semibold text-[#00b14f] border border-[#00b14f] rounded hover:bg-[#00b14f] hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    Đăng ký
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="flex items-center px-3 py-1.5 text-sm font-semibold text-white bg-[#00b14f] rounded hover:bg-[#009643] transition-colors whitespace-nowrap"
+                  >
+                    Đăng nhập
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile: Hamburger only */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="flex md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              Đăng ký
-            </Link>
-            <Link
-              href="/login"
-              className="flex items-center px-3 py-1.5 text-sm font-semibold text-white bg-[#00b14f] rounded hover:bg-[#009643] transition-colors whitespace-nowrap"
-            >
-              Đăng nhập
-            </Link>
+              <Icon name={mobileMenuOpen ? "close" : "menu"} size={24} className="text-gray-700" />
+            </button>
           </div>
 
         </div>
       </div>
+
+      {/* Mobile Menu Overlay - Slide from right */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-16 z-[9998]">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+          <div className="absolute right-0 top-0 bottom-0 bg-white w-full max-w-xs overflow-y-auto shadow-xl">
+            {/* User info if logged in */}
+            {isAuthenticated && user && (
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={user.avatar} alt={user.fullName} />
+                    <AvatarFallback className="bg-[#00b14f] text-white">
+                      {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-800 truncate">{user.fullName}</p>
+                    <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <nav className="py-2">
+              {navItems.map((item, index) => (
+                <div key={index}>
+                  <button
+                        onClick={() => setExpandedMobileNav(expandedMobileNav === item.dropdownId ? null : item.dropdownId)}
+                        className="flex items-center justify-between w-full px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                      >
+                        <span className="font-medium">{item.label}</span>
+                        <Icon 
+                          name={expandedMobileNav === item.dropdownId ? "expand_less" : "expand_more"} 
+                          size={20} 
+                          className="text-gray-400" 
+                        />
+                      </button>
+                      
+                      {/* Việc làm Sub-items */}
+                      {item.dropdownId === "jobs" && expandedMobileNav === "jobs" && (
+                        <div className="bg-gray-50 py-2">
+                          {jobMenuLeft.map((section, sIdx) => (
+                            <div key={sIdx} className={sIdx > 0 ? "mt-2" : ""}>
+                              <p className="px-7 py-1 text-xs font-semibold text-gray-500">{section.title}</p>
+                              {section.items.map((menuItem, mIdx) => (
+                                <Link
+                                  key={mIdx}
+                                  href={menuItem.href}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
+                                >
+                                  <Icon name={menuItem.icon} size={18} className="text-gray-400" />
+                                  {menuItem.label}
+                                </Link>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Công cụ Sub-items */}
+                      {item.dropdownId === "tools" && expandedMobileNav === "tools" && (
+                        <div className="bg-gray-50 py-2">
+                          {toolsMenu.items.flat().filter(Boolean).map((tool, tIdx) => (
+                            tool && (
+                              <Link
+                                key={tIdx}
+                                href={tool.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
+                              >
+                                <Icon name={tool.icon} size={18} className="text-gray-400" />
+                                {tool.label}
+                              </Link>
+                            )
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Cẩm nang Sub-items */}
+                      {item.dropdownId === "career" && expandedMobileNav === "career" && (
+                        <div className="bg-gray-50 py-2">
+                          {careerMenuLeft.map((menuItem, idx) => (
+                            <Link
+                              key={idx}
+                              href={menuItem.href}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
+                            >
+                              <Icon name={menuItem.icon} size={18} className="text-gray-400" />
+                              {menuItem.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* CV Sub-items */}
+                      {item.dropdownId === "cv" && expandedMobileNav === "cv" && (
+                        <div className="bg-gray-50 py-2">
+                          <Link
+                            href="/cv-builder"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
+                          >
+                            <Icon name="description" size={18} className="text-gray-400" />
+                            Tạo CV mới
+                          </Link>
+                          <Link
+                            href="/cv-templates"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
+                          >
+                            <Icon name="grid_view" size={18} className="text-gray-400" />
+                            Mẫu CV
+                          </Link>
+                          <Link
+                            href="/my-cvs"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
+                          >
+                            <Icon name="folder" size={18} className="text-gray-400" />
+                            CV của tôi
+                          </Link>
+                        </div>
+                  )}
+                </div>
+              ))}
+            </nav>
+
+            <div className="border-t border-gray-200">
+              {isAuthenticated && user ? (
+                <div className="py-2">
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                  >
+                    <Icon name="person" size={20} className="text-gray-400" />
+                    <span>Hồ sơ của tôi</span>
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                  >
+                    <Icon name="settings" size={20} className="text-gray-400" />
+                    <span>Cài đặt</span>
+                  </Link>
+                  <button
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-3 px-5 py-3.5 text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                  >
+                    <Icon name="logout" size={20} />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4">
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full py-3 text-center text-white bg-[#00b14f] rounded-lg font-semibold hover:bg-[#009643] transition-colors mb-3"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block w-full py-3 text-center text-[#00b14f] border border-[#00b14f] rounded-lg font-semibold hover:bg-[#00b14f] hover:text-white transition-colors"
+                  >
+                    Đăng ký
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
