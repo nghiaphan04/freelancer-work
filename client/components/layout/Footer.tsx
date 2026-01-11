@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { FacebookIcon, YouTubeIcon } from "@/components/ui/SocialIcons";
 
 export default function Footer() {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import Icon from "@/components/ui/Icon";
 
 const jobMenuLeft = [
@@ -100,7 +101,7 @@ export default function Header() {
           {/* Left: Logo + Nav */}
           <div className="flex items-center gap-3">
             {/* Logo */}
-            <a href="/" className="flex flex-col items-start shrink-0">
+            <Link href="/" className="flex flex-col items-start shrink-0">
               <Image
                 src="/logo.svg"
                 alt="Freelancer"
@@ -111,7 +112,7 @@ export default function Header() {
               <p className="text-xs text-gray-500 -mt-0.5">
                 Freelancer
               </p>
-            </a>
+            </Link>
 
             {/* Chevron Separator */}
             <div className="hidden md:block h-16 w-12 overflow-hidden">
@@ -336,18 +337,18 @@ export default function Header() {
 
           {/* Right: Buttons */}
           <div className="flex items-center gap-1">
-            <a
+            <Link
               href="/register"
               className="flex items-center px-3 py-1.5 text-sm font-semibold text-[#00b14f] border border-[#00b14f] rounded hover:bg-[#00b14f] hover:text-white transition-colors whitespace-nowrap"
             >
               Đăng ký
-            </a>
-            <a
+            </Link>
+            <Link
               href="/login"
               className="flex items-center px-3 py-1.5 text-sm font-semibold text-white bg-[#00b14f] rounded hover:bg-[#009643] transition-colors whitespace-nowrap"
             >
               Đăng nhập
-            </a>
+            </Link>
           </div>
 
         </div>
