@@ -1,0 +1,1286 @@
+# WorkHub - Authentication System Documentation
+
+## 1. KIẾN TRÚC TỔNG QUAN
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           AUTHENTICATION SYSTEM                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   │
+│  │   Client    │───>│Rate Limiter │───>│ JWT Filter  │───>│ Controller  │   │
+│  │  (Next.js)  │    │   (Redis)   │    │             │    │             │   │
+│  └─────────────┘    └─────────────┘    └─────────────┘    └──────┬──────┘   │
+│                                                                   │         │
+│                                              ┌────────────────────┼────┐    │
+│                                              │                    │    │    │
+│                                              ▼                    ▼    ▼    │
+│                                        ┌──────────┐        ┌──────────────┐ │
+│                                        │ Service  │        │   Security   │ │
+│                                        │  Layer   │        │   Config     │ │
+│                                        └────┬─────┘        └──────────────┘ │
+│                                             │                               │
+│                          ┌──────────────────┼──────────────────┐            │
+│                          │                  │                  │            │
+│                          ▼                  ▼                  ▼            │
+│                   ┌────────────┐     ┌────────────┐     ┌────────────┐      │
+│                   │    User    │     │    OTP     │     │   Email    │      │
+│                   │ Repository │     │  Service   │     │  Service   │      │
+│                   └─────┬──────┘     └─────┬──────┘     └────────────┘      │
+│                         │                  │                                │
+│                         ▼                  ▼                                │
+│                   ┌────────────┐     ┌────────────┐                         │
+│                   │  Database  │     │   Redis    │                         │
+│                   │(PostgreSQL)│     │ (OTP/Rate) │                         │
+│                   └────────────┘     └────────────┘                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. DATABASE SCHEMA
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              DATABASE DESIGN                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────────────────┐         ┌─────────────────────────┐           │
+│   │         users           │         │         roles           │           │
+│   ├─────────────────────────┤         ├─────────────────────────┤           │
+│   │ id (PK, BIGINT)         │         │ id (PK, INT)            │           │
+│   │ email (UNIQUE)          │    N:M  │ name (ENUM)             │           │
+│   │ password (BCrypt)       │◄───────►│   - ROLE_ADMIN          │           │
+│   │ full_name               │         │   - ROLE_FREELANCER     │           │
+│   │ phone_number            │         │   - ROLE_EMPLOYER       │           │
+│   │ avatar_url              │         └─────────────────────────┘           │
+│   │ email_verified (BOOL)   │                                               │
+│   │ enabled (BOOL)          │         ┌─────────────────────────┐           │
+│   │ created_at              │         │      user_roles         │           │
+│   │ updated_at              │         ├─────────────────────────┤           │
+│   └────────────┬────────────┘         │ user_id (FK)            │           │
+│                │                      │ role_id (FK)            │           │
+│                │                      └─────────────────────────┘           │
+│                │                                                            │
+│                │ 1:N                                                        │
+│                ▼                                                            │
+│   ┌─────────────────────────┐         ┌─────────────────────────┐           │
+│   │    refresh_tokens       │         │   Redis (OTP Storage)   │           │
+│   ├─────────────────────────┤         ├─────────────────────────┤           │
+│   │ id (PK)                 │         │ otp:REGISTRATION:{email}│           │
+│   │ user_id (FK)            │         │ otp:FORGOT_PASSWORD:... │           │
+│   │ token (UNIQUE)          │         │ rate:login:{ip}         │           │
+│   │ expires_at              │         │ rate:register:{ip}      │           │
+│   │ created_at              │         │ (Auto-expire with TTL)  │           │
+│   └─────────────────────────┘         └─────────────────────────┘           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+---
+
+## 4. AUTHENTICATION FLOWS
+
+### 4.1 Registration Flow (Đăng ký)
+
+```
+┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+│  Client  │     │  Server  │     │    DB    │     │  Email   │
+└────┬─────┘     └────┬─────┘     └────┬─────┘     └────┬─────┘
+     │                │                │                │
+     │ POST /register │                │                │
+     │ {email,pass,   │                │                │
+     │  fullName}     │                │                │
+     │───────────────>│                │                │
+     │                │                │                │
+     │                │ Check email    │                │
+     │                │ exists?        │                │
+     │                │───────────────>│                │
+     │                │<───────────────│                │
+     │                │                │                │
+     │                │ Save user      │                │
+     │                │ (email_verified│                │
+     │                │  = false)      │                │
+     │                │───────────────>│                │
+     │                │                │                │
+     │                │ Generate OTP   │                │
+     │                │ Save to Redis  │                │
+     │                │───────────────>│                │
+     │                │                │                │
+     │                │                │ Send OTP email │
+     │                │                │───────────────>│
+     │                │                │                │
+     │<───────────────│                │                │
+     │ "OTP sent"     │                │                │
+     │                │                │                │
+     │ POST /verify-otp                │                │
+     │ {email, otp}   │                │                │
+     │───────────────>│                │                │
+     │                │                │                │
+     │                │ Verify OTP     │                │
+     │                │───────────────>│                │
+     │                │                │                │
+     │                │ Update user    │                │
+     │                │ email_verified │                │
+     │                │ = true         │                │
+     │                │───────────────>│                │
+     │                │                │                │
+     │<───────────────│                │                │
+     │ "Success"      │                │                │
+     │ + JWT Token    │                │                │
+```
+
+---
+
+### 4.2 Login Flow (Đăng nhập)
+
+```
+┌──────────┐                    ┌──────────┐                    ┌──────────┐
+│  Client  │                    │  Server  │                    │    DB    │
+└────┬─────┘                    └────┬─────┘                    └────┬─────┘
+     │                               │                               │
+     │ POST /login                   │                               │
+     │ {email, password}             │                               │
+     │──────────────────────────────>│                               │
+     │                               │                               │
+     │                               │ Find user by email            │
+     │                               │──────────────────────────────>│
+     │                               │<──────────────────────────────│
+     │                               │                               │
+     │                               │ Verify password (BCrypt)      │
+     │                               │                               │
+     │                               │ Check email_verified          │
+     │                               │                               │
+     │                               │ Generate JWT + Refresh Token  │
+     │                               │──────────────────────────────>│
+     │                               │                               │
+     │<──────────────────────────────│                               │
+     │ {accessToken, refreshToken,   │                               │
+     │  user info, roles}            │                               │
+```
+
+
+---
+
+### 4.3 Forgot Password Flow (Quên mật khẩu)
+
+```
+┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+│  Client  │     │  Server  │     │    DB    │     │  Email   │
+└────┬─────┘     └────┬─────┘     └────┬─────┘     └────┬─────┘
+     │                │                │                │
+     │ POST /forgot-password           │                │
+     │ {email}        │                │                │
+     │───────────────>│                │                │
+     │                │ Check user     │                │
+     │                │───────────────>│                │
+     │                │                │                │
+     │                │ Generate OTP   │                │
+     │                │ (type=FORGOT)  │                │
+     │                │───────────────>│                │
+     │                │                │ Send OTP       │
+     │                │                │───────────────>│
+     │<───────────────│                │                │
+     │ "OTP sent"     │                │                │
+     │                │                │                │
+     │ POST /reset-password            │                │
+     │ {email, otp,   │                │                │
+     │  newPassword}  │                │                │
+     │───────────────>│                │                │
+     │                │ Verify OTP     │                │
+     │                │───────────────>│                │
+     │                │                │                │
+     │                │ Update password│                │
+     │                │───────────────>│                │
+     │<───────────────│                │                │
+     │ "Success"      │                │                │
+```
+
+#### Forgot Password Request/Response
+
+---
+
+### 4.4 Refresh Token Flow
+
+```
+┌──────────┐                    ┌──────────┐                    ┌──────────┐
+│  Client  │                    │  Server  │                    │    DB    │
+└────┬─────┘                    └────┬─────┘                    └────┬─────┘
+     │                               │                               │
+     │ POST /refresh-token           │                               │
+     │ {refreshToken}                │                               │
+     │──────────────────────────────>│                               │
+     │                               │                               │
+     │                               │ Validate refresh token        │
+     │                               │──────────────────────────────>│
+     │                               │<──────────────────────────────│
+     │                               │                               │
+     │                               │ Generate new access token     │
+     │                               │                               │
+     │<──────────────────────────────│                               │
+     │ {newAccessToken}              │                               │
+```
+
+---
+
+## 5. RATE LIMITING STRATEGY
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           RATE LIMITING CONFIG                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Endpoint                    │ Limit              │ Window    │ Block      │
+│   ────────────────────────────┼────────────────────┼───────────┼─────────── │
+│   POST /api/auth/register     │ 5 requests         │ 1 hour    │ IP-based   │
+│   POST /api/auth/login        │ 10 requests        │ 15 mins   │ IP-based   │
+│   POST /api/auth/verify-otp   │ 5 attempts         │ 10 mins   │ Per email  │
+│   POST /api/auth/forgot-pass  │ 3 requests         │ 1 hour    │ Per email  │
+│   POST /api/auth/resend-otp   │ 3 requests         │ 10 mins   │ Per email  │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+---
+
+## 6. PROJECT STRUCTURE
+
+```
+backend/src/main/java/com/workhub/api/
+├── WorkHubApplication.java              # Main entry point
+│
+├── config/                              # Cấu hình
+│   ├── SecurityConfig.java              # Spring Security, CORS
+│   ├── RateLimitConfig.java             # Rate limiting với Redis
+│   └── RedisConfig.java                 # Redis connection
+│
+├── controller/                          # Nhận request
+│   ├── AuthController.java              # /api/auth/*
+│   ├── UserController.java              # /api/users/*
+│ 
+│
+├── service/                             # Xử lý logic
+│   ├── AuthService.java                 # Đăng ký, đăng nhập, quên MK
+│   ├── UserService.java                 # CRUD user
+│   ├── OtpService.java                  # OTP (lưu Redis)
+│   ├── EmailService.java                # Gửi email
+│   └── RefreshTokenService.java         # Refresh token
+│
+├── repository/                          # Đọc/ghi DB
+│   ├── UserRepository.java
+│   ├── RoleRepository.java
+│   └── RefreshTokenRepository.java
+│
+├── entity/                              # Bảng DB
+│   ├── User.java
+│   ├── Role.java
+│   ├── ERole.java                       # Enum: ADMIN, FREELANCER, EMPLOYER
+│   ├── RefreshToken.java
+│   └── EOtpType.java                    # Enum: REGISTRATION, FORGOT_PASSWORD
+│
+├── dto/                                 # Request/Response
+│   ├── request/
+│   │   ├── RegisterRequest.java
+│   │   ├── LoginRequest.java
+│   │   ├── VerifyOtpRequest.java
+│   │   ├── ForgotPasswordRequest.java
+│   │   ├── ResetPasswordRequest.java
+│   │   ├── ResendOtpRequest.java
+│   │   └── RefreshTokenRequest.java
+│   └── response/
+│       ├── ApiResponse.java
+│       ├── AuthResponse.java
+│       └── OtpResponse.java
+│
+├── exception/                           # Xử lý lỗi
+│   ├── GlobalExceptionHandler.java
+│   ├── UserAlreadyExistsException.java
+│   ├── UserNotFoundException.java
+│   ├── InvalidOtpException.java
+│   ├── OtpExpiredException.java
+│   ├── EmailNotVerifiedException.java
+│   └── TokenRefreshException.java
+│
+├── security/                            # Bảo mật
+│   ├── jwt/
+│   │   ├── JwtUtils.java                # Tạo/verify JWT
+│   │   ├── JwtAuthFilter.java           # Filter kiểm tra JWT
+│   │   └── AuthEntryPoint.java          # Xử lý lỗi 401
+│   ├── UserDetailsImpl.java
+│   ├── UserDetailsServiceImpl.java
+│   └── RateLimitFilter.java             # Filter chống spam
+│
+└── seeder/                              # Dữ liệu khởi tạo
+    ├── RoleSeeder.java                  # Tạo 3 roles
+    └── AdminSeeder.java                 # Tạo admin mặc định
+```
+
+---
+
+## 7. API ENDPOINTS
+
+### Authentication Endpoints
+
+| Method | Endpoint | Description | Auth Required | Rate Limit |
+|--------|----------|-------------|---------------|------------|
+| `POST` | `/api/auth/register` | Đăng ký tài khoản mới | ❌ | 5/hour/IP |
+| `POST` | `/api/auth/verify-otp` | Xác thực OTP sau đăng ký | ❌ | 5/10min/email |
+| `POST` | `/api/auth/resend-otp` | Gửi lại mã OTP | ❌ | 3/10min/email |
+| `POST` | `/api/auth/login` | Đăng nhập | ❌ | 10/15min/IP |
+| `POST` | `/api/auth/refresh-token` | Làm mới access token | ❌ | - |
+| `POST` | `/api/auth/logout` | Đăng xuất | ✅ | - |
+| `POST` | `/api/auth/forgot-password` | Yêu cầu reset password | ❌ | 3/hour/email |
+| `POST` | `/api/auth/reset-password` | Đặt lại mật khẩu | ❌ | 5/hour/email |
+
+###/api/auth/register
+
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/RateLimitFilter.java (dòng 43-45)                     │
+├──────────────────────────────────────────────────────────────────────┤
+│ if (path.equals("/api/auth/register")) {                             │
+│     allowed = rateLimitConfig.isRegisterAllowed(clientIP);           │
+│ }                                                                    │
+│                                                                      │
+│ → Check Redis: rate:register:{IP}                                    │
+│ → Quá 10 lần → 429 Too Many Requests                                 │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 21-24)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/register")                                            │
+│ public ResponseEntity<ApiResponse<OtpResponse>> register(            │
+│     @Valid @RequestBody RegisterRequest req                          │
+│ ) {                                                                  │
+│     return ResponseEntity.status(HttpStatus.CREATED)                 │
+│                          .body(authService.register(req));           │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/RegisterRequest.java (dòng 13-28)                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ @NotBlank @Email                                                     │
+│ private String email;                                                │
+│                                                                      │
+│ @NotBlank @Size(min=8) @Pattern(regexp="...")                        │
+│ private String password;                                             │
+│                                                                      │
+│ @NotBlank @Size(min=2, max=100)                                      │
+│ private String fullName;                                             │
+│                                                                      │
+│ → Validate sai → 400 Bad Request                                     │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 37-60)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<OtpResponse> register(RegisterRequest req) {      │
+│                                                                      │
+│     // 1. Check email tồn tại                                        │
+│     if (userService.existsByEmail(req.getEmail())) {                 │
+│         throw new UserAlreadyExistsException("Email đã đăng ký");    │
+│     }                                                                │
+│                                                                      │
+│     // 2. Lấy role FREELANCER                                        │
+│     Role role = roleRepository.findByName(ERole.ROLE_FREELANCER);    │
+│                                                                      │
+│     // 3. Tạo user (mã hóa password)                                 │
+│     User user = User.builder()                                       │
+│             .email(req.getEmail())                                   │
+│             .password(passwordEncoder.encode(req.getPassword()))     │
+│             .fullName(req.getFullName())                             │
+│             .emailVerified(false)                                    │
+│             .build();                                                │
+│     user.assignRole(role);                                           │
+│                                                                      │
+│     // 4. Lưu vào PostgreSQL                                         │
+│     userService.save(user);                                          │
+│                                                                      │
+│     // 5. Tạo OTP và gửi email                                       │
+│     otpService.generateAndSendOtp(user, EOtpType.REGISTRATION);      │
+│                                                                      │
+│     return ApiResponse.success("Đăng ký thành công...", ...);        │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/OtpService.java (dòng 30-47)                           │
+├──────────────────────────────────────────────────────────────────────┤
+│ public void generateAndSendOtp(User user, EOtpType otpType) {        │
+│     String otpKey = "otp:" + otpType + ":" + user.getEmail();        │
+│     // Key = "otp:REGISTRATION:test@gmail.com"                       │
+│                                                                      │
+│     String otpCode = String.format("%06d", random.nextInt(1000000)); │
+│     // otpCode = "385621"                                            │
+│                                                                      │
+│     // Lưu Redis, TTL 10 phút                                        │
+│     redisTemplate.opsForValue().set(otpKey, otpCode, 600, SECONDS);  │
+│                                                                      │
+│     // Gửi email                                                     │
+│     emailService.sendOtpEmail(...);                                  │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 201 Created
+{
+    "status": "SUCCESS",
+    "message": "Đăng ký thành công. Vui lòng xác thực email.",
+    "data": { "email": "test@gmail.com", "expiresIn": 600 }
+}
+
+### /api/auth/resend-otp
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/RateLimitFilter.java (dòng 49-51)                     │
+├──────────────────────────────────────────────────────────────────────┤
+│ } else if (path.equals("/api/auth/resend-otp")) {                    │
+│     allowed = rateLimitConfig.isOtpAllowed(clientIP);                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 31-34)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/resend-otp")                                          │
+│ public ResponseEntity<ApiResponse<OtpResponse>> resendOtp(           │
+│     @Valid @RequestBody ResendOtpRequest req                         │
+│ ) {                                                                  │
+│     return ResponseEntity.ok(authService.resendOtp(req));            │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 122-131)                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<OtpResponse> resendOtp(ResendOtpRequest req) {    │
+│                                                                      │
+│     // 1. Tìm user                                                   │
+│     User user = userService.findByEmail(req.getEmail())              │
+│             .orElseThrow(() -> new UserNotFoundException(...));      │
+│                                                                      │
+│     // 2. Chuyển string → enum                                       │
+│     EOtpType otpType = EOtpType.valueOf(req.getOtpType());           │
+│     // "REGISTRATION" → EOtpType.REGISTRATION                        │
+│                                                                      │
+│     // 3. Tạo OTP mới và gửi email                                   │
+│     otpService.generateAndSendOtp(user, otpType);                    │
+│                                                                      │
+│     return ApiResponse.success("Đã gửi lại OTP", ...);               │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "message": "Đã gửi lại OTP",
+    "data": { "email": "test@gmail.com", "expiresIn": 600 }
+}
+
+### /api/auth/verify-otp
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 26-29)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/verify-otp")                                          │
+│ public ResponseEntity<ApiResponse<AuthResponse>> verifyOtp(          │
+│     @Valid @RequestBody VerifyOtpRequest req                         │
+│ ) {                                                                  │
+│     return ResponseEntity.ok(authService.verifyOtp(req));            │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 62-71)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<AuthResponse> verifyOtp(VerifyOtpRequest req) {   │
+│                                                                      │
+│     // 1. Verify OTP từ Redis                                        │
+│     otpService.verifyOtp(req.getEmail(), req.getOtp(),               │
+│                          EOtpType.REGISTRATION);                     │
+│                                                                      │
+│     // 2. Cập nhật emailVerified = true                              │
+│     User user = userService.getByEmail(req.getEmail());              │
+│     user.verifyEmail();                                              │
+│     userService.save(user);                                          │
+│                                                                      │
+│     // 3. Tạo JWT tokens                                             │
+│     return buildAuthResponse(user, "Xác thực thành công");           │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/OtpService.java (dòng 49-79)                           │
+├──────────────────────────────────────────────────────────────────────┤
+│ public void verifyOtp(String email, String otpCode, EOtpType type) { │
+│     String otpKey = "otp:" + type + ":" + email;                     │
+│                                                                      │
+│     // 1. Lấy OTP từ Redis                                           │
+│     String storedOtp = redisTemplate.opsForValue().get(otpKey);      │
+│                                                                      │
+│     // 2. Check hết hạn                                              │
+│     if (storedOtp == null) {                                         │
+│         throw new OtpExpiredException("OTP hết hạn");                │
+│     }                                                                │
+│                                                                      │
+│     // 3. Check số lần thử (max 5)                                   │
+│     if (attempts >= maxAttempts) {                                   │
+│         throw new InvalidOtpException("Quá số lần thử");             │
+│     }                                                                │
+│                                                                      │
+│     // 4. So sánh OTP                                                │
+│     if (!storedOtp.equals(otpCode)) {                                │
+│         throw new InvalidOtpException("OTP sai");                    │
+│     }                                                                │
+│                                                                      │
+│     // 5. Xóa OTP                                                    │
+│     redisTemplate.delete(otpKey);                                    │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+        "refreshToken": "a1b2c3d4...",
+        "tokenType": "Bearer",
+        "expiresIn": 86400,
+        "user": { "id": 1, "email": "test@gmail.com", ... }
+    }
+}
+
+### /api/auth/login
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/RateLimitFilter.java (dòng 46-48)                     │
+├──────────────────────────────────────────────────────────────────────┤
+│ } else if (path.equals("/api/auth/login")) {                         │
+│     allowed = rateLimitConfig.isLoginAllowed(clientIP);              │
+│ }                                                                    │
+│ → Quá 10 lần → 429                                                   │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 36-39)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/login")                                               │
+│ public ResponseEntity<ApiResponse<AuthResponse>> login(              │
+│     @Valid @RequestBody LoginRequest req                             │
+│ ) {                                                                  │
+│     return ResponseEntity.ok(authService.login(req));                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 73-86)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<AuthResponse> login(LoginRequest req) {           │
+│                                                                      │
+│     // 1. Tìm user                                                   │
+│     User user = userService.findByEmail(req.getEmail())              │
+│             .orElseThrow(() -> new UserNotFoundException(...));      │
+│                                                                      │
+│     // 2. Check đã verify email chưa                                 │
+│     if (!user.getEmailVerified()) {                                  │
+│         otpService.generateAndSendOtp(user, EOtpType.REGISTRATION);  │
+│         throw new EmailNotVerifiedException("Email chưa xác thực");  │
+│     }                                                                │
+│                                                                      │
+│     // 3. Xác thực password (Spring Security)                        │
+│     authenticationManager.authenticate(                              │
+│         new UsernamePasswordAuthenticationToken(                     │
+│             req.getEmail(), req.getPassword()                        │
+│         )                                                            │
+│     );                                                               │
+│     // Password sai → 401 Unauthorized                               │
+│                                                                      │
+│     // 4. Tạo JWT tokens                                             │
+│     return buildAuthResponse(user, "Đăng nhập thành công");          │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+        "refreshToken": "a1b2c3d4...",
+        "user": { ... }
+    }
+}
+
+### /api/auth/refresh-token
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 41-44)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/refresh-token")                                       │
+│ public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(       │
+│     @Valid @RequestBody RefreshTokenRequest req                      │
+│ ) {                                                                  │
+│     return ResponseEntity.ok(authService.refreshToken(req));         │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 88-91)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<AuthResponse> refreshToken(RefreshTokenRequest r) │
+│ {                                                                    │
+│     // 1. Verify refresh token từ PostgreSQL                         │
+│     RefreshToken token = refreshTokenService.verifyToken(            │
+│         r.getRefreshToken()                                          │
+│     );                                                               │
+│                                                                      │
+│     // 2. Tạo access token MỚI                                       │
+│     return buildAuthResponse(token.getUser(), "Token đã làm mới");   │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/RefreshTokenService.java                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ public RefreshToken verifyToken(String token) {                      │
+│     // 1. Tìm trong DB                                               │
+│     RefreshToken rt = refreshTokenRepository.findByToken(token)      │
+│             .orElseThrow(() -> new TokenRefreshException(...));      │
+│                                                                      │
+│     // 2. Check hết hạn                                              │
+│     if (rt.getExpiresAt().isBefore(Instant.now())) {                 │
+│         refreshTokenRepository.delete(rt);                           │
+│         throw new TokenRefreshException("Token hết hạn");            │
+│     }                                                                │
+│                                                                      │
+│     return rt;                                                       │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": {
+        "accessToken": "eyJhbGciOiJIUzI1NiJ9...(MỚI)",
+        "refreshToken": "a1b2c3d4...",
+        ...
+    }
+}
+
+### /api/auth/forgot-password
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/RateLimitFilter.java (dòng 52-54)                     │
+├──────────────────────────────────────────────────────────────────────┤
+│ } else if (path.equals("/api/auth/forgot-password")) {               │
+│     allowed = rateLimitConfig.isForgotPasswordAllowed(clientIP);     │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 51-54)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/forgot-password")                                     │
+│ public ResponseEntity<ApiResponse<OtpResponse>> forgotPassword(      │
+│     @Valid @RequestBody ForgotPasswordRequest req                    │
+│ ) {                                                                  │
+│     return ResponseEntity.ok(authService.forgotPassword(req));       │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 99-107)                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<OtpResponse> forgotPassword(ForgotPasswordReq r) {│
+│                                                                      │
+│     // 1. Tìm user                                                   │
+│     User user = userService.findByEmail(r.getEmail())                │
+│             .orElseThrow(() -> new UserNotFoundException(...));      │
+│                                                                      │
+│     // 2. Tạo OTP loại FORGOT_PASSWORD                               │
+│     otpService.generateAndSendOtp(user, EOtpType.FORGOT_PASSWORD);   │
+│     // Key Redis: "otp:FORGOT_PASSWORD:test@gmail.com"               │
+│                                                                      │
+│     return ApiResponse.success("Đã gửi OTP đến email", ...);         │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "message": "Đã gửi OTP đến email",
+    "data": { "email": "test@gmail.com", "expiresIn": 600 }
+}
+
+### /api/auth/reset-password
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 56-59)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/reset-password")                                      │
+│ public ResponseEntity<ApiResponse<Void>> resetPassword(              │
+│     @Valid @RequestBody ResetPasswordRequest req                     │
+│ ) {                                                                  │
+│     return ResponseEntity.ok(authService.resetPassword(req));        │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 109-120)                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<Void> resetPassword(ResetPasswordRequest req) {   │
+│                                                                      │
+│     // 1. Verify OTP loại FORGOT_PASSWORD                            │
+│     otpService.verifyOtp(req.getEmail(), req.getOtp(),               │
+│                          EOtpType.FORGOT_PASSWORD);                  │
+│                                                                      │
+│     // 2. Đổi password                                               │
+│     User user = userService.getByEmail(req.getEmail());              │
+│     user.changePassword(passwordEncoder.encode(req.getNewPassword()));│
+│     userService.save(user);                                          │
+│                                                                      │
+│     // 3. Xóa tất cả refresh tokens (logout mọi thiết bị)            │
+│     refreshTokenService.deleteByUser(user);                          │
+│                                                                      │
+│     return ApiResponse.success("Đặt lại mật khẩu thành công");       │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "message": "Đặt lại mật khẩu thành công"
+}
+
+### /api/auth/logout
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AuthController.java (dòng 46-49)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/logout")                                              │
+│ public ResponseEntity<ApiResponse<Void>> logout(                     │
+│     @RequestBody RefreshTokenRequest req                             │
+│ ) {                                                                  │
+│     return ResponseEntity.ok(authService.logout(req.getRefreshToken()));│
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/AuthService.java (dòng 93-97)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<Void> logout(String refreshToken) {               │
+│                                                                      │
+│     // 1. Xóa refresh token khỏi PostgreSQL                          │
+│     refreshTokenService.deleteByToken(refreshToken);                 │
+│                                                                      │
+│     // 2. Clear security context                                     │
+│     SecurityContextHolder.clearContext();                            │
+│                                                                      │
+│     return ApiResponse.success("Đăng xuất thành công");              │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "message": "Đăng xuất thành công"
+}
+
+### User Endpoints
+
+| Method | Endpoint | Description | Auth Required | Roles |
+|--------|----------|-------------|---------------|-------|
+| `GET` | `/api/users/me` | Lấy thông tin user hiện tại | ✅ | ALL |
+| `PUT` | `/api/users/me` | Cập nhật profile | ✅ | ALL |
+| `PUT` | `/api/users/me/password` | Đổi mật khẩu | ✅ | ALL |
+| `GET` | `/api/users` | Lấy danh sách users | ✅ | ADMIN |
+| `GET` | `/api/users/{id}` | Lấy user theo ID | ✅ | ADMIN |
+| `PUT` | `/api/users/{id}/status` | Enable/Disable user | ✅ | ADMIN |
+
+---
+### /api/users/me
+GET /api/users/me - lấy thông tin user hiện tại
+Header: Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+
+Request
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/jwt/JwtAuthFilter.java (dòng 31-57)                   │
+├──────────────────────────────────────────────────────────────────────┤
+│ protected void doFilterInternal(HttpServletRequest request, ...) {   │
+│                                                                      │
+│     // 1. Lấy token từ header                                        │
+│     String jwt = parseJwt(request);                                  │
+│     // Header: "Authorization: Bearer eyJhbG..."                     │
+│     // jwt = "eyJhbG..."                                             │
+│                                                                      │
+│     // 2. Validate token                                             │
+│     if (jwt != null && jwtUtils.validateJwtToken(jwt)) {             │
+│                                                                      │
+│         // 3. Lấy email từ token                                     │
+│         String email = jwtUtils.getEmailFromJwtToken(jwt);           │
+│                                                                      │
+│         // 4. Load user từ DB                                        │
+│         UserDetails userDetails = userDetailsService                 │
+│             .loadUserByUsername(email);                              │
+│                                                                      │
+│         // 5. Set vào SecurityContext (đánh dấu đã login)            │
+│         UsernamePasswordAuthenticationToken authentication =         │
+│             new UsernamePasswordAuthenticationToken(                 │
+│                 userDetails, null, userDetails.getAuthorities()      │
+│             );                                                       │
+│         SecurityContextHolder.getContext()                           │
+│             .setAuthentication(authentication);                      │
+│     }                                                                │
+│                                                                      │
+│     filterChain.doFilter(request, response);                         │
+│ }                                                                    │
+│                                                                      │
+│ // Token invalid hoặc không có → 401 Unauthorized                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping("/me")                                                   │
+│ public ResponseEntity<ApiResponse<UserResponse>> getMe(              │
+│     @AuthenticationPrincipal UserDetailsImpl userDetails             │
+│ ) {                                                                  │
+│     // userDetails = user đang login (lấy từ SecurityContext)        │
+│                                                                      │
+│     User user = userService.getById(userDetails.getId());            │
+│                                                                      │
+│     UserResponse res = UserResponse.builder()                        │
+│             .id(user.getId())                                        │
+│             .email(user.getEmail())                                  │
+│             .fullName(user.getFullName())                            │
+│             .roles(roles)                                            │
+│             .build();                                                │
+│                                                                      │
+│     return ResponseEntity.ok(ApiResponse.success("Thành công", res));│
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": {
+        "id": 1,
+        "email": "test@gmail.com",
+        "fullName": "Nguyen Van A",
+        "roles": ["ROLE_FREELANCER"]
+    }
+}
+
+### /api/users/me` | Cập nhật profile 
+Request + JWT Token
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/jwt/JwtAuthFilter.java (dòng 30-40)                   │
+├──────────────────────────────────────────────────────────────────────┤
+│ String jwt = parseJwt(request);                                      │
+│ if (jwt != null && jwtUtils.validateJwtToken(jwt)) {                 │
+│     String email = jwtUtils.getEmailFromJwtToken(jwt);               │
+│     UserDetails userDetails = userDetailsService.loadUserByUsername  │
+│     SecurityContextHolder.getContext().setAuthentication(...)        │
+│ }                                                                    │
+│                                                                      │
+│ → Giải mã JWT, lấy email                                             │
+│ → Load user từ DB, set vào SecurityContext                           │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java (dòng 40-48)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PutMapping("/me")                                                   │
+│ public ResponseEntity<...> updateProfile(                            │
+│     @AuthenticationPrincipal UserDetailsImpl userDetails,            │
+│     @Valid @RequestBody UpdateProfileRequest req) {                  │
+│                                                                      │
+│     User user = userService.updateProfile(userDetails.getId(), req); │
+│     return ResponseEntity.ok(ApiResponse.success(...));              │
+│ }                                                                    │
+│                                                                      │
+│ → @AuthenticationPrincipal: Lấy user đang login từ SecurityContext   │
+│ → @Valid: Validate request body                                      │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/UpdateProfileRequest.java (dòng 1-23)              │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Size(min = 2, max = 100) private String fullName;                   │
+│ @Pattern(regexp = "^(\\+84|84|0)?[0-9]{9,10}$")                      │
+│     private String phoneNumber;                                      │
+│ @Size(max = 500) private String avatarUrl;                           │
+│                                                                      │
+│ → Các field đều OPTIONAL (không có @NotBlank)                        │
+│ → Chỉ validate nếu có giá trị                                        │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/UserService.java (dòng 48-53)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public User updateProfile(Long userId, UpdateProfileRequest req) {   │
+│     User user = getById(userId);                                     │
+│     user.updateProfile(req.getFullName(), req.getPhoneNumber(),      │
+│                        req.getAvatarUrl());                          │
+│     return userRepository.save(user);                                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: entity/User.java (dòng 74-80)                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ public void updateProfile(String fullName, String phoneNumber,       │
+│                           String avatarUrl) {                        │
+│     if (fullName != null && !fullName.isBlank()) {                   │
+│         this.fullName = fullName;                                    │
+│     }                                                                │
+│     this.phoneNumber = phoneNumber;                                  │
+│     this.avatarUrl = avatarUrl;                                      │
+│ }                                                                    │
+│                                                                      │
+│ → Rich Domain Model: Entity tự validate/xử lý logic                  │
+│ → fullName: chỉ update nếu không null/blank                          │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ RESPONSE: 200 OK                                                     │
+├──────────────────────────────────────────────────────────────────────┤
+│ {                                                                    │
+│   "status": "SUCCESS",                                               │
+│   "message": "Cập nhật profile thành công",                          │
+│   "data": { user info với các field đã update }                      │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+### /api/users/me/password` | Đổi mật khẩu 
+Request + JWT Token
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/jwt/JwtAuthFilter.java                                │
+├──────────────────────────────────────────────────────────────────────┤
+│ → Xác thực JWT (giống API 1)                                         │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java (dòng 50-57)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PutMapping("/me/password")                                          │
+│ public ResponseEntity<ApiResponse<Void>> changePassword(             │
+│     @AuthenticationPrincipal UserDetailsImpl userDetails,            │
+│     @Valid @RequestBody ChangePasswordRequest req) {                 │
+│                                                                      │
+│     userService.changePassword(userDetails.getId(), req);            │
+│     return ResponseEntity.ok(ApiResponse.success("Đổi mật khẩu..."));│
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/ChangePasswordRequest.java (dòng 1-26)             │
+├──────────────────────────────────────────────────────────────────────┤
+│ @NotBlank private String currentPassword;                            │
+│                                                                      │
+│ @NotBlank                                                            │
+│ @Size(min = 8, max = 50)                                             │
+│ @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)...")             │
+│ private String newPassword;                                          │
+│                                                                      │
+│ → currentPassword: Bắt buộc nhập                                     │
+│ → newPassword: Validate mạnh (chữ hoa, thường, số, đặc biệt)         │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/UserService.java (dòng 56-71)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public void changePassword(Long userId, ChangePasswordRequest req) { │
+│     User user = getById(userId);                                     │
+│                                                                      │
+│     // CHECK 1: Mật khẩu hiện tại đúng không?                        │
+│     if (!passwordEncoder.matches(req.getCurrentPassword(),           │
+│                                  user.getPassword())) {              │
+│         throw new IllegalArgumentException("Mật khẩu hiện tại...");  │
+│     }                                                                │
+│                                                                      │
+│     // CHECK 2: Mật khẩu mới khác mật khẩu cũ?                       │
+│     if (passwordEncoder.matches(req.getNewPassword(),                │
+│                                 user.getPassword())) {               │
+│         throw new IllegalArgumentException("Mật khẩu mới không...");│
+│     }                                                                │
+│                                                                      │
+│     user.changePassword(passwordEncoder.encode(req.getNewPassword()));
+│     userRepository.save(user);                                       │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: entity/User.java (dòng 68-73)                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ public void changePassword(String encodedPassword) {                 │
+│     if (encodedPassword == null || encodedPassword.isBlank()) {      │
+│         throw new IllegalArgumentException("Password cannot...");    │
+│     }                                                                │
+│     this.password = encodedPassword;                                 │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+   RESPONSE: 200 OK hoặc 400 Bad Request (nếu mật khẩu sai)
+### /api/users` | Lấy danh sách users (admin)
+Request + ADMIN JWT Token
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: security/jwt/JwtAuthFilter.java                                │
+├──────────────────────────────────────────────────────────────────────┤
+│ → Xác thực JWT, load user với roles                                  │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java (dòng 59-76)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping                                                          │
+│ @PreAuthorize("hasRole('ADMIN')")    ◄── KIỂM TRA QUYỀN ADMIN        │
+│ public ResponseEntity<...> getAllUsers(                              │
+│     @RequestParam(defaultValue = "0") int page,                      │
+│     @RequestParam(defaultValue = "10") int size,                     │
+│     @RequestParam(defaultValue = "id") String sortBy,                │
+│     @RequestParam(defaultValue = "asc") String sortDir) {            │
+│                                                                      │
+│     Sort sort = sortDir.equalsIgnoreCase("desc")                     │
+│             ? Sort.by(sortBy).descending()                           │
+│             : Sort.by(sortBy).ascending();                           │
+│     Pageable pageable = PageRequest.of(page, size, sort);            │
+│                                                                      │
+│     Page<User> users = userService.getAllUsers(pageable);            │
+│     Page<UserResponse> response = users.map(this::buildUserResponse);│
+│     return ResponseEntity.ok(ApiResponse.success("Thành công",...)); │
+│ }                                                                    │
+│                                                                      │
+│ → @PreAuthorize: Spring Security kiểm tra ROLE_ADMIN                 │
+│ → Không phải ADMIN → 403 Forbidden                                   │
+│ → Hỗ trợ phân trang và sắp xếp                                       │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/UserService.java (dòng 45-47)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ public Page<User> getAllUsers(Pageable pageable) {                   │
+│     return userRepository.findAll(pageable);                         │
+│ }                                                                    │
+│                                                                      │
+│ → Spring Data JPA tự động phân trang                                 │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ RESPONSE: 200 OK                                                     │
+├──────────────────────────────────────────────────────────────────────┤
+│ {                                                                    │
+│   "status": "SUCCESS",                                               │
+│   "data": {                                                          │
+│     "content": [ {...user1}, {...user2}, ... ],                      │
+│     "totalPages": 5,                                                 │
+│     "totalElements": 50,                                             │
+│     "size": 10,                                                      │
+│     "number": 0                                                      │
+│   }                                                                  │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+### /api/users/{id}` | Lấy user theo ID (admin)
+Request + ADMIN JWT Token
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java (dòng 78-83)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping("/{id}")                                                 │
+│ @PreAuthorize("hasRole('ADMIN')")                                    │
+│ public ResponseEntity<...> getUserById(@PathVariable Long id) {      │
+│     User user = userService.getById(id);                             │
+│     return ResponseEntity.ok(ApiResponse.success(...));              │
+│ }                                                                    │
+│                                                                      │
+│ → @PathVariable: Lấy {id} từ URL                                     │
+│ → Không tìm thấy → 404 Not Found                                     │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/UserService.java (dòng 31-34)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ public User getById(Long id) {                                       │
+│     return userRepository.findById(id)                               │
+│         .orElseThrow(() -> new UserNotFoundException("Không tìm...")); 
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+### `/api/users/{id}/status` | Enable/Disable user (admin)
+Request + ADMIN JWT Token
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java (dòng 85-94)                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PutMapping("/{id}/status")                                          │
+│ @PreAuthorize("hasRole('ADMIN')")                                    │
+│ public ResponseEntity<...> updateUserStatus(                         │
+│     @PathVariable Long id,                                           │
+│     @Valid @RequestBody UpdateUserStatusRequest req) {               │
+│                                                                      │
+│     User user = userService.updateUserStatus(id, req.getEnabled());  │
+│     String message = req.getEnabled()                                │
+│         ? "Đã kích hoạt user"                                        │
+│         : "Đã vô hiệu hóa user";                                     │
+│     return ResponseEntity.ok(ApiResponse.success(message, ...));     │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/UpdateUserStatusRequest.java (dòng 1-16)           │
+├──────────────────────────────────────────────────────────────────────┤
+│ @NotNull(message = "Enabled status is required")                     │
+│ private Boolean enabled;                                             │
+│                                                                      │
+│ → true: Kích hoạt user                                               │
+│ → false: Vô hiệu hóa (user không thể login)                          │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/UserService.java (dòng 74-82)                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public User updateUserStatus(Long userId, Boolean enabled) {         │
+│     User user = getById(userId);                                     │
+│     if (enabled) {                                                   │
+│         user.enable();                                               │
+│     } else {                                                         │
+│         user.disable();                                              │
+│     }                                                                │
+│     return userRepository.save(user);                                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: entity/User.java (dòng 81-86)                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ public void disable() {                                              │
+│     this.enabled = false;                                            │
+│ }                                                                    │
+│ public void enable() {                                               │
+│     this.enabled = true;                                             │
+│ }                                                                    │
+│                                                                      │
+│ → User bị disable sẽ KHÔNG thể login (kiểm tra ở AuthService.login)  │
+└──────────────────────────────────────────────────────────────────────┘
+
+### 8.2 Gmail SMTP Configuration
+
+**Bước 1: Bật 2-Step Verification**
+- Truy cập: https://myaccount.google.com/security
+
+**Bước 2: Tạo App Password**
+1. Truy cập: https://myaccount.google.com/apppasswords
+2. Chọn "Mail" → "Other"
+3. Copy 16 ký tự vào `MAIL_PASSWORD`
+
+---
+
+## 9. REDIS SETUP
+
+### Option 1: Docker (Local)
+```bash
+docker run -d --name redis -p 6379:6379 redis
+```
+
+### Option 2: Upstash (Cloud miễn phí)
+1. Tạo tài khoản: https://upstash.com
+2. Create Database
+3. Copy Host, Port, Password vào `.env`
+
+### Redis Keys
+
+| Key | Value | TTL | Mục đích |
+|-----|-------|-----|----------|
+| `rate:login:{IP}` | Counter | 15 phút | Rate limit login |
+| `rate:register:{IP}` | Counter | 1 giờ | Rate limit register |
+| `otp:REGISTRATION:{email}` | 6 số | 10 phút | OTP đăng ký |
+| `otp:FORGOT_PASSWORD:{email}` | 6 số | 10 phút | OTP quên MK |
+| `otp_attempts:{type}:{email}` | Counter | 10 phút | Đếm số lần nhập sai |
+
+---
+
+## 10. CHẠY ỨNG DỤNG
+
+```bash
+# 1. Start Redis
+docker run -d --name redis -p 6379:6379 redis
+```
+- Option 2: Cloud miễn phí - Upstash
+    + Tạo tài khoản → Create Database
+    + Copy Host, Port, Password vào .env:
+
+
+JWT
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+```
