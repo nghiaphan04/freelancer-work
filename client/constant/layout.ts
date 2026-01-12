@@ -203,7 +203,6 @@ export const careerMenuArticles = [
 ];
 
 export const navItems = [
-  { label: "Đăng việc", hasDropdown: true, dropdownId: "jobs" },
   { label: "Tìm việc", hasDropdown: true, dropdownId: "find-work" },
   { label: "Công cụ", hasDropdown: true, dropdownId: "tools" },
   { label: "Cẩm nang nghề nghiệp", hasDropdown: true, dropdownId: "career" },

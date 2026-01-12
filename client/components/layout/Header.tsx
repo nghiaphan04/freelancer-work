@@ -18,8 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  jobCategories,
-  jobMenuActions,
   findWorkCategories,
   findWorkActions,
   toolsMenu,
@@ -123,63 +121,6 @@ export default function Header() {
                       />
                     )}
                   </button>
-
-                  {/* Việc làm Dropdown */}
-                  {item.dropdownId === "jobs" && activeDropdown === "jobs" && (
-                    <div className="absolute top-full left-0 z-[9999] w-[900px]">
-                      <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] p-6">
-                        {/* Grid 4 columns */}
-                        <div className="grid grid-cols-4 gap-6">
-                          {jobCategories.slice(0, 4).map((category, idx) => (
-                            <div key={idx}>
-                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
-                              <ul className="space-y-2">
-                                {category.items.map((item, iIdx) => (
-                                  <li key={iIdx}>
-                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
-                                      {item}
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Grid 4 columns - row 2 */}
-                        <div className="grid grid-cols-4 gap-6 mt-6 pt-6 border-t border-gray-100">
-                          {jobCategories.slice(4, 7).map((category, idx) => (
-                            <div key={idx}>
-                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
-                              <ul className="space-y-2">
-                                {category.items.map((item, iIdx) => (
-                                  <li key={iIdx}>
-                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
-                                      {item}
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                          
-                          {/* Actions column */}
-                          <div className="flex flex-col justify-start gap-3">
-                            {jobMenuActions.map((action, aIdx) => (
-                              <a
-                                key={aIdx}
-                                href={action.href}
-                                className="inline-flex items-center gap-1 text-sm font-medium text-[#00b14f] hover:underline"
-                              >
-                                {action.label}
-                                <Icon name={action.icon} size={16} />
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Tìm việc Dropdown */}
                   {item.dropdownId === "find-work" && activeDropdown === "find-work" && (
@@ -530,40 +471,6 @@ export default function Header() {
                         />
                       </button>
                       
-                      {/* Việc làm Sub-items */}
-                      {item.dropdownId === "jobs" && expandedMobileNav === "jobs" && (
-                        <div className="bg-gray-50 py-2 max-h-[60vh] overflow-y-auto">
-                          {jobCategories.map((category, cIdx) => (
-                            <div key={cIdx} className={cIdx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
-                              <p className="px-7 py-1 text-xs font-semibold text-gray-900">{category.title}</p>
-                              {category.items.map((jobItem, jIdx) => (
-                                <Link
-                                  key={jIdx}
-                                  href="#"
-                                  onClick={() => setMobileMenuOpen(false)}
-                                  className="block px-7 py-2 text-sm text-gray-600 hover:text-[#00b14f]"
-                                >
-                                  {jobItem}
-                                </Link>
-                              ))}
-                            </div>
-                          ))}
-                          <div className="mt-3 pt-3 border-t border-gray-200 px-7">
-                            {jobMenuActions.map((action, aIdx) => (
-                              <Link
-                                key={aIdx}
-                                href={action.href}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="flex items-center gap-1 py-2 text-sm font-medium text-[#00b14f]"
-                              >
-                                {action.label}
-                                <Icon name={action.icon} size={16} />
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Công cụ Sub-items */}
                       {item.dropdownId === "tools" && expandedMobileNav === "tools" && (
                         <div className="bg-gray-50 py-2">
