@@ -26,88 +26,143 @@ export interface Stat {
   desc: string;
 }
 
+export interface ProductCategory {
+  id: number;
+  name: string;
+  jobs: number;
+  iconType: string;
+}
+
 export const jobCategories: JobCategory[] = [
   { 
     id: 1, 
-    name: "Kinh doanh/Bán hàng",
-    popular: ["Nhân viên kinh doanh", "Nhân viên bán hàng", "Nhân viên tư vấn", "Telesales", "Sales Admin", "Tư vấn tuyển sinh", "Sales Online"],
+    name: "Phát triển & CNTT",
+    popular: [
+      "Lập trình viên Ada", "Kiểm thử Blockchain", "Lập trình Backend Amazon", 
+      "Lập trình viên Yeoman", "Lập trình viên nghiên cứu", "Lập trình viên Twitter API",
+      "Lập trình viên UI", "Lập trình viên Schema", "Lập trình viên từ xa", "Kỹ sư Java"
+    ],
     subCategories: [
-      { name: "Sales Xuất nhập khẩu/Logistics", tags: ["Sales Logistics", "Sales Xuất nhập khẩu/Logistics khác"] },
-      { name: "Sales Bất động sản", tags: ["Sales bất động sản/Môi giới bất động sản", "Sales Bất động sản khác"] },
-      { name: "Sales Xây dựng", tags: ["Kinh doanh thiết bị/vật liệu xây dựng", "Kinh doanh nội thất", "Tư vấn thiết kế xây dựng", "Sales Xây dựng khác"] },
+      { name: "Web & Mobile", tags: ["Lập trình viên Web", "Lập trình viên Web Ấn Độ", "Lập trình Game 2D", "Lập trình viên phần mềm", "Lập trình viên Google API"] },
+      { name: "Hệ thống & Cloud", tags: ["Lập trình viên Chrome OS", "Chuyên gia BLOOM", "Chuyên gia GPT Neo", "Tư vấn đổi mới", "Kỹ sư Big Data"] },
     ]
   },
   { 
     id: 2, 
-    name: "Marketing/PR/Quảng cáo",
-    popular: ["Marketing", "Digital Marketing", "Content Marketing", "SEO", "Graphic Design"],
+    name: "Thiết kế & Sáng tạo",
+    popular: [
+      "Thiết kế tài nguyên Game 2D", "Thiết kế Game 2D", "Thiết kế trang sức thủ công",
+      "Thiết kế trang phục", "Thiết kế hoa", "Biên kịch hành động",
+      "Thiết kế đánh giá", "Thiết kế Marketing", "Thiết kế đồ họa", "Chuyên gia Adobe Photoshop"
+    ],
     subCategories: [
-      { name: "Marketing Online", tags: ["Facebook Ads", "Google Ads", "TikTok Marketing"] },
-      { name: "Content", tags: ["Content Writer", "Copywriter", "Content Creator"] },
+      { name: "Video & Âm thanh", tags: ["Biên tập video Youtube", "Chuyên gia Final Cut Pro X", "Biên tập video", "Kỹ sư âm thanh", "Kỹ sư mixing"] },
+      { name: "Thiết kế & Minh họa", tags: ["Thiết kế Logo", "Họa sĩ nền 2D Animation", "Họa sĩ minh họa 2D", "Quản lý âm nhạc", "Chuyên gia Adobe Illustrator"] },
     ]
   },
   { 
     id: 3, 
-    name: "Chăm sóc khách hàng (Customer Service)",
-    popular: ["Chăm sóc khách hàng", "Tổng đài viên", "CSKH Online"],
-    subCategories: []
+    name: "Dịch vụ AI",
+    popular: [
+      "Lập trình viên OpenAI", "Lập trình viên AI Agent", "Kỹ sư trí tuệ nhân tạo",
+      "Kỹ sư Machine Learning", "Nhà khoa học dữ liệu", "Lập trình OpenAI trên AWS",
+      "Chuyên gia Deep Learning", "Lập trình viên Pandas", "Kỹ sư thị giác máy tính", "Kỹ sư NLP"
+    ],
+    subCategories: [
+      { name: "Framework & Tools", tags: ["Lập trình viên TensorFlow", "Freelancer PyTorch", "Chuyên gia Scikit-Learn", "Lập trình viên OpenCV", "Lập trình viên thuật toán"] },
+      { name: "Chuyên sâu", tags: ["Freelancer Keras", "Chuyên gia Jupyter", "Lập trình Deep Neural Networks", "Chuyên gia phân tích dự đoán", "Freelancer phân tích chuỗi thời gian"] },
+    ]
   },
   { 
     id: 4, 
-    name: "Nhân sự/Hành chính/Pháp chế",
-    popular: ["Nhân sự", "Hành chính", "Thư ký", "Lễ tân"],
-    subCategories: []
+    name: "Bán hàng & Marketing",
+    popular: [
+      "Phân tích viên Sales", "Tư vấn Marketing thương hiệu", "Tư vấn phân tích Marketing",
+      "Chuyên gia mạng xã hội", "Chuyên viên mạng xã hội", "Chuyên viên SEM",
+      "Tư vấn Marketing", "Quản lý SEO", "Tư vấn Marketing doanh nghiệp nhỏ", "Tư vấn chiến lược Marketing"
+    ],
+    subCategories: [
+      { name: "Tư vấn chuyên ngành", tags: ["Tư vấn Marketing luật", "Tư vấn Marketing y tế", "Tư vấn Marketing Google", "Tư vấn chiến lược Digital Marketing", "Tư vấn Marketing nha khoa"] },
+      { name: "Digital Marketing", tags: ["Tư vấn Marketing doanh nghiệp", "Marketer theo ngành dọc", "Digital Marketer", "Chuyên gia tạo khách hàng tiềm năng", "Marketer tạo nhu cầu"] },
+    ]
   },
   { 
     id: 5, 
-    name: "Công nghệ Thông tin",
-    popular: ["Developer", "Tester", "BA", "DevOps", "AI Engineer"],
+    name: "Viết lách & Dịch thuật",
+    popular: [
+      "Người đánh giá sách", "Nhà văn", "Chuyên gia bản tin",
+      "Chuyên gia bản thảo", "Nhà văn tạp chí", "Viết CV",
+      "Viết nội dung", "Viết kế hoạch kinh doanh", "Nhà văn chuyên nghiệp", "Biên dịch viên"
+    ],
     subCategories: [
-      { name: "Lập trình", tags: ["Frontend", "Backend", "Fullstack", "Mobile Dev"] },
-      { name: "Quản lý", tags: ["Project Manager", "Product Manager", "Scrum Master"] },
+      { name: "Dịch thuật", tags: ["Chuyên gia dịch tài liệu", "Dịch bài viết", "Dịch sách", "Viết luận văn", "Copywriter"] },
+      { name: "Viết chuyên ngành", tags: ["Nhà văn khoa học viễn tưởng", "Viết về ẩm thực", "Biên tập viên", "Freelancer ngữ pháp", "Nhà văn Anime"] },
     ]
   },
   { 
     id: 6, 
-    name: "Lao động phổ thông",
-    popular: ["Công nhân", "Bảo vệ", "Lái xe", "Giao hàng"],
-    subCategories: []
+    name: "Hành chính & Hỗ trợ",
+    popular: [
+      "Trợ lý ảo Amazon", "Lập trình viên hệ thống", "Trợ lý ảo Ebay",
+      "Chuyên viên nhập liệu", "Chuyên viên mã hóa dữ liệu", "Trợ lý ảo nhập liệu CRM",
+      "Trợ lý nhập liệu CRM", "Nhân viên nhập liệu", "Trợ lý ảo", "Dịch vụ thanh toán y tế Medical Mastermind"
+    ],
+    subCategories: [
+      { name: "Quản trị", tags: ["Lập trình Google Calendar", "Trợ lý biên tập", "Chuyên gia phần mềm đấu giá", "Trợ lý ảo bất động sản", "Chuyên gia Excel"] },
+      { name: "Hỗ trợ", tags: ["Đại diện chăm sóc khách hàng", "Trợ lý cá nhân", "Quản lý dự án kinh doanh", "Quản lý dự án", "Quản trị viên Microsoft 365 Enterprise"] },
+    ]
   },
   { 
     id: 7, 
-    name: "Tài chính/Kế toán",
-    popular: ["Kế toán", "Kiểm toán", "Tài chính", "Ngân hàng"],
-    subCategories: []
+    name: "Tài chính & Kế toán",
+    popular: [
+      "Tư vấn phần mềm kế toán", "Quản lý đầu tư", "Quản lý quỹ đầu cơ",
+      "Tư vấn kế toán", "Tư vấn CNTT", "Tư vấn tài chính",
+      "Kế toán viên", "Tư vấn thuế", "Gia sư kế toán", "Tư vấn giáo dục"
+    ],
+    subCategories: [
+      { name: "Tư vấn & Phân tích", tags: ["Tư vấn quản lý", "Chuyên viên đối chiếu ngân hàng", "Phân tích viên kinh doanh", "Freelancer kỹ năng giao tiếp", "Phân tích viên tài chính"] },
+      { name: "Kế toán chuyên môn", tags: ["Đại diện phát triển kinh doanh", "Tư vấn QuickBooks", "Chuyên gia Xero", "Chuyên viên đối chiếu tài khoản", "Chuyên viên lương"] },
+    ]
   },
   { 
     id: 8, 
-    name: "Thiết kế/Đồ họa",
-    popular: ["Graphic Designer", "UI/UX Designer", "3D Designer"],
-    subCategories: []
+    name: "Pháp lý",
+    popular: [
+      "Soạn thảo hợp đồng", "Chuyên viên tuân thủ CNTT", "Chuyên viên tuân thủ",
+      "Luật sư hợp đồng", "Trợ lý pháp lý", "Nghiên cứu viên pháp lý",
+      "Trợ lý luật sư", "Tư vấn pháp lý", "Người đánh giá tài liệu", "Luật sư tài chính chứng khoán"
+    ],
+    subCategories: [
+      { name: "Luật chuyên ngành", tags: ["Luật sư doanh nghiệp", "Freelancer luật kinh doanh", "Luật sư di trú", "Freelancer tuân thủ quy định", "Luật sư bản quyền"] },
+      { name: "Tố tụng & Lao động", tags: ["Luật sư sở hữu trí tuệ", "Luật sư dân sự", "Luật sư lao động", "Chuyên gia tố tụng", "Luật sư hình sự"] },
+    ]
   },
   { 
     id: 9, 
-    name: "Giáo dục/Đào tạo",
-    popular: ["Giáo viên", "Gia sư", "Đào tạo viên"],
-    subCategories: []
+    name: "Nhân sự & Đào tạo",
+    popular: [
+      "Quản lý tuyển dụng", "Nhà tuyển dụng", "Freelancer công nghệ",
+      "Quản lý nhân sự", "Chuyên gia quản lý nhân tài", "Chuyên gia đào tạo & phát triển",
+      "Nhà tuyển dụng LinkedIn", "Thiết kế hướng dẫn", "Phỏng vấn viên", "Chuyên gia e-Learning"
+    ],
+    subCategories: [
+      { name: "Phát triển nhân sự", tags: ["Chuyên gia phát triển lãnh đạo", "Chuyên gia onboarding", "Freelancer tìm nguồn ứng viên", "Phát triển chương trình đào tạo", "Nhà tuyển dụng kỹ thuật"] },
+      { name: "Tư vấn HR", tags: ["Chuyên gia hệ thống quản lý học tập (LMS)", "Tư vấn phát triển tổ chức", "Freelancer thiết kế chương trình", "Tư vấn HR", "Chuyên gia gắn kết nhân viên"] },
+    ]
   },
   { 
     id: 10, 
-    name: "Y tế/Dược phẩm",
-    popular: ["Bác sĩ", "Y tá", "Dược sĩ", "Trình dược viên"],
-    subCategories: []
-  },
-  { 
-    id: 11, 
-    name: "Xây dựng/Kiến trúc",
-    popular: ["Kỹ sư xây dựng", "Kiến trúc sư", "Giám sát"],
-    subCategories: []
-  },
-  { 
-    id: 12, 
-    name: "Logistics/Vận tải",
-    popular: ["Logistics", "Xuất nhập khẩu", "Kho vận"],
-    subCategories: []
+    name: "Kỹ thuật & Kiến trúc",
+    popular: [
+      "Họa sĩ minh họa kiến trúc", "Kỹ sư thiết kế", "Chuyên gia AutoCAD",
+      "Chuyên gia Arduino", "Chuyên gia MATLAB", "Kỹ sư chuyên nghiệp",
+      "Kỹ sư tư vấn điện", "Kỹ sư Arduino", "Kỹ sư phần cứng", "Kỹ sư chiếu sáng"
+    ],
+    subCategories: [
+      { name: "Kỹ sư chuyên ngành", tags: ["Kỹ sư nông nghiệp", "Kỹ sư hàng không vũ trụ", "Kỹ sư địa kỹ thuật", "Họa sĩ 3D", "Tư vấn kỹ thuật"] },
+      { name: "Thiết kế & CAD", tags: ["Thiết kế sản phẩm", "Tư vấn AutoCAD", "Tư vấn an toàn", "Người dựng mô hình 3D", "Thiết kế CAD"] },
+    ]
   },
 ];
 
@@ -133,23 +188,36 @@ export const bannerSlides: BannerSlide[] = [
 
 export const stats: Stat[] = [
   { 
-    number: "540.000+", 
-    title: "Nhà tuyển dụng uy tín",
-    desc: "Các nhà tuyển dụng đến từ tất cả các ngành nghề và được xác thực"
+    number: "18M+", 
+    title: "Freelancer đã đăng ký",
+    desc: "Tìm kiếm chuyên gia phù hợp với dự án của bạn từ mạng lưới freelancer lớn nhất"
   },
   { 
-    number: "200.000+", 
-    title: "Doanh nghiệp hàng đầu",
-    desc: "Samsung, Viettel, Vingroup, FPT, Techcombank,..."
+    number: "8.000+", 
+    title: "Kỹ năng chuyên môn",
+    desc: "Từ phát triển web, thiết kế đồ họa đến AI, blockchain và nhiều hơn nữa"
   },
   { 
-    number: "2.000.000+", 
-    title: "Việc làm đã được kết nối",
-    desc: "Kết nối ứng viên với cơ hội việc làm từ doanh nghiệp uy tín"
+    number: "5M+", 
+    title: "Dự án đã hoàn thành",
+    desc: "Kết nối khách hàng với freelancer chất lượng cao trên toàn thế giới"
   },
   { 
-    number: "1.200.000+", 
-    title: "Lượt tải ứng dụng",
-    desc: "60% là ứng viên có kinh nghiệm từ 3 năm trở lên"
+    number: "4.9/5", 
+    title: "Đánh giá trung bình",
+    desc: "Hàng triệu khách hàng hài lòng với chất lượng dịch vụ freelancer"
   },
+];
+
+export const productCategories: ProductCategory[] = [
+  { id: 1, name: "Phát triển & CNTT", jobs: 7938, iconType: "dev" },
+  { id: 2, name: "Thiết kế & Sáng tạo", jobs: 5640, iconType: "design" },
+  { id: 3, name: "Dịch vụ AI", jobs: 2005, iconType: "ai" },
+  { id: 4, name: "Bán hàng & Marketing", jobs: 2465, iconType: "marketing" },
+  { id: 5, name: "Viết lách & Dịch thuật", jobs: 1892, iconType: "writing" },
+  { id: 6, name: "Hành chính & Hỗ trợ", jobs: 1283, iconType: "admin" },
+  { id: 7, name: "Tài chính & Kế toán", jobs: 4572, iconType: "finance" },
+  { id: 8, name: "Pháp lý", jobs: 343, iconType: "legal" },
+  { id: 9, name: "Nhân sự & Đào tạo", jobs: 1456, iconType: "hr" },
+  { id: 10, name: "Kỹ thuật & Kiến trúc", jobs: 2134, iconType: "engineering" },
 ];

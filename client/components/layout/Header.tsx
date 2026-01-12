@@ -14,97 +14,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const jobMenuLeft = [
-  { 
-    title: "VIỆC LÀM",
-    items: [
-      { icon: "search", label: "Tìm việc làm", href: "/jobs" },
-      { icon: "bookmark", label: "Việc làm đã lưu", href: "/saved-jobs" },
-      { icon: "description", label: "Việc làm đã ứng tuyển", href: "/applied-jobs" },
-      { icon: "thumb_up", label: "Việc làm phù hợp", href: "/recommended-jobs" },
-    ]
-  },
-  {
-    title: "CÔNG TY",
-    items: [
-      { icon: "apartment", label: "Danh sách công ty", href: "/companies" },
-      { icon: "emoji_events", label: "Top công ty", href: "/top-companies" },
-    ]
-  }
-];
-
-const jobMenuRight = {
-  title: "VIỆC LÀM THEO VỊ TRÍ",
-  items: [
-    ["Việc làm Nhân viên kinh doanh", "Việc làm Lao động phổ thông"],
-    ["Việc làm Kế toán", "Việc làm Senior"],
-    ["Việc làm Marketing", "Việc làm Kỹ sư xây dựng"],
-    ["Việc làm Hành chính nhân sự", "Việc làm Thiết kế đồ hoạ"],
-    ["Việc làm Chăm sóc khách hàng", "Việc làm Bất động sản"],
-    ["Việc làm Ngân hàng", "Việc làm Giáo dục"],
-    ["Việc làm IT", "Việc làm Telesales"],
-  ]
-};
-
-const toolsMenu = {
-  title: "CÔNG CỤ",
-  items: [
-    [
-      { icon: "calculate", label: "Tính lương Gross - Net", href: "/tools/salary" },
-      { icon: "elderly", label: "Tính bảo hiểm xã hội một lần", href: "/tools/social-insurance" },
-    ],
-    [
-      { icon: "receipt_long", label: "Tính thuế thu nhập cá nhân", href: "/tools/tax" },
-      { icon: "savings", label: "Lập kế hoạch tiết kiệm", href: "/tools/savings" },
-    ],
-    [
-      { icon: "percent", label: "Tính lãi suất kép", href: "/tools/compound-interest" },
-      { icon: "smartphone", label: "Mobile App Freelancer", href: "/tools/mobile-app" },
-    ],
-    [
-      { icon: "account_balance", label: "Tính bảo hiểm thất nghiệp", href: "/tools/unemployment" },
-      null,
-    ],
-  ]
-};
-
-const careerMenuLeft = [
-  { icon: "explore", label: "Định hướng nghề nghiệp", href: "/career/orientation" },
-  { icon: "lightbulb", label: "Bí kíp tìm việc", href: "/career/job-tips" },
-  { icon: "payments", label: "Chế độ lương thưởng", href: "/career/salary" },
-  { icon: "school", label: "Kiến thức chuyên ngành", href: "/career/knowledge" },
-  { icon: "work_outline", label: "Hành trang nghề nghiệp", href: "/career/preparation" },
-  { icon: "trending_up", label: "Thị trường & xu hướng tuyển dụng", href: "/career/trends" },
-];
-
-const careerMenuArticles = [
-  {
-    image: "/logo.svg",
-    title: "Ngành Marketing là gì? Cơ hội việc làm mới nhất",
-    desc: "Marketing là một trong những ngành đóng vai trò quan trọng trong hầu hết các doanh nghiệp...",
-    href: "/career/marketing"
-  },
-  {
-    image: "/logo.svg",
-    title: "Tài mẫu sơ yếu lý lịch xin việc chuẩn nhất 2026",
-    desc: "Sơ yếu lý lịch là một trong những giấy tờ quan trọng nhất khi chuẩn bị hồ sơ xin việc, bởi nó...",
-    href: "/career/cv-template"
-  },
-];
+import {
+  jobCategories,
+  jobMenuActions,
+  findWorkCategories,
+  findWorkActions,
+  toolsMenu,
+  careerMenuLeft,
+  careerMenuArticles,
+  navItems,
+} from "@/constant/layout";
 
 export default function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileNav, setExpandedMobileNav] = useState<string | null>(null);
   const { user, isAuthenticated, isHydrated, logout } = useAuth();
-
-  const navItems = [
-    { label: "Việc làm", hasDropdown: true, dropdownId: "jobs" },
-    { label: "Tạo CV", hasDropdown: true, dropdownId: "cv" },
-    { label: "Công cụ", hasDropdown: true, dropdownId: "tools" },
-    { label: "Cẩm nang nghề nghiệp", hasDropdown: true, dropdownId: "career" },
-  ];
 
   return (
     <header className="bg-white text-gray-800 border-b border-gray-200 w-full sticky top-0 z-[9999]">
@@ -179,57 +104,113 @@ export default function Header() {
 
                   {/* Việc làm Dropdown */}
                   {item.dropdownId === "jobs" && activeDropdown === "jobs" && (
-                    <div className="absolute top-full left-0 z-[9999] w-[750px]">
-                      <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f]">
-                        <div className="flex">
-                        {/* Left Column */}
-                        <div className="w-[240px] border-r border-gray-100 py-4">
-                          {jobMenuLeft.map((section, sIdx) => (
-                            <div key={sIdx} className={sIdx > 0 ? "mt-4" : ""}>
-                              <h4 className="px-5 text-xs font-semibold text-gray-500 mb-2">
-                                {section.title}
-                              </h4>
-                              {section.items.map((menuItem, mIdx) => (
-                                <a
-                                  key={mIdx}
-                                  href={menuItem.href}
-                                  className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 transition-colors group"
-                                >
-                                  <Icon 
-                                    name={menuItem.icon} 
-                                    size={20} 
-                                    className="text-gray-400 group-hover:text-[#00b14f]" 
-                                  />
-                                  <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">
-                                    {menuItem.label}
-                                  </span>
-                                </a>
-                              ))}
+                    <div className="absolute top-full left-0 z-[9999] w-[900px]">
+                      <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] p-6">
+                        {/* Grid 4 columns */}
+                        <div className="grid grid-cols-4 gap-6">
+                          {jobCategories.slice(0, 4).map((category, idx) => (
+                            <div key={idx}>
+                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
+                              <ul className="space-y-2">
+                                {category.items.map((item, iIdx) => (
+                                  <li key={iIdx}>
+                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
+                                      {item}
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                           ))}
                         </div>
 
-                        {/* Right Column */}
-                        <div className="flex-1 py-4 px-5">
-                          <h4 className="text-xs font-semibold text-gray-500 mb-3">
-                            {jobMenuRight.title}
-                          </h4>
-                          <div className="space-y-1">
-                            {jobMenuRight.items.map((row, rIdx) => (
-                              <div key={rIdx} className="grid grid-cols-2 gap-x-6">
-                                {row.map((job, jIdx) => (
-                                  <a
-                                    key={jIdx}
-                                    href="#"
-                                    className="py-2 text-sm text-gray-700 hover:text-[#00b14f] transition-colors"
-                                  >
-                                    {job}
-                                  </a>
+                        {/* Grid 4 columns - row 2 */}
+                        <div className="grid grid-cols-4 gap-6 mt-6 pt-6 border-t border-gray-100">
+                          {jobCategories.slice(4, 7).map((category, idx) => (
+                            <div key={idx}>
+                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
+                              <ul className="space-y-2">
+                                {category.items.map((item, iIdx) => (
+                                  <li key={iIdx}>
+                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
+                                      {item}
+                                    </a>
+                                  </li>
                                 ))}
-                              </div>
+                              </ul>
+                            </div>
+                          ))}
+                          
+                          {/* Actions column */}
+                          <div className="flex flex-col justify-start gap-3">
+                            {jobMenuActions.map((action, aIdx) => (
+                              <a
+                                key={aIdx}
+                                href={action.href}
+                                className="inline-flex items-center gap-1 text-sm font-medium text-[#00b14f] hover:underline"
+                              >
+                                {action.label}
+                                <Icon name={action.icon} size={16} />
+                              </a>
                             ))}
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tìm việc Dropdown */}
+                  {item.dropdownId === "find-work" && activeDropdown === "find-work" && (
+                    <div className="absolute top-full left-0 z-[9999] w-[900px]">
+                      <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] p-6">
+                        {/* Grid 4 columns - row 1 */}
+                        <div className="grid grid-cols-4 gap-6">
+                          {findWorkCategories.slice(0, 4).map((category, idx) => (
+                            <div key={idx}>
+                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
+                              <ul className="space-y-2">
+                                {category.items.map((jobItem, iIdx) => (
+                                  <li key={iIdx}>
+                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
+                                      {jobItem}
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Grid 4 columns - row 2 */}
+                        <div className="grid grid-cols-4 gap-6 mt-6 pt-6 border-t border-gray-100">
+                          {findWorkCategories.slice(4, 7).map((category, idx) => (
+                            <div key={idx}>
+                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
+                              <ul className="space-y-2">
+                                {category.items.map((jobItem, iIdx) => (
+                                  <li key={iIdx}>
+                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
+                                      {jobItem}
+                                    </a>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                          
+                          {/* Actions column */}
+                          <div className="flex flex-col justify-start gap-3">
+                            {findWorkActions.map((action, aIdx) => (
+                              <a
+                                key={aIdx}
+                                href={action.href}
+                                className="inline-flex items-center gap-1 text-sm font-medium text-[#00b14f] hover:underline"
+                              >
+                                {action.label}
+                                <Icon name={action.icon} size={16} />
+                              </a>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -464,23 +445,35 @@ export default function Header() {
                       
                       {/* Việc làm Sub-items */}
                       {item.dropdownId === "jobs" && expandedMobileNav === "jobs" && (
-                        <div className="bg-gray-50 py-2">
-                          {jobMenuLeft.map((section, sIdx) => (
-                            <div key={sIdx} className={sIdx > 0 ? "mt-2" : ""}>
-                              <p className="px-7 py-1 text-xs font-semibold text-gray-500">{section.title}</p>
-                              {section.items.map((menuItem, mIdx) => (
+                        <div className="bg-gray-50 py-2 max-h-[60vh] overflow-y-auto">
+                          {jobCategories.map((category, cIdx) => (
+                            <div key={cIdx} className={cIdx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
+                              <p className="px-7 py-1 text-xs font-semibold text-gray-900">{category.title}</p>
+                              {category.items.map((jobItem, jIdx) => (
                                 <Link
-                                  key={mIdx}
-                                  href={menuItem.href}
+                                  key={jIdx}
+                                  href="#"
                                   onClick={() => setMobileMenuOpen(false)}
-                                  className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
+                                  className="block px-7 py-2 text-sm text-gray-600 hover:text-[#00b14f]"
                                 >
-                                  <Icon name={menuItem.icon} size={18} className="text-gray-400" />
-                                  {menuItem.label}
+                                  {jobItem}
                                 </Link>
                               ))}
                             </div>
                           ))}
+                          <div className="mt-3 pt-3 border-t border-gray-200 px-7">
+                            {jobMenuActions.map((action, aIdx) => (
+                              <Link
+                                key={aIdx}
+                                href={action.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-1 py-2 text-sm font-medium text-[#00b14f]"
+                              >
+                                {action.label}
+                                <Icon name={action.icon} size={16} />
+                              </Link>
+                            ))}
+                          </div>
                         </div>
                       )}
 
@@ -520,33 +513,37 @@ export default function Header() {
                         </div>
                       )}
 
-                      {/* CV Sub-items */}
-                      {item.dropdownId === "cv" && expandedMobileNav === "cv" && (
-                        <div className="bg-gray-50 py-2">
-                          <Link
-                            href="/cv-builder"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
-                          >
-                            <Icon name="description" size={18} className="text-gray-400" />
-                            Tạo CV mới
-                          </Link>
-                          <Link
-                            href="/cv-templates"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
-                          >
-                            <Icon name="grid_view" size={18} className="text-gray-400" />
-                            Mẫu CV
-                          </Link>
-                          <Link
-                            href="/my-cvs"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600 hover:text-[#00b14f]"
-                          >
-                            <Icon name="folder" size={18} className="text-gray-400" />
-                            CV của tôi
-                          </Link>
+                      {/* Tìm việc Sub-items */}
+                      {item.dropdownId === "find-work" && expandedMobileNav === "find-work" && (
+                        <div className="bg-gray-50 py-2 max-h-[60vh] overflow-y-auto">
+                          {findWorkCategories.map((category, cIdx) => (
+                            <div key={cIdx} className={cIdx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
+                              <p className="px-7 py-1 text-xs font-semibold text-gray-900">{category.title}</p>
+                              {category.items.map((jobItem, jIdx) => (
+                                <Link
+                                  key={jIdx}
+                                  href="#"
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="block px-7 py-2 text-sm text-gray-600 hover:text-[#00b14f]"
+                                >
+                                  {jobItem}
+                                </Link>
+                              ))}
+                            </div>
+                          ))}
+                          <div className="mt-3 pt-3 border-t border-gray-200 px-7">
+                            {findWorkActions.map((action, aIdx) => (
+                              <Link
+                                key={aIdx}
+                                href={action.href}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="flex items-center gap-1 py-2 text-sm font-medium text-[#00b14f]"
+                              >
+                                {action.label}
+                                <Icon name={action.icon} size={16} />
+                              </Link>
+                            ))}
+                          </div>
                         </div>
                   )}
                 </div>
