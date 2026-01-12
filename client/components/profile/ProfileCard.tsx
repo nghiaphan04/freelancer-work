@@ -16,7 +16,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
       {/* Cover Image */}
       <div className="h-48 relative">
         <Image 
-          src={user.coverImage || "/background_user.png"} 
+          src={user.coverImageUrl || "/background_user.png"} 
           alt="Cover" 
           fill 
           className="object-cover"
@@ -31,7 +31,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
         {/* Avatar */}
         <div className="relative -mt-16 mb-4 w-fit">
           <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
-            <AvatarImage src={user.avatar} alt={user.fullName} />
+            <AvatarImage src={user.avatarUrl} alt={user.fullName} />
             <AvatarFallback className="bg-[#00b14f] text-white text-3xl">
               {user.fullName?.charAt(0)?.toUpperCase() || "U"}
             </AvatarFallback>

@@ -50,7 +50,19 @@ public class UserService {
     @Transactional
     public User updateProfile(Long userId, UpdateProfileRequest req) {
         User user = getById(userId);
-        user.updateProfile(req.getFullName(), req.getPhoneNumber(), req.getAvatarUrl());
+        user.updateProfile(
+                req.getFullName(),
+                req.getPhoneNumber(),
+                req.getAvatarUrl(),
+                req.getCoverImageUrl(),
+                req.getTitle(),
+                req.getLocation(),
+                req.getCompany(),
+                req.getBio(),
+                req.getSkills(),
+                req.getIsOpenToWork(),
+                req.getOpenToWorkRoles()
+        );
         return userRepository.save(user);
     }
 

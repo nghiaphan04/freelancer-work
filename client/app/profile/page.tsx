@@ -8,11 +8,10 @@ import ProfileCard from "@/components/profile/ProfileCard";
 import ProfileAbout from "@/components/profile/ProfileAbout";
 import ProfileSkills from "@/components/profile/ProfileSkills";
 import { useAuth } from "@/context/AuthContext";
-import { mapAuthUserToUser } from "@/constant/profile";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user: authUser, isAuthenticated, isHydrated } = useAuth();
+  const { user, isAuthenticated, isHydrated } = useAuth();
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
@@ -28,11 +27,9 @@ export default function ProfilePage() {
     );
   }
 
-  if (!isAuthenticated || !authUser) {
+  if (!isAuthenticated || !user) {
     return null;
   }
-
-  const user = mapAuthUserToUser(authUser);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">

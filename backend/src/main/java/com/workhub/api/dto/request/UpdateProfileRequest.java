@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,4 +21,25 @@ public class UpdateProfileRequest {
     
     @Size(max = 500, message = "Avatar URL must be less than 500 characters")
     private String avatarUrl;
+    
+    @Size(max = 500, message = "Cover image URL must be less than 500 characters")
+    private String coverImageUrl;
+    
+    @Size(max = 200, message = "Title must be less than 200 characters")
+    private String title;
+    
+    @Size(max = 100, message = "Location must be less than 100 characters")
+    private String location;
+    
+    @Size(max = 200, message = "Company must be less than 200 characters")
+    private String company;
+    
+    @Size(max = 5000, message = "Bio must be less than 5000 characters")
+    private String bio;
+    
+    private Set<String> skills;
+    
+    private Boolean isOpenToWork;
+    
+    private Set<String> openToWorkRoles;
 }

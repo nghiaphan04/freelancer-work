@@ -567,7 +567,6 @@ Body:
     "data": {
         "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
         "refreshToken": "a1b2c3d4...",
-        "tokenType": "Bearer",
         "expiresIn": 86400,
         "user": { "id": 1, "email": "test@gmail.com", ... }
     }
@@ -989,7 +988,6 @@ Body:
     "data": {
         "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
         "refreshToken": "a1b2c3d4...",
-        "tokenType": "Bearer",
         "expiresIn": 900,
         "user": {
             "id": 1,
@@ -1059,7 +1057,7 @@ import { GoogleLogin } from "@react-oauth/google";
 ---
 ### /api/users/me
 GET /api/users/me - lấy thông tin user hiện tại
-Auth: Cookie accessToken HOẶC Header Authorization: Bearer ...
+Auth: Cookie accessToken (HttpOnly)
 
 Request
    │
@@ -1076,24 +1074,22 @@ Request
 │ }                                                                    │
 │                                                                      │
 │ private String parseJwt(HttpServletRequest request) {                │
-│     // 1. Ưu tiên header                                             │
-│     String headerAuth = request.getHeader("Authorization");          │
-│     if (headerAuth != null && headerAuth.startsWith("Bearer "))      │
-│         return headerAuth.substring(7);                              │
-│     // 2. Fallback cookie                                            │
 │     Cookie[] cookies = request.getCookies();                         │
-│     if (cookies != null)                                             │
-│         for (Cookie c : cookies)                                     │
-│             if ("accessToken".equals(c.getName()))                   │
-│                 return c.getValue();                                 │
+│     if (cookies != null) {                                           │
+│         for (Cookie cookie : cookies) {                              │
+│             if ("accessToken".equals(cookie.getName())) {            │
+│                 return cookie.getValue();                            │
+│             }                                                        │
+│         }                                                            │
+│     }                                                                │
 │     return null;                                                     │
 │ }                                                                    │
 │                                                                      │
-│         // 4. Load user từ DB                                        │
+│         // Load user từ DB                                           │
 │         UserDetails userDetails = userDetailsService                 │
 │             .loadUserByUsername(email);                              │
 │                                                                      │
-│         // 5. Set vào SecurityContext (đánh dấu đã login)            │
+│         // Set vào SecurityContext (đánh dấu đã login)               │
 │         UsernamePasswordAuthenticationToken authentication =         │
 │             new UsernamePasswordAuthenticationToken(                 │
 │                 userDetails, null, userDetails.getAuthorities()      │
@@ -1144,19 +1140,13 @@ Response: 200 OK
 }
 
 ### /api/users/me` | Cập nhật profile 
-Request + JWT Token
+Request + Cookie accessToken
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ FILE: security/jwt/JwtAuthFilter.java (dòng 30-40)                   │
+│ FILE: security/jwt/JwtAuthFilter.java                                │
 ├──────────────────────────────────────────────────────────────────────┤
-│ String jwt = parseJwt(request);                                      │
-│ if (jwt != null && jwtUtils.validateJwtToken(jwt)) {                 │
-│     String email = jwtUtils.getEmailFromJwtToken(jwt);               │
-│     UserDetails userDetails = userDetailsService.loadUserByUsername  │
-│     SecurityContextHolder.getContext().setAuthentication(...)        │
-│ }                                                                    │
-│                                                                      │
+│ → Đọc JWT từ cookie accessToken                                      │
 │ → Giải mã JWT, lấy email                                             │
 │ → Load user từ DB, set vào SecurityContext                           │
 └──────────────────────────────────────────────────────────────────────┘
@@ -1232,13 +1222,13 @@ Request + JWT Token
 │ }                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
 ### /api/users/me/password` | Đổi mật khẩu 
-Request + JWT Token
+Request + Cookie accessToken
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │ FILE: security/jwt/JwtAuthFilter.java                                │
 ├──────────────────────────────────────────────────────────────────────┤
-│ → Xác thực JWT (giống API 1)                                         │
+│ → Đọc JWT từ cookie accessToken (giống GET /me)                      │
 └──────────────────────────────────────────────────────────────────────┘
    │
    ▼
@@ -1310,13 +1300,13 @@ Request + JWT Token
    ▼
    RESPONSE: 200 OK hoặc 400 Bad Request (nếu mật khẩu sai)
 ### /api/users` | Lấy danh sách users (admin)
-Request + ADMIN JWT Token
+Request + Cookie accessToken (ADMIN)
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │ FILE: security/jwt/JwtAuthFilter.java                                │
 ├──────────────────────────────────────────────────────────────────────┤
-│ → Xác thực JWT, load user với roles                                  │
+│ → Đọc JWT từ cookie, load user với roles                             │
 └──────────────────────────────────────────────────────────────────────┘
    │
    ▼
@@ -1373,7 +1363,7 @@ Request + ADMIN JWT Token
 │ }                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
 ### /api/users/{id}` | Lấy user theo ID (admin)
-Request + ADMIN JWT Token
+Request + Cookie accessToken (ADMIN)
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -1401,7 +1391,7 @@ Request + ADMIN JWT Token
 └──────────────────────────────────────────────────────────────────────┘
 
 ### `/api/users/{id}/status` | Enable/Disable user (admin)
-Request + ADMIN JWT Token
+Request + Cookie accessToken (ADMIN)
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐

@@ -340,7 +340,7 @@ export default function Header() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors outline-none">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} alt={user.fullName} />
+                        <AvatarImage src={user.avatarUrl} alt={user.fullName} />
                         <AvatarFallback className="bg-[#00b14f] text-white text-sm">
                           {user.fullName?.charAt(0)?.toUpperCase() || "U"}
                         </AvatarFallback>
@@ -415,7 +415,7 @@ export default function Header() {
               <div className="p-4 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={user.avatar} alt={user.fullName} />
+                    <AvatarImage src={user.avatarUrl} alt={user.fullName} />
                     <AvatarFallback className="bg-[#00b14f] text-white">
                       {user.fullName?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>

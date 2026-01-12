@@ -39,6 +39,41 @@ public class User {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
     
+    @Column(name = "cover_image_url", length = 500)
+    private String coverImageUrl;
+    
+    @Column(length = 200)
+    private String title;
+    
+    @Column(length = 100)
+    private String location;
+    
+    @Column(length = 200)
+    private String company;
+    
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_skills", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "skill", length = 100)
+    @Builder.Default
+    private Set<String> skills = new HashSet<>();
+    
+    @Column(name = "is_verified", nullable = false)
+    @Builder.Default
+    private Boolean isVerified = false;
+    
+    @Column(name = "is_open_to_work", nullable = false)
+    @Builder.Default
+    private Boolean isOpenToWork = false;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_open_to_work_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role", length = 100)
+    @Builder.Default
+    private Set<String> openToWorkRoles = new HashSet<>();
+    
     @Column(name = "email_verified", nullable = false)
     @Builder.Default
     private Boolean emailVerified = false;
@@ -71,12 +106,33 @@ public class User {
         }
         this.password = encodedPassword;
     }
-    public void updateProfile(String fullName, String phoneNumber, String avatarUrl) {
+    public void updateProfile(String fullName, String phoneNumber, String avatarUrl,
+                              String coverImageUrl, String title, String location,
+                              String company, String bio, Set<String> skills,
+                              Boolean isOpenToWork, Set<String> openToWorkRoles) {
         if (fullName != null && !fullName.isBlank()) {
             this.fullName = fullName;
         }
         this.phoneNumber = phoneNumber;
         this.avatarUrl = avatarUrl;
+        this.coverImageUrl = coverImageUrl;
+        this.title = title;
+        this.location = location;
+        this.company = company;
+        this.bio = bio;
+        if (skills != null) {
+            this.skills = skills;
+        }
+        if (isOpenToWork != null) {
+            this.isOpenToWork = isOpenToWork;
+        }
+        if (openToWorkRoles != null) {
+            this.openToWorkRoles = openToWorkRoles;
+        }
+    }
+    
+    public void verify() {
+        this.isVerified = true;
     }
     public void disable() {
         this.enabled = false;

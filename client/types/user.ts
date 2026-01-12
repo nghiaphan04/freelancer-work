@@ -1,9 +1,10 @@
 export interface User {
-  id: string;
+  id: number;
   email: string;
   fullName: string;
-  avatar?: string;
-  coverImage?: string;
+  phoneNumber?: string;
+  avatarUrl?: string;
+  coverImageUrl?: string;
   title?: string;
   location?: string;
   company?: string;
@@ -12,4 +13,7 @@ export interface User {
   isVerified?: boolean;
   isOpenToWork?: boolean;
   openToWorkRoles?: string[];
+  emailVerified?: boolean;
+  enabled?: boolean;
+  roles?: string[];
 }
