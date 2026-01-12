@@ -23,7 +23,7 @@ public class PaymentResponse {
     
     private Long jobId;
     private String jobTitle;
-    private BigDecimal jobAmount;
+    private BigDecimal escrowAmount;
     private BigDecimal feeAmount;
     private BigDecimal feePercent;
     private BigDecimal totalAmount;
@@ -41,4 +41,8 @@ public class PaymentResponse {
     private LocalDateTime expiredAt;
     private LocalDateTime paidAt;
     private LocalDateTime createdAt;
+    
+    private BigDecimal refundAmount;
+    private LocalDateTime refundedAt;
+    private String refundReason;
 }

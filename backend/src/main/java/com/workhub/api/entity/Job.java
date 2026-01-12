@@ -182,4 +182,8 @@ public class Job {
         return this.applicationDeadline != null 
             && LocalDateTime.now().isAfter(this.applicationDeadline);
     }
+
+    public void setStatus(EJobStatus status) {
+        this.status = status;
+    }
 }

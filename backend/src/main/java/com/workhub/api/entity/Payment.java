@@ -34,8 +34,8 @@ public class Payment {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "job_amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal jobAmount;
+    @Column(name = "escrow_amount", precision = 15, scale = 2, nullable = false)
+    private BigDecimal escrowAmount;
 
     @Column(name = "fee_amount", precision = 15, scale = 2, nullable = false)
     private BigDecimal feeAmount;
@@ -77,6 +77,18 @@ public class Payment {
     @Column(name = "payment_channel")
     private Integer paymentChannel;
 
+    @Column(name = "refund_amount", precision = 15, scale = 2)
+    private BigDecimal refundAmount;
+
+    @Column(name = "refunded_at")
+    private LocalDateTime refundedAt;
+
+    @Column(name = "refund_reason", length = 500)
+    private String refundReason;
+
+    @Column(name = "m_refund_id", length = 50)
+    private String mRefundId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -106,11 +118,27 @@ public class Payment {
         this.status = EPaymentStatus.EXPIRED;
     }
 
+    public void markAsRefunded(BigDecimal refundAmount, String reason, String mRefundId) {
+        this.status = EPaymentStatus.REFUNDED;
+        this.refundAmount = refundAmount;
+        this.refundReason = reason;
+        this.refundedAt = LocalDateTime.now();
+        this.mRefundId = mRefundId;
+    }
+
     public boolean isPending() {
         return this.status == EPaymentStatus.PENDING;
     }
 
     public boolean isPaid() {
         return this.status == EPaymentStatus.PAID;
+    }
+
+    public boolean isRefunded() {
+        return this.status == EPaymentStatus.REFUNDED;
+    }
+
+    public boolean canRefund() {
+        return this.status == EPaymentStatus.PAID && this.zpTransId != null;
     }
 }

@@ -8,6 +8,7 @@ import com.workhub.api.entity.*;
 import com.workhub.api.exception.JobNotFoundException;
 import com.workhub.api.exception.UnauthorizedAccessException;
 import com.workhub.api.repository.JobRepository;
+import com.workhub.api.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,8 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final UserService userService;
+    private final PaymentRepository paymentRepository;
+    private final PaymentService paymentService;
 
     @Transactional
     public ApiResponse<JobResponse> createJob(Long employerId, CreateJobRequest req) {
@@ -147,7 +150,16 @@ public class JobService {
 
         job.close();
         Job updatedJob = jobRepository.save(job);
-        return ApiResponse.success("Đã đóng tin tuyển dụng", buildJobResponse(updatedJob));
+        
+        boolean hasRefundablePayment = paymentRepository.findByJobId(jobId)
+                .map(p -> p.canRefund())
+                .orElse(false);
+        
+        String message = hasRefundablePayment 
+                ? "Đã đóng tin. Gọi API hoàn tiền để nhận lại tiền escrow."
+                : "Đã đóng tin tuyển dụng";
+        
+        return ApiResponse.success(message, buildJobResponse(updatedJob));
     }
 
     @Transactional
@@ -159,8 +171,23 @@ public class JobService {
             throw new UnauthorizedAccessException("Bạn không có quyền xóa job này");
         }
 
+        boolean refunded = false;
+        Payment payment = paymentRepository.findByJobId(jobId).orElse(null);
+        
+        if (payment != null) {
+            if (payment.getStatus() == EPaymentStatus.PAID && !payment.isRefunded()) {
+                paymentService.refundPayment(jobId, userId, "Xóa job - tự động hoàn tiền");
+                refunded = true;
+            }
+            paymentRepository.delete(payment);
+        }
+
         jobRepository.delete(job);
-        return ApiResponse.success("Xóa job thành công");
+        
+        String message = refunded 
+            ? "Xóa job thành công (đã hoàn tiền escrow)" 
+            : "Xóa job thành công";
+        return ApiResponse.success(message);
     }
 
     public Job getById(Long id) {

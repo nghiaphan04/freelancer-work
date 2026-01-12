@@ -36,8 +36,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Payment p WHERE p.status = :status")
     BigDecimal sumTotalAmountByStatus(@Param("status") EPaymentStatus status);
 
-    @Query("SELECT COALESCE(SUM(p.jobAmount), 0) FROM Payment p WHERE p.status = :status")
-    BigDecimal sumJobAmountByStatus(@Param("status") EPaymentStatus status);
+    @Query("SELECT COALESCE(SUM(p.escrowAmount), 0) FROM Payment p WHERE p.status = :status")
+    BigDecimal sumEscrowAmountByStatus(@Param("status") EPaymentStatus status);
 
     @Query("SELECT COALESCE(SUM(p.feeAmount), 0) FROM Payment p WHERE p.status = :status")
     BigDecimal sumFeeAmountByStatus(@Param("status") EPaymentStatus status);

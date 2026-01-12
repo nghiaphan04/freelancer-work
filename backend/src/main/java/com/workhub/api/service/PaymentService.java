@@ -72,9 +72,9 @@ public class PaymentService {
 
         User user = userService.getById(userId);
 
-        BigDecimal jobAmount = job.getBudget();
-        BigDecimal feeAmount = jobAmount.multiply(FEE_PERCENT).divide(new BigDecimal("100"), 0, RoundingMode.CEILING);
-        BigDecimal totalAmount = jobAmount.add(feeAmount);
+        BigDecimal escrowAmount = job.getBudget();
+        BigDecimal feeAmount = escrowAmount.multiply(FEE_PERCENT).divide(new BigDecimal("100"), 0, RoundingMode.CEILING);
+        BigDecimal totalAmount = escrowAmount.add(feeAmount);
 
         String appTransId = generateAppTransId(jobId);
         long appTime = System.currentTimeMillis();
@@ -88,7 +88,7 @@ public class PaymentService {
                 .appTransId(appTransId)
                 .job(job)
                 .user(user)
-                .jobAmount(jobAmount)
+                .escrowAmount(escrowAmount)
                 .feeAmount(feeAmount)
                 .feePercent(FEE_PERCENT)
                 .totalAmount(totalAmount)
@@ -326,7 +326,7 @@ public class PaymentService {
                 .zpTransId(payment.getZpTransId())
                 .jobId(payment.getJob().getId())
                 .jobTitle(payment.getJob().getTitle())
-                .jobAmount(payment.getJobAmount())
+                .escrowAmount(payment.getEscrowAmount())
                 .feeAmount(payment.getFeeAmount())
                 .feePercent(payment.getFeePercent())
                 .totalAmount(payment.getTotalAmount())
@@ -339,12 +339,104 @@ public class PaymentService {
                 .expiredAt(payment.getExpiredAt())
                 .paidAt(payment.getPaidAt())
                 .createdAt(payment.getCreatedAt())
+                .refundAmount(payment.getRefundAmount())
+                .refundedAt(payment.getRefundedAt())
+                .refundReason(payment.getRefundReason())
                 .build();
+    }
+
+    @Transactional
+    public ApiResponse<PaymentResponse> refundPayment(Long jobId, Long userId, String reason) {
+        Payment payment = paymentRepository.findByJobId(jobId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán cho job này"));
+
+        if (!payment.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền hoàn tiền thanh toán này");
+        }
+
+        if (!payment.canRefund()) {
+            throw new RuntimeException("Không thể hoàn tiền: thanh toán chưa hoàn thành hoặc đã được hoàn tiền");
+        }
+
+        BigDecimal refundAmount = payment.getEscrowAmount();
+        String mRefundId = generateRefundId(jobId);
+
+        try {
+            JsonNode refundResult = callZaloPayRefund(
+                    payment.getZpTransId(),
+                    refundAmount.longValue(),
+                    reason != null ? reason : "Hủy job - hoàn tiền escrow",
+                    mRefundId
+            );
+
+            int returnCode = refundResult.get("return_code").asInt();
+            if (returnCode == 1 || returnCode == 2) {
+                payment.markAsRefunded(refundAmount, reason, mRefundId);
+                paymentRepository.save(payment);
+                
+                Job job = payment.getJob();
+                job.setStatus(EJobStatus.CLOSED);
+                jobRepository.save(job);
+                
+                log.info("Hoàn tiền thành công: jobId={}, amount={}", jobId, refundAmount);
+            } else {
+                String returnMessage = refundResult.get("return_message").asText();
+                throw new RuntimeException("ZaloPay refund error: " + returnMessage);
+            }
+
+        } catch (Exception e) {
+            log.error("Lỗi hoàn tiền ZaloPay", e);
+            if (testMode) {
+                payment.markAsRefunded(refundAmount, reason, mRefundId);
+                paymentRepository.save(payment);
+                
+                Job job = payment.getJob();
+                job.setStatus(EJobStatus.CLOSED);
+                jobRepository.save(job);
+                
+                log.warn("TEST MODE: Bỏ qua lỗi ZaloPay, đánh dấu hoàn tiền");
+            } else {
+                throw new RuntimeException("Lỗi hoàn tiền: " + e.getMessage());
+            }
+        }
+
+        return ApiResponse.success("Hoàn tiền thành công", buildPaymentResponse(payment));
+    }
+
+    private JsonNode callZaloPayRefund(Long zpTransId, long amount, String description, String mRefundId) throws Exception {
+        String url = zaloPayConfig.getEndpoint() + "/refund";
+
+        long timestamp = System.currentTimeMillis();
+        String mac = zaloPayConfig.createRefundMac(String.valueOf(zpTransId), amount, description, timestamp);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("app_id", zaloPayConfig.getAppId());
+        params.add("zp_trans_id", String.valueOf(zpTransId));
+        params.add("amount", String.valueOf(amount));
+        params.add("description", description);
+        params.add("timestamp", String.valueOf(timestamp));
+        params.add("m_refund_id", mRefundId);
+        params.add("mac", mac);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+        log.debug("ZaloPay refund response: {}", response.getBody());
+        return objectMapper.readTree(response.getBody());
+    }
+
+    private String generateRefundId(Long jobId) {
+        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMdd"));
+        int random = ThreadLocalRandom.current().nextInt(100000, 999999);
+        return datePrefix + "_RF_" + jobId + "_" + random;
     }
 
     public ApiResponse<PaymentStatisticsResponse> getPaymentStatistics() {
         BigDecimal totalRevenue = paymentRepository.sumTotalAmountByStatus(EPaymentStatus.PAID);
-        BigDecimal totalJobAmount = paymentRepository.sumJobAmountByStatus(EPaymentStatus.PAID);
+        BigDecimal totalEscrowAmount = paymentRepository.sumEscrowAmountByStatus(EPaymentStatus.PAID);
         BigDecimal totalFeeAmount = paymentRepository.sumFeeAmountByStatus(EPaymentStatus.PAID);
 
         Long totalTransactions = paymentRepository.count();
@@ -367,7 +459,7 @@ public class PaymentService {
 
         PaymentStatisticsResponse statistics = PaymentStatisticsResponse.builder()
                 .totalRevenue(totalRevenue)
-                .totalJobAmount(totalJobAmount)
+                .totalEscrowAmount(totalEscrowAmount)
                 .totalFeeAmount(totalFeeAmount)
                 .totalTransactions(totalTransactions)
                 .paidTransactions(paidTransactions)

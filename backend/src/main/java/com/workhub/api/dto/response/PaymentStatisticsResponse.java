@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 public class PaymentStatisticsResponse {
     
     private BigDecimal totalRevenue;
-    private BigDecimal totalJobAmount;
+    private BigDecimal totalEscrowAmount;
     private BigDecimal totalFeeAmount;
     
     private Long totalTransactions;

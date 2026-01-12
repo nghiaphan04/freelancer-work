@@ -4,5 +4,6 @@ public enum EJobStatus {
     OPEN,           // Đang tuyển
     IN_PROGRESS,    // Đang thực hiện
     COMPLETED,      // Hoàn thành
-    CANCELLED       // Đã hủy
+    CLOSED,
+    CANCELLED
 }

@@ -80,16 +80,18 @@
 │   └─────────────────────────┘    │ zp_trans_id           ◄── Mã ZaloPay│   │
 │                                  │ job_id (FK → jobs)                  │   │
 │                                  │ user_id (FK → users)                │   │
-│                                  │ job_amount (DECIMAL)  ◄── Ngân sách │   │
+│                                  │ escrow_amount (DECIMAL)◄── Escrow   │   │
 │                                  │ fee_amount (DECIMAL)  ◄── Phí 5%    │   │
 │                                  │ total_amount (DECIMAL)◄── Tổng      │   │
 │                                  │ order_url (VARCHAR)   ◄── Link TT   │   │
 │                                  │ qr_code (TEXT)        ◄── Mã QR     │   │
 │                                  │ status (ENUM)         ◄── PENDING/  │   │
-│                                  │                          PAID/...   │   │
+│                                  │                          PAID/REFUND│   │
 │                                  │ payment_channel (INT) ◄── Kênh TT   │   │
 │                                  │ paid_at (DATETIME)                  │   │
-│                                  │ expired_at (DATETIME)               │   │
+│                                  │ refund_amount (DECIMAL)◄── Hoàn tiền│   │
+│                                  │ refunded_at (DATETIME)              │   │
+│                                  │ refund_reason (VARCHAR)             │   │
 │                                  └─────────────────────────────────────┘   │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -529,21 +531,34 @@ Request + Cookie accessToken
    │
    ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ FILE: service/JobService.java (dòng 153-164)                         │
+│ FILE: service/JobService.java                                        │
 ├──────────────────────────────────────────────────────────────────────┤
 │ @Transactional                                                       │
 │ public ApiResponse<Void> deleteJob(Long jobId, Long userId) {        │
 │     Job job = getById(jobId);                                        │
 │     User user = userService.getById(userId);                         │
 │                                                                      │
-│     // CHECK QUYỀN: Owner HOẶC Admin                                 │
 │     if (!job.isOwnedBy(userId) && !user.isAdmin()) {                 │
-│         throw new UnauthorizedAccessException(                       │
-│             "Bạn không có quyền xóa job này");                       │
+│         throw new UnauthorizedAccessException(...);                  │
+│     }                                                                │
+│                                                                      │
+│     boolean refunded = false;                                        │
+│     Payment payment = paymentRepository.findByJobId(jobId)           │
+│         .orElse(null);                                               │
+│                                                                      │
+│     if (payment != null) {                                           │
+│         if (payment.getStatus() == PAID && !payment.isRefunded()) {  │
+│             paymentService.refundPayment(jobId, userId,              │
+│                 "Xóa job - tự động hoàn tiền");                      │
+│             refunded = true;    ◄── TỰ ĐỘNG REFUND                   │
+│         }                                                            │
+│         paymentRepository.delete(payment);                           │
 │     }                                                                │
 │                                                                      │
 │     jobRepository.delete(job);                                       │
-│     return ApiResponse.success("Xóa job thành công");                │
+│     return ApiResponse.success(refunded                              │
+│         ? "Xóa job thành công (đã hoàn tiền escrow)"                 │
+│         : "Xóa job thành công");                                     │
 │ }                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
    │
@@ -1009,8 +1024,8 @@ Request + Cookie accessToken (ROLE_ADMIN)
 │ {                                                                    │
 │     BigDecimal totalRevenue = paymentRepository                      │
 │         .sumTotalAmountByStatus(EPaymentStatus.PAID);                │
-│     BigDecimal totalJobAmount = paymentRepository                    │
-│         .sumJobAmountByStatus(EPaymentStatus.PAID);                  │
+│     BigDecimal totalEscrowAmount = paymentRepository                 │
+│         .sumEscrowAmountByStatus(EPaymentStatus.PAID);               │
 │     BigDecimal totalFeeAmount = paymentRepository                    │
 │         .sumFeeAmountByStatus(EPaymentStatus.PAID);                  │
 │                                                                      │
@@ -1463,9 +1478,19 @@ Cookie: accessToken=eyJ...
 }
 ```
 
+**Response (nếu có payment PAID):**
+```json
+{
+    "status": "SUCCESS",
+    "message": "Xóa job thành công (đã hoàn tiền escrow)"
+}
+```
+
 **Errors:**
 - `403`: Không phải Owner và không phải Admin
 - `404`: Job không tồn tại
+
+**Lưu ý:** Nếu job đã được thanh toán (PAID), hệ thống sẽ **TỰ ĐỘNG REFUND** trước khi xóa.
 
 ---
 
@@ -1580,7 +1605,7 @@ Cookie: accessToken=eyJ...
 ```
 
 **Query params:**
-- `status` (optional): `PENDING`, `PAID`, `CANCELLED`, `EXPIRED`
+- `status` (optional): `PENDING`, `PAID`, `CANCELLED`, `EXPIRED`, `REFUNDED`
 
 **Response: 200 OK**
 ```json
@@ -1634,6 +1659,25 @@ Cookie: accessToken=eyJ...
 │  8. GET /api/payments/query/260112_1_123456 → Kiểm tra payment PAID         │
 │                                                                             │
 │  9. GET /api/jobs                 → Job xuất hiện trong danh sách công khai │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         FLOW TEST XÓA JOB (TỰ ĐỘNG REFUND)                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. GET /api/payments/jobs/1      → Kiểm tra payment status = "PAID"        │
+│                                                                             │
+│  2. DELETE /api/jobs/1            → ✅ Xóa job thành công                   │
+│     Response: "Xóa job thành công (đã hoàn tiền escrow)"                    │
+│     → Hệ thống TỰ ĐỘNG:                                                     │
+│        1. Gọi refund ZaloPay                                                │
+│        2. Xóa payment record                                                │
+│        3. Xóa job                                                           │
+│                                                                             │
+│  3. GET /api/jobs/1               → 404 Not Found                           │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1789,3 +1833,73 @@ PAYMENT_CANCEL_URL=http://localhost:3000/payment/cancel
 │ )                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 10. SQL MIGRATION
+
+### Đổi job_amount → escrow_amount
+```sql
+ALTER TABLE payments RENAME COLUMN job_amount TO escrow_amount;
+```
+
+### Thêm refund fields
+```sql
+ALTER TABLE payments ADD COLUMN refund_amount DECIMAL(15,2);
+ALTER TABLE payments ADD COLUMN refunded_at TIMESTAMP;
+ALTER TABLE payments ADD COLUMN refund_reason VARCHAR(500);
+ALTER TABLE payments ADD COLUMN m_refund_id VARCHAR(50);
+```
+
+---
+
+## 11. PAYMENT STATUS FLOW
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PAYMENT STATUS FLOW                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                              ┌─────────┐                                   │
+│                              │ PENDING │ ◄── Tạo payment                   │
+│                              └────┬────┘                                   │
+│                                   │                                         │
+│           ┌───────────────────────┼───────────────────────┐                │
+│           │                       │                       │                │
+│           ▼                       ▼                       ▼                │
+│    ┌─────────────┐         ┌───────────┐         ┌───────────────┐        │
+│    │  CANCELLED  │         │   PAID    │         │    EXPIRED    │        │
+│    │ (User hủy)  │         │(Thanh toán)│         │  (Hết hạn)   │        │
+│    └─────────────┘         └─────┬─────┘         └───────────────┘        │
+│                                  │                                         │
+│                                  │ Hủy job                                 │
+│                                  ▼                                         │
+│                           ┌─────────────┐                                  │
+│                           │  REFUNDED   │ ← Hoàn escrow                    │
+│                           │ (Hoàn tiền) │   (Admin giữ fee)                │
+│                           └─────────────┘   → Job = CLOSED                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Refund khi Delete Job
+
+```
+DELETE /api/jobs/{id}
+         │
+         │ Nếu có payment PAID
+         ▼
+┌─────────────────────────────────────┐
+│ 1. Tự động gọi ZaloPay refund       │
+│ 2. Hoàn escrowAmount cho user       │
+│ 3. Xóa payment record               │
+│ 4. Xóa job                          │
+└─────────────────────────────────────┘
+```
+
+### Chính sách hoàn tiền
+
+| Trạng thái | escrowAmount | feeAmount | Ghi chú |
+|------------|--------------|-----------|---------|
+| Delete job (PAID) | ✅ Hoàn | ❌ Giữ | Tự động refund khi xóa |
+| PAID → COMPLETED | → Freelancer | ❌ Giữ | Job hoàn thành |
