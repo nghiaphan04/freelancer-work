@@ -86,6 +86,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/{id}").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/search").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/by-skills").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );

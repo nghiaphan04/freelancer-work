@@ -1,0 +1,56 @@
+package com.workhub.api.dto.response;
+
+import com.workhub.api.entity.EJobComplexity;
+import com.workhub.api.entity.EJobDuration;
+import com.workhub.api.entity.EJobStatus;
+import com.workhub.api.entity.EWorkType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Set;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class JobResponse {
+
+    private Long id;
+    private String title;
+    private String description;
+    private String context;
+    private String requirements;
+    private String deliverables;
+    private Set<String> skills;
+    private EJobComplexity complexity;
+    private EJobDuration duration;
+    private EWorkType workType;
+    private BigDecimal budget;
+    private String currency;
+    private LocalDateTime applicationDeadline;
+    private LocalDateTime expectedStartDate;
+    private EJobStatus status;
+    private Integer viewCount;
+    private Integer applicationCount;
+    private EmployerResponse employer;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EmployerResponse {
+        private Long id;
+        private String fullName;
+        private String avatarUrl;
+        private String title;
+        private String company;
+        private String location;
+        private Boolean isVerified;
+    }
+}
