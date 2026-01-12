@@ -53,38 +53,38 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
   return (
     <>
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {/* Cover Image */}
-        <div className="h-48 relative">
+        {/* Cover Image - responsive height */}
+        <div className="h-32 sm:h-48 relative">
           <Image
             src={user.coverImageUrl || "/background_user.png"}
             alt="Cover"
             fill
             className="object-cover"
           />
-          <button className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50">
-            <Icon name="photo_camera" size={20} className="text-gray-600" />
+          <button className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50">
+            <Icon name="photo_camera" size={18} className="text-gray-600" />
           </button>
         </div>
 
         {/* Profile Info */}
-        <div className="px-6 pb-6">
-          {/* Avatar */}
-          <div className="relative -mt-16 mb-4 w-fit">
-            <Avatar className="w-32 h-32 border-4 border-white shadow-lg">
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+          {/* Avatar - responsive size */}
+          <div className="relative -mt-12 sm:-mt-16 mb-3 sm:mb-4 w-fit">
+            <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-white shadow-lg">
               <AvatarImage src={user.avatarUrl} alt={user.fullName} />
-              <AvatarFallback className="bg-[#00b14f] text-white text-3xl">
+              <AvatarFallback className="bg-[#00b14f] text-white text-2xl sm:text-3xl">
                 {user.fullName?.charAt(0)?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
-            <button className="absolute bottom-2 right-2 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 border border-gray-200">
-              <Icon name="edit" size={16} className="text-gray-600" />
+            <button className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 border border-gray-200">
+              <Icon name="edit" size={14} className="text-gray-600" />
             </button>
           </div>
 
           {/* Name & Info */}
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900">{user.fullName}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{user.fullName}</h1>
               <button
                 onClick={handleOpenEdit}
                 className="p-1 hover:bg-gray-100 rounded-full"
@@ -127,9 +127,9 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               </div>
             ) : null}
 
-            {/* Placeholder buttons - thẳng hàng */}
+            {/* Placeholder buttons - responsive */}
             {(!user.title || !user.location || !user.company) && (
-              <div className="flex items-center gap-6 mt-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-3">
                 {!user.title && (
                   <button
                     onClick={handleOpenEdit}
@@ -161,14 +161,14 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            <Button className="bg-[#00b14f] hover:bg-[#009643] rounded-full">
+          {/* Action Buttons - responsive */}
+          <div className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button className="bg-[#00b14f] hover:bg-[#009643] rounded-full w-full sm:w-auto">
               {user.isOpenToWork ? "Đang tìm việc" : "Sẵn sàng nhận việc"}
             </Button>
             <Button
               variant="outline"
-              className="rounded-full border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f]/5"
+              className="rounded-full border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f]/5 w-full sm:w-auto"
               onClick={handleOpenEdit}
             >
               Chỉnh sửa hồ sơ
