@@ -80,8 +80,8 @@ public class PaymentService {
         long appTime = System.currentTimeMillis();
         String description = "WorkHub - Thanh toan job #" + jobId;
 
-        String embedData = String.format("{\"redirecturl\":\"%s\",\"jobId\":%d}", 
-                zaloPayConfig.getReturnUrl(), jobId);
+        String redirectUrl = zaloPayConfig.getReturnUrl() + "?jobId=" + jobId;
+        String embedData = String.format("{\"redirecturl\":\"%s\"}", redirectUrl);
         String item = "[]";
 
         Payment payment = Payment.builder()

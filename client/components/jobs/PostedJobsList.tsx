@@ -137,6 +137,7 @@ export default function PostedJobsList() {
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className="text-xs text-gray-400">#{job.id}</span>
                       <Link href={`/jobs/${job.id}`} className="text-lg font-semibold text-gray-900 hover:text-[#00b14f]">
                         {job.title}
                       </Link>
@@ -178,9 +179,24 @@ export default function PostedJobsList() {
                         )}
                       </div>
                     )}
+
+                    {job.status === "DRAFT" && (
+                      <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                        <Icon name="info" size={16} />
+                        <span>Thanh toán để công việc được hiển thị công khai</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-row sm:flex-col gap-2">
+                    {job.status === "DRAFT" && (
+                      <Link href={`/jobs/${job.id}/payment`} className="flex-1 sm:flex-none">
+                        <Button size="sm" className="w-full bg-[#00b14f] hover:bg-[#009643] text-white">
+                          <Icon name="payment" size={16} />
+                          <span className="ml-1">Thanh toán</span>
+                        </Button>
+                      </Link>
+                    )}
                     <Link href={`/jobs/${job.id}`} className="flex-1 sm:flex-none">
                       <Button variant="outline" size="sm" className="w-full">
                         <Icon name="visibility" size={16} />
