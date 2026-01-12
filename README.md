@@ -21,9 +21,9 @@ Coming soon...
 ## Công nghệ sử dụng
 
 - **Frontend**: Next.js, React, Tailwind CSS
-- **Smart Contract**: Solidity
+- **Smart Contract**: move
 - **Backend**: Node.js
-- **Blockchain**: Ethereum
+- **Blockchain**: aptos
 
 ## Tác giả
 

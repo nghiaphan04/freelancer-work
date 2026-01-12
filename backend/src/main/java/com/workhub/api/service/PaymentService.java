@@ -6,12 +6,14 @@ import com.workhub.api.config.ZaloPayConfig;
 import com.workhub.api.dto.request.ZaloPayCallbackRequest;
 import com.workhub.api.dto.response.ApiResponse;
 import com.workhub.api.dto.response.PaymentResponse;
+import com.workhub.api.dto.response.PaymentStatisticsResponse;
 import com.workhub.api.entity.*;
 import com.workhub.api.exception.JobNotFoundException;
 import com.workhub.api.repository.JobRepository;
 import com.workhub.api.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,9 +27,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -43,8 +47,11 @@ public class PaymentService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${app.payment.test-mode:false}")
+    private boolean testMode;
+
     private static final BigDecimal FEE_PERCENT = new BigDecimal("5.00");
-    private static final int PAYMENT_EXPIRY_SECONDS = 900; // 15 phút
+    private static final int PAYMENT_EXPIRY_SECONDS = 900;
 
     @Transactional
     public ApiResponse<PaymentResponse> createPaymentForJob(Long jobId, Long userId) {
@@ -104,7 +111,6 @@ public class PaymentService {
 
             int returnCode = zaloPayResponse.get("return_code").asInt();
             if (returnCode == 1) {
-                // Thành công
                 String orderUrl = zaloPayResponse.has("order_url") ? 
                         zaloPayResponse.get("order_url").asText() : null;
                 String qrCode = zaloPayResponse.has("qr_code") ? 
@@ -114,7 +120,6 @@ public class PaymentService {
 
                 payment.setZaloPayInfo(orderUrl, qrCode, zpTransToken);
             } else {
-                // Thất bại
                 String returnMessage = zaloPayResponse.get("return_message").asText();
                 String subReturnMessage = zaloPayResponse.has("sub_return_message") ? 
                         zaloPayResponse.get("sub_return_message").asText() : "";
@@ -138,11 +143,15 @@ public class PaymentService {
             String dataStr = request.getData();
             String requestMac = request.getMac();
 
-            if (!zaloPayConfig.verifyCallback(dataStr, requestMac)) {
+            if (!testMode && !zaloPayConfig.verifyCallback(dataStr, requestMac)) {
                 log.warn("Callback không hợp lệ - MAC không khớp");
                 result.put("return_code", -1);
                 result.put("return_message", "mac not equal");
                 return result;
+            }
+
+            if (testMode) {
+                log.warn("TEST MODE");
             }
 
             ZaloPayCallbackRequest.CallbackData callbackData = 
@@ -271,7 +280,7 @@ public class PaymentService {
         params.add("item", item);
         params.add("bank_code", "");
         params.add("expire_duration_seconds", String.valueOf(PAYMENT_EXPIRY_SECONDS));
-        params.add("callback_url", zaloPayConfig.getEndpoint().replace("openapi", "callback")); // Sẽ override bằng callback đã đăng ký
+        params.add("callback_url", zaloPayConfig.getEndpoint().replace("openapi", "callback"));
         params.add("mac", mac);
 
         HttpHeaders headers = new HttpHeaders();
@@ -331,5 +340,75 @@ public class PaymentService {
                 .paidAt(payment.getPaidAt())
                 .createdAt(payment.getCreatedAt())
                 .build();
+    }
+
+    public ApiResponse<PaymentStatisticsResponse> getPaymentStatistics() {
+        BigDecimal totalRevenue = paymentRepository.sumTotalAmountByStatus(EPaymentStatus.PAID);
+        BigDecimal totalJobAmount = paymentRepository.sumJobAmountByStatus(EPaymentStatus.PAID);
+        BigDecimal totalFeeAmount = paymentRepository.sumFeeAmountByStatus(EPaymentStatus.PAID);
+
+        Long totalTransactions = paymentRepository.count();
+        Long paidTransactions = paymentRepository.countByStatus(EPaymentStatus.PAID);
+        Long pendingTransactions = paymentRepository.countByStatus(EPaymentStatus.PENDING);
+        Long cancelledTransactions = paymentRepository.countByStatus(EPaymentStatus.CANCELLED);
+        Long expiredTransactions = paymentRepository.countByStatus(EPaymentStatus.EXPIRED);
+
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        BigDecimal todayRevenue = paymentRepository.sumTotalAmountByStatusAndPaidAtAfter(
+                EPaymentStatus.PAID, startOfToday);
+        Long todayTransactions = paymentRepository.countByStatusAndPaidAtAfter(
+                EPaymentStatus.PAID, startOfToday);
+
+        LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        BigDecimal monthRevenue = paymentRepository.sumTotalAmountByStatusAndPaidAtAfter(
+                EPaymentStatus.PAID, startOfMonth);
+        Long monthTransactions = paymentRepository.countByStatusAndPaidAtAfter(
+                EPaymentStatus.PAID, startOfMonth);
+
+        PaymentStatisticsResponse statistics = PaymentStatisticsResponse.builder()
+                .totalRevenue(totalRevenue)
+                .totalJobAmount(totalJobAmount)
+                .totalFeeAmount(totalFeeAmount)
+                .totalTransactions(totalTransactions)
+                .paidTransactions(paidTransactions)
+                .pendingTransactions(pendingTransactions)
+                .cancelledTransactions(cancelledTransactions)
+                .expiredTransactions(expiredTransactions)
+                .todayRevenue(todayRevenue)
+                .todayTransactions(todayTransactions)
+                .monthRevenue(monthRevenue)
+                .monthTransactions(monthTransactions)
+                .build();
+
+        return ApiResponse.success("Lấy thống kê thành công", statistics);
+    }
+
+    public ApiResponse<Page<PaymentResponse>> getAllPayments(EPaymentStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Page<Payment> payments;
+        if (status != null) {
+            payments = paymentRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+        } else {
+            payments = paymentRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
+
+        Page<PaymentResponse> response = payments.map(this::buildPaymentResponse);
+        return ApiResponse.success("Thành công", response);
+    }
+
+    public ApiResponse<Page<PaymentResponse>> searchPayments(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Payment> payments = paymentRepository.searchByKeyword(keyword, pageable);
+        Page<PaymentResponse> response = payments.map(this::buildPaymentResponse);
+        return ApiResponse.success("Thành công", response);
+    }
+
+    public ApiResponse<List<PaymentResponse>> getRecentPaidPayments() {
+        List<Payment> payments = paymentRepository.findTop10ByStatusOrderByPaidAtDesc(EPaymentStatus.PAID);
+        List<PaymentResponse> response = payments.stream()
+                .map(this::buildPaymentResponse)
+                .toList();
+        return ApiResponse.success("Thành công", response);
     }
 }

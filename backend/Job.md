@@ -102,8 +102,9 @@
 ```
 backend/src/main/java/com/workhub/api/
 ├── controller/
-│   ├── JobController.java              # /api/jobs/*
-│   └── PaymentController.java          # /api/payments/*
+│   ├── JobController.java
+│   ├── PaymentController.java
+│   └── AdminPaymentController.java
 │
 ├── service/
 │   ├── JobService.java                 # Xử lý logic job
@@ -129,7 +130,8 @@ backend/src/main/java/com/workhub/api/
 │   │   └── ZaloPayCallbackRequest.java
 │   └── response/
 │       ├── JobResponse.java
-│       └── PaymentResponse.java
+│       ├── PaymentResponse.java
+│       └── PaymentStatisticsResponse.java
 │
 ├── config/
 │   └── ZaloPayConfig.java              # Cấu hình ZaloPay + HMAC
@@ -249,6 +251,15 @@ backend/src/main/java/com/workhub/api/
 | `GET` | `/api/payments/query/{appTransId}` | Truy vấn trạng thái | ✅ |
 | `GET` | `/api/payments/jobs/{jobId}` | Thanh toán của job | ✅ Owner |
 | `GET` | `/api/payments/my-payments` | Danh sách thanh toán | ✅ |
+
+### Admin Payment Endpoints
+
+| Method | Endpoint | Mô tả | Auth |
+|--------|----------|-------|------|
+| `GET` | `/api/admin/payments/statistics` | Thống kê tổng quan | ✅ Admin |
+| `GET` | `/api/admin/payments` | Danh sách tất cả thanh toán | ✅ Admin |
+| `GET` | `/api/admin/payments/search` | Tìm kiếm thanh toán | ✅ Admin |
+| `GET` | `/api/admin/payments/recent` | Giao dịch gần đây | ✅ Admin |
 
 ---
 
@@ -966,6 +977,256 @@ ZaloPay return_code:
 
 ---
 
+## 7.5 CHI TIẾT API - ADMIN PAYMENT
+
+### GET /api/admin/payments/statistics
+Lấy thống kê thanh toán tổng quan cho Admin Dashboard
+
+```
+Request + Cookie accessToken (ROLE_ADMIN)
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AdminPaymentController.java                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PreAuthorize("hasRole('ADMIN')")                                    │
+│ public class AdminPaymentController {                                │
+│                                                                      │
+│     @GetMapping("/statistics")                                       │
+│     public ResponseEntity<ApiResponse<PaymentStatisticsResponse>>    │
+│             getPaymentStatistics() {                                 │
+│         return ResponseEntity.ok(                                    │
+│             paymentService.getPaymentStatistics());                  │
+│     }                                                                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/PaymentService.java                                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<PaymentStatisticsResponse> getPaymentStatistics() │
+│ {                                                                    │
+│     BigDecimal totalRevenue = paymentRepository                      │
+│         .sumTotalAmountByStatus(EPaymentStatus.PAID);                │
+│     BigDecimal totalJobAmount = paymentRepository                    │
+│         .sumJobAmountByStatus(EPaymentStatus.PAID);                  │
+│     BigDecimal totalFeeAmount = paymentRepository                    │
+│         .sumFeeAmountByStatus(EPaymentStatus.PAID);                  │
+│                                                                      │
+│     Long totalTransactions = paymentRepository.count();              │
+│     Long paidTransactions = paymentRepository                        │
+│         .countByStatus(EPaymentStatus.PAID);                         │
+│     Long pendingTransactions = paymentRepository                     │
+│         .countByStatus(EPaymentStatus.PENDING);                      │
+│     ...                                                              │
+│                                                                      │
+│     LocalDateTime startOfToday = LocalDate.now().atStartOfDay();     │
+│     BigDecimal todayRevenue = paymentRepository                      │
+│         .sumTotalAmountByStatusAndPaidAtAfter(PAID, startOfToday);   │
+│                                                                      │
+│     LocalDateTime startOfMonth = LocalDate.now()                     │
+│         .withDayOfMonth(1).atStartOfDay();                           │
+│     BigDecimal monthRevenue = paymentRepository                      │
+│         .sumTotalAmountByStatusAndPaidAtAfter(PAID, startOfMonth);   │
+│                                                                      │
+│     return ApiResponse.success("...", statistics);                   │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: repository/PaymentRepository.java                              │
+├──────────────────────────────────────────────────────────────────────┤
+│ Long countByStatus(EPaymentStatus status);                           │
+│                                                                      │
+│ @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Payment p        │
+│         WHERE p.status = :status")                                   │
+│ BigDecimal sumTotalAmountByStatus(@Param("status") EPaymentStatus);  │
+│                                                                      │
+│ @Query("SELECT COALESCE(SUM(p.totalAmount), 0) FROM Payment p        │
+│         WHERE p.status = :status AND p.paidAt >= :fromDate")         │
+│ BigDecimal sumTotalAmountByStatusAndPaidAtAfter(                     │
+│     @Param("status") EPaymentStatus,                                 │
+│     @Param("fromDate") LocalDateTime);                               │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": {
+        "totalRevenue": 15750000,
+        "totalJobAmount": 15000000,
+        "totalFeeAmount": 750000,
+        "totalTransactions": 10,
+        "paidTransactions": 5,
+        "pendingTransactions": 3,
+        "cancelledTransactions": 1,
+        "expiredTransactions": 1,
+        "todayRevenue": 5250000,
+        "todayTransactions": 2,
+        "monthRevenue": 15750000,
+        "monthTransactions": 5
+    }
+}
+```
+
+---
+
+### GET /api/admin/payments
+Lấy danh sách tất cả thanh toán (phân trang, filter theo status)
+
+```
+Request + Cookie accessToken (ROLE_ADMIN)
+GET /api/admin/payments?status=PAID&page=0&size=10
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AdminPaymentController.java                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping                                                          │
+│ public ResponseEntity<ApiResponse<Page<PaymentResponse>>>            │
+│         getAllPayments(                                              │
+│             @RequestParam(required = false) EPaymentStatus status,   │
+│             @RequestParam(defaultValue = "0") int page,              │
+│             @RequestParam(defaultValue = "10") int size) {           │
+│                                                                      │
+│     return ResponseEntity.ok(                                        │
+│         paymentService.getAllPayments(status, page, size));          │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/PaymentService.java                                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<Page<PaymentResponse>> getAllPayments(            │
+│         EPaymentStatus status, int page, int size) {                 │
+│                                                                      │
+│     Pageable pageable = PageRequest.of(page, size,                   │
+│         Sort.by("createdAt").descending());                          │
+│                                                                      │
+│     Page<Payment> payments;                                          │
+│     if (status != null) {                                            │
+│         payments = paymentRepository                                 │
+│             .findByStatusOrderByCreatedAtDesc(status, pageable);     │
+│     } else {                                                         │
+│         payments = paymentRepository                                 │
+│             .findAllByOrderByCreatedAtDesc(pageable);                │
+│     }                                                                │
+│                                                                      │
+│     Page<PaymentResponse> response = payments                        │
+│         .map(this::buildPaymentResponse);                            │
+│     return ApiResponse.success("Thành công", response);              │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": {
+        "content": [
+            {
+                "id": 1,
+                "appTransId": "260112_1_123456",
+                "zpTransId": 260112000000389,
+                "jobId": 1,
+                "jobTitle": "Viết bài SEO...",
+                "totalAmount": 5250000,
+                "status": "PAID",
+                "paidAt": "2026-01-12T16:05:00"
+            }
+        ],
+        "totalPages": 1,
+        "totalElements": 1
+    }
+}
+```
+
+---
+
+### GET /api/admin/payments/search
+Tìm kiếm thanh toán theo appTransId hoặc tên job
+
+```
+Request + Cookie accessToken (ROLE_ADMIN)
+GET /api/admin/payments/search?keyword=260112&page=0&size=10
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AdminPaymentController.java                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping("/search")                                               │
+│ public ResponseEntity<ApiResponse<Page<PaymentResponse>>>            │
+│         searchPayments(                                              │
+│             @RequestParam String keyword,                            │
+│             @RequestParam(defaultValue = "0") int page,              │
+│             @RequestParam(defaultValue = "10") int size) {           │
+│                                                                      │
+│     return ResponseEntity.ok(                                        │
+│         paymentService.searchPayments(keyword, page, size));         │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: repository/PaymentRepository.java                              │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Query("SELECT p FROM Payment p                                      │
+│         WHERE p.appTransId LIKE %:keyword%                           │
+│         OR p.job.title LIKE %:keyword%                               │
+│         ORDER BY p.createdAt DESC")                                  │
+│ Page<Payment> searchByKeyword(                                       │
+│     @Param("keyword") String keyword, Pageable pageable);            │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK (danh sách payments matching keyword)
+```
+
+---
+
+### GET /api/admin/payments/recent
+Lấy 10 giao dịch thành công gần nhất (cho Dashboard)
+
+```
+Request + Cookie accessToken (ROLE_ADMIN)
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/AdminPaymentController.java                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping("/recent")                                               │
+│ public ResponseEntity<ApiResponse<List<PaymentResponse>>>            │
+│         getRecentPayments() {                                        │
+│     return ResponseEntity.ok(                                        │
+│         paymentService.getRecentPaidPayments());                     │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: repository/PaymentRepository.java                              │
+├──────────────────────────────────────────────────────────────────────┤
+│ List<Payment> findTop10ByStatusOrderByPaidAtDesc(EPaymentStatus);    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": [
+        { "appTransId": "...", "status": "PAID", "paidAt": "..." },
+        { "appTransId": "...", "status": "PAID", "paidAt": "..." },
+        ...
+    ]
+}
+```
+
+---
+
 ## 8. POSTMAN TEST
 
 ### 8.0 Đăng nhập (Lấy Token)
@@ -1419,6 +1680,85 @@ Cookie: accessToken=eyJ...
 
 ---
 
+### 8.5 ADMIN PAYMENT APIs (Yêu cầu ROLE_ADMIN)
+
+#### GET /api/admin/payments/statistics - Thống kê tổng quan
+```http
+GET http://localhost:8080/api/admin/payments/statistics
+Cookie: accessToken={{admin_token}}
+```
+
+**Response: 200 OK**
+```json
+{
+    "status": "SUCCESS",
+    "data": {
+        "totalRevenue": 15750000,
+        "totalJobAmount": 15000000,
+        "totalFeeAmount": 750000,
+        "totalTransactions": 10,
+        "paidTransactions": 5,
+        "pendingTransactions": 3,
+        "cancelledTransactions": 1,
+        "expiredTransactions": 1,
+        "todayRevenue": 5250000,
+        "todayTransactions": 2,
+        "monthRevenue": 15750000,
+        "monthTransactions": 5
+    }
+}
+```
+
+---
+
+#### GET /api/admin/payments - Danh sách thanh toán
+```http
+GET http://localhost:8080/api/admin/payments?status=PAID&page=0&size=10
+Cookie: accessToken={{admin_token}}
+```
+
+**Query params:**
+- `status` (optional): `PENDING`, `PAID`, `CANCELLED`, `EXPIRED`
+- `page`: 0, 1, 2...
+- `size`: 10, 20...
+
+---
+
+#### GET /api/admin/payments/search - Tìm kiếm
+```http
+GET http://localhost:8080/api/admin/payments/search?keyword=260112&page=0&size=10
+Cookie: accessToken={{admin_token}}
+```
+
+---
+
+#### GET /api/admin/payments/recent - Giao dịch gần đây
+```http
+GET http://localhost:8080/api/admin/payments/recent
+Cookie: accessToken={{admin_token}}
+```
+
+**Response: 200 OK**
+```json
+{
+    "status": "SUCCESS",
+    "data": [
+        {
+            "id": 1,
+            "appTransId": "260112_1_123456",
+            "zpTransId": 260112000000389,
+            "jobId": 1,
+            "jobTitle": "Viết bài SEO...",
+            "totalAmount": 5250000,
+            "status": "PAID",
+            "paidAt": "2026-01-12T16:05:00"
+        }
+    ]
+}
+```
+
+---
+
 ## 9. CẤU HÌNH
 
 ### .env
@@ -1439,19 +1779,12 @@ PAYMENT_CANCEL_URL=http://localhost:3000/payment/cancel
 │ FILE: config/SecurityConfig.java                                     │
 ├──────────────────────────────────────────────────────────────────────┤
 │ .authorizeHttpRequests(auth -> auth                                  │
-│     // Public - Job                                                  │
 │     .requestMatchers(GET, "/api/jobs").permitAll()                   │
 │     .requestMatchers(GET, "/api/jobs/{id}").permitAll()              │
 │     .requestMatchers(GET, "/api/jobs/search").permitAll()            │
 │     .requestMatchers(GET, "/api/jobs/by-skills").permitAll()         │
-│                                                                      │
-│     // Public - Payment Callback                                     │
 │     .requestMatchers(POST, "/api/payments/callback").permitAll()     │
-│                            ▲                                         │
-│                            │                                         │
-│                   ZaloPay cần gọi được!                              │
-│                                                                      │
-│     // Protected                                                     │
+│     .requestMatchers("/api/admin/**").hasRole("ADMIN")               │
 │     .anyRequest().authenticated()                                    │
 │ )                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
