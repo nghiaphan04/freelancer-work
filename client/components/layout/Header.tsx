@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import Icon from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
@@ -28,12 +29,17 @@ import {
 } from "@/constant/layout";
 
 export default function Header() {
+  const pathname = usePathname();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileNav, setExpandedMobileNav] = useState<string | null>(null);
   const [isBecomingEmployer, setIsBecomingEmployer] = useState(false);
   const { user, isAuthenticated, isHydrated, logout } = useAuth();
   const { becomeEmployer } = useProfile();
+
+  // Check if current path matches
+  const isActive = (path: string) => pathname === path;
+  const isActivePrefix = (prefix: string) => pathname?.startsWith(prefix);
 
   const handleBecomeEmployer = async () => {
     setIsBecomingEmployer(true);
@@ -350,27 +356,41 @@ export default function Header() {
                   onMouseEnter={() => setActiveDropdown("my-jobs")}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  <button className="flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap text-gray-700 hover:text-[#00b14f] group/nav">
+                  <button className={`flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap group/nav ${
+                    isActivePrefix("/my-posted-jobs") || isActivePrefix("/my-accepted-jobs")
+                      ? "text-[#00b14f]"
+                      : "text-gray-700 hover:text-[#00b14f]"
+                  }`}>
                     Quản lý công việc
                     <Icon 
                       name={activeDropdown === "my-jobs" ? "expand_less" : "expand_more"} 
                       size={16} 
-                      className="text-gray-400 group-hover/nav:text-[#00b14f]" 
+                      className={isActivePrefix("/my-posted-jobs") || isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f]" : "text-gray-400 group-hover/nav:text-[#00b14f]"}
                     />
                   </button>
                   {activeDropdown === "my-jobs" && (
                     <div className="absolute top-full left-0 z-[9999] w-[280px]">
                       <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] py-2">
                         {user?.roles?.includes("ROLE_FREELANCER") && (
-                          <Link href="/my-accepted-jobs" className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group">
-                            <Icon name="work" size={20} className="text-gray-500 group-hover:text-[#00b14f]" />
-                            <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">Việc đã nhận</span>
+                          <Link 
+                            href="/my-accepted-jobs" 
+                            className={`flex items-center gap-3 px-4 py-2.5 transition-colors group ${
+                              isActivePrefix("/my-accepted-jobs") ? "bg-[#00b14f]/5" : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <Icon name="work" size={20} className={isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f]" : "text-gray-500 group-hover:text-[#00b14f]"} />
+                            <span className={`text-sm ${isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f] font-medium" : "text-gray-700 group-hover:text-[#00b14f]"}`}>Việc đã nhận</span>
                           </Link>
                         )}
                         {user?.roles?.includes("ROLE_EMPLOYER") ? (
-                          <Link href="/my-posted-jobs" className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group">
-                            <Icon name="post_add" size={20} className="text-gray-500 group-hover:text-[#00b14f]" />
-                            <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">Việc đã đăng</span>
+                          <Link 
+                            href="/my-posted-jobs" 
+                            className={`flex items-center gap-3 px-4 py-2.5 transition-colors group ${
+                              isActivePrefix("/my-posted-jobs") ? "bg-[#00b14f]/5" : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <Icon name="post_add" size={20} className={isActivePrefix("/my-posted-jobs") ? "text-[#00b14f]" : "text-gray-500 group-hover:text-[#00b14f]"} />
+                            <span className={`text-sm ${isActivePrefix("/my-posted-jobs") ? "text-[#00b14f] font-medium" : "text-gray-700 group-hover:text-[#00b14f]"}`}>Việc đã đăng</span>
                           </Link>
                         ) : (
                           <button 
@@ -423,13 +443,13 @@ export default function Header() {
                       <p className="truncate">{user.fullName}</p>
                       <p className="text-xs text-gray-500 font-normal truncate">{user.email}</p>
                     </DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
+                    <DropdownMenuItem asChild className={isActive("/profile") ? "bg-[#00b14f]/5 text-[#00b14f]" : ""}>
                       <Link href="/profile">
                         <Icon name="person" size={20} />
                         Hồ sơ của tôi
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
+                    <DropdownMenuItem asChild className={isActive("/settings") ? "bg-[#00b14f]/5 text-[#00b14f]" : ""}>
                       <Link href="/settings">
                         <Icon name="settings" size={20} />
                         Cài đặt
@@ -623,18 +643,26 @@ export default function Header() {
                   <Link
                     href="/profile"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                      isActive("/profile") 
+                        ? "bg-[#00b14f]/5 text-[#00b14f]" 
+                        : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                    }`}
                   >
-                    <Icon name="person" size={20} className="text-gray-400" />
+                    <Icon name="person" size={20} className={isActive("/profile") ? "text-[#00b14f]" : "text-gray-400"} />
                     <span>Hồ sơ của tôi</span>
                   </Link>
                   {user.roles?.includes("ROLE_FREELANCER") && (
                     <Link
                       href="/my-accepted-jobs"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                      className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                        isActivePrefix("/my-accepted-jobs") 
+                          ? "bg-[#00b14f]/5 text-[#00b14f]" 
+                          : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                      }`}
                     >
-                      <Icon name="work" size={20} className="text-gray-400" />
+                      <Icon name="work" size={20} className={isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f]" : "text-gray-400"} />
                       <span>Việc đã nhận</span>
                     </Link>
                   )}
@@ -642,9 +670,13 @@ export default function Header() {
                     <Link
                       href="/my-posted-jobs"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                      className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                        isActivePrefix("/my-posted-jobs") 
+                          ? "bg-[#00b14f]/5 text-[#00b14f]" 
+                          : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                      }`}
                     >
-                      <Icon name="post_add" size={20} className="text-gray-400" />
+                      <Icon name="post_add" size={20} className={isActivePrefix("/my-posted-jobs") ? "text-[#00b14f]" : "text-gray-400"} />
                       <span>Việc đã đăng</span>
                     </Link>
                   ) : (
@@ -664,9 +696,13 @@ export default function Header() {
                   <Link
                     href="/settings"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                      isActive("/settings") 
+                        ? "bg-[#00b14f]/5 text-[#00b14f]" 
+                        : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                    }`}
                   >
-                    <Icon name="settings" size={20} className="text-gray-400" />
+                    <Icon name="settings" size={20} className={isActive("/settings") ? "text-[#00b14f]" : "text-gray-400"} />
                     <span>Cài đặt</span>
                   </Link>
                   <button
