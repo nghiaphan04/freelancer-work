@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { clearAuthData } from "@/constant/auth";
 import Icon from "@/components/ui/Icon";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AdminDashboard from "./AdminDashboard";
 import AdminUsers from "./AdminUsers";
 import AdminPayments from "./AdminPayments";
@@ -25,6 +25,7 @@ export default function AdminLayout() {
   const { user, setUser } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -41,54 +42,108 @@ export default function AdminLayout() {
     }
   };
 
+  const handleTabClick = (tabId: TabType) => {
+    setActiveTab(tabId);
+    setMobileMenuOpen(false);
+  };
+
+  const SidebarContent = () => (
+    <>
+      {/* Logo */}
+      <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <Icon name="admin_panel_settings" size={22} className="text-[#00b14f]" />
+          <span className="font-semibold text-gray-900">Admin</span>
+        </div>
+        {/* Close button - mobile only */}
+        <button
+          onClick={() => setMobileMenuOpen(false)}
+          className="md:hidden p-1 rounded hover:bg-gray-100"
+        >
+          <Icon name="close" size={20} className="text-gray-500" />
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 py-4 px-3">
+        <ul className="space-y-1">
+          {TABS.map((tab) => (
+            <li key={tab.id}>
+              <button
+                onClick={() => handleTabClick(tab.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-[#00b14f]/10 text-[#00b14f] font-medium"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <Icon name={tab.icon} size={18} className={activeTab === tab.id ? "text-[#00b14f]" : "text-gray-400"} />
+                {tab.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* User & Logout */}
+      <div className="border-t border-gray-100 p-3">
+        <div className="flex items-center gap-2 px-2 py-2 mb-2">
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={user?.avatarUrl} alt={user?.fullName} />
+            <AvatarFallback className="bg-gray-200 text-gray-600 text-xs">
+              {user?.fullName?.charAt(0)?.toUpperCase() || "A"}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">{user?.fullName}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50"
+        >
+          {isLoggingOut ? (
+            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Icon name="logout" size={18} />
+          )}
+          Đăng xuất
+        </button>
+      </div>
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-sm flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b">
-          <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
-          <p className="text-sm text-gray-500 mt-1">{user?.fullName}</p>
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      {/* Mobile Header */}
+      <div className="md:hidden h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          <Icon name="admin_panel_settings" size={22} className="text-[#00b14f]" />
+          <span className="font-semibold text-gray-900">Admin</span>
         </div>
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 rounded-lg hover:bg-gray-100"
+        >
+          <Icon name="menu" size={24} className="text-gray-700" />
+        </button>
+      </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-1">
-            {TABS.map((tab) => (
-              <li key={tab.id}>
-                <button
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                    activeTab === tab.id
-                      ? "bg-[#00b14f]/10 text-[#00b14f] font-medium"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
-                  }`}
-                >
-                  <Icon name={tab.icon} size={20} className={activeTab === tab.id ? "text-[#00b14f]" : "text-gray-500"} />
-                  {tab.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Footer */}
-        <div className="p-4 border-t space-y-3">
-          <Button
-            variant="outline"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            {isLoggingOut ? (
-              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Icon name="logout" size={18} />
-            )}
-            Đăng xuất
-          </Button>
-          <p className="text-xs text-gray-400 text-center">WorkHub Admin v1.0</p>
+      {/* Mobile Sidebar Overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white flex flex-col shadow-xl">
+            <SidebarContent />
+          </aside>
         </div>
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-56 bg-white border-r border-gray-200 flex-col sticky top-0 h-screen">
+        <SidebarContent />
       </aside>
 
       {/* Main Content */}
