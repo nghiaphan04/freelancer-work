@@ -2,17 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePostedJobs } from "@/hooks/usePostedJobs";
-import { JOB_STATUS_CONFIG } from "@/types/job";
+import { JOB_STATUS_CONFIG, JobStatus } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
+
+const FILTER_TABS: { key: JobStatus | "all"; label: string }[] = [
+  { key: "all", label: "Tất cả" },
+  { key: "DRAFT", label: "Bản nháp" },
+  { key: "OPEN", label: "Đang tuyển" },
+  { key: "IN_PROGRESS", label: "Đang thực hiện" },
+  { key: "COMPLETED", label: "Hoàn thành" },
+];
 
 export default function PostedJobsList() {
   const router = useRouter();
   const { user, isAuthenticated, isHydrated } = useAuth();
-  const { jobs, isLoading, error, fetchJobs } = usePostedJobs();
-  const [filter, setFilter] = useState<string>("all");
+  const { jobs, page, isLoading, error, fetchJobs } = usePostedJobs();
+  const [filter, setFilter] = useState<JobStatus | "all">("all");
 
   const hasAccess = user?.roles?.includes("ROLE_EMPLOYER");
 
@@ -30,9 +39,22 @@ export default function PostedJobsList() {
 
   useEffect(() => {
     if (isHydrated && isAuthenticated && hasAccess) {
-      fetchJobs(filter);
+      fetchJobs(filter === "all" ? {} : { status: filter });
     }
   }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs]);
+
+  const formatBudget = (budget?: number, currency?: string) => {
+    if (!budget) return "Thương lượng";
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: currency || "VND",
+    }).format(budget);
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "Chưa xác định";
+    return new Date(dateStr).toLocaleDateString("vi-VN");
+  };
 
   if (!isHydrated) {
     return (
@@ -52,23 +74,22 @@ export default function PostedJobsList() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý công việc đã đăng</h1>
-          <p className="text-gray-500 mt-1">Xem và quản lý các công việc bạn đã đăng tuyển</p>
+          <p className="text-gray-500 mt-1">
+            {page ? `${page.totalElements} công việc` : "Xem và quản lý các công việc bạn đã đăng tuyển"}
+          </p>
         </div>
-        <Button className="bg-[#00b14f] hover:bg-[#009643] w-full sm:w-auto">
-          <Icon name="add" size={20} />
-          Đăng việc mới
-        </Button>
+        <Link href="/post-job">
+          <Button className="bg-[#00b14f] hover:bg-[#009643] w-full sm:w-auto">
+            <Icon name="add" size={20} />
+            Đăng việc mới
+          </Button>
+        </Link>
       </div>
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow mb-4">
         <div className="flex flex-wrap border-b border-gray-200">
-          {[
-            { key: "all", label: "Tất cả" },
-            { key: "open", label: "Đang mở" },
-            { key: "in_progress", label: "Đang thực hiện" },
-            { key: "completed", label: "Hoàn thành" },
-          ].map((tab) => (
+          {FILTER_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
@@ -103,20 +124,22 @@ export default function PostedJobsList() {
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">Không có công việc nào</p>
-              <Button className="mt-4 bg-[#00b14f] hover:bg-[#009643]">
-                <Icon name="add" size={20} />
-                Đăng việc mới
-              </Button>
+              <Link href="/post-job">
+                <Button className="mt-4 bg-[#00b14f] hover:bg-[#009643]">
+                  <Icon name="add" size={20} />
+                  Đăng việc mới
+                </Button>
+              </Link>
             </div>
           ) : (
             jobs.map((job) => (
-              <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6 hover:shadow-md transition-shadow">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 hover:text-[#00b14f] cursor-pointer">
+                      <Link href={`/jobs/${job.id}`} className="text-lg font-semibold text-gray-900 hover:text-[#00b14f]">
                         {job.title}
-                      </h3>
+                      </Link>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${JOB_STATUS_CONFIG[job.status]?.color || "bg-gray-100 text-gray-700"}`}>
                         {JOB_STATUS_CONFIG[job.status]?.label || job.status}
                       </span>
@@ -125,43 +148,83 @@ export default function PostedJobsList() {
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
                       <span className="flex items-center gap-1">
                         <Icon name="payments" size={16} />
-                        {job.budget}
+                        {formatBudget(job.budget, job.currency)}
                       </span>
-                      {job.applicants !== undefined && (
+                      <span className="flex items-center gap-1">
+                        <Icon name="people" size={16} />
+                        {job.applicationCount} ứng viên
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Icon name="visibility" size={16} />
+                        {job.viewCount} lượt xem
+                      </span>
+                      {job.applicationDeadline && (
                         <span className="flex items-center gap-1">
-                          <Icon name="people" size={16} />
-                          {job.applicants} ứng viên
+                          <Icon name="schedule" size={16} />
+                          Hạn: {formatDate(job.applicationDeadline)}
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Icon name="schedule" size={16} />
-                        Hạn: {new Date(job.deadline).toLocaleDateString("vi-VN")}
-                      </span>
                     </div>
 
-                    {job.freelancer && (
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Freelancer:</span> {job.freelancer.name}
-                      </p>
+                    {job.skills && job.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {job.skills.slice(0, 5).map((skill) => (
+                          <span key={skill} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                            {skill}
+                          </span>
+                        ))}
+                        {job.skills.length > 5 && (
+                          <span className="px-2 py-0.5 text-gray-400 text-xs">+{job.skills.length - 5}</span>
+                        )}
+                      </div>
                     )}
                   </div>
 
                   <div className="flex flex-row sm:flex-col gap-2">
-                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                      <Icon name="visibility" size={16} />
-                      <span className="sm:hidden lg:inline">Xem chi tiết</span>
-                    </Button>
-                    {job.status === "open" && (
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-[#00b14f] border-[#00b14f]">
-                        <Icon name="edit" size={16} />
-                        <span className="sm:hidden lg:inline">Chỉnh sửa</span>
+                    <Link href={`/jobs/${job.id}`} className="flex-1 sm:flex-none">
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Icon name="visibility" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                       </Button>
+                    </Link>
+                    {(job.status === "DRAFT" || job.status === "OPEN") && (
+                      <Link href={`/jobs/${job.id}/edit`} className="flex-1 sm:flex-none">
+                        <Button variant="outline" size="sm" className="w-full text-[#00b14f] border-[#00b14f] hover:bg-[#00b14f]/5">
+                          <Icon name="edit" size={16} />
+                          <span className="sm:hidden lg:inline ml-1">Sửa</span>
+                        </Button>
+                      </Link>
                     )}
                   </div>
                 </div>
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {page && page.totalPages > 1 && (
+        <div className="mt-6 flex justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page.first}
+            onClick={() => fetchJobs({ status: filter === "all" ? undefined : filter, page: page.number - 1 })}
+          >
+            Trước
+          </Button>
+          <span className="px-4 py-2 text-sm text-gray-600">
+            Trang {page.number + 1} / {page.totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page.last}
+            onClick={() => fetchJobs({ status: filter === "all" ? undefined : filter, page: page.number + 1 })}
+          >
+            Sau
+          </Button>
         </div>
       )}
     </div>

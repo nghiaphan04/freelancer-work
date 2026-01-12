@@ -1,9 +1,10 @@
 import { User } from "@/types/user";
-import { Job, PostedJobsStats, AcceptedJobsStats } from "@/types/job";
+import { Job, Page, CreateJobRequest, UpdateJobRequest, JobStatus } from "@/types/job";
+import { Payment, PaymentStatus } from "@/types/payment";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   status: string;
   message: string;
   data: T;
@@ -52,15 +53,83 @@ export const api = {
   // Roles
   becomeEmployer: () => request<User>("/api/users/me/become-employer", { method: "POST" }),
 
-  // Jobs - Posted (for Employer)
-  getPostedJobs: (status?: string) =>
-    request<Job[]>(`/api/jobs/posted${status ? `?status=${status}` : ""}`),
+  // Jobs
+  // Tạo job mới (DRAFT)
+  createJob: (data: CreateJobRequest) =>
+    request<Job>("/api/jobs", { method: "POST", body: JSON.stringify(data) }),
 
-  // Jobs - Accepted (for Freelancer)
-  getAcceptedJobs: (status?: string) =>
-    request<Job[]>(`/api/jobs/accepted${status ? `?status=${status}` : ""}`),
+  // Lấy danh sách jobs đang tuyển (công khai)
+  getOpenJobs: (params?: { page?: number; size?: number; sortBy?: string; sortDir?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    if (params?.sortBy) query.append("sortBy", params.sortBy);
+    if (params?.sortDir) query.append("sortDir", params.sortDir);
+    return request<Page<Job>>(`/api/jobs${query.toString() ? `?${query}` : ""}`);
+  },
 
-  // Job Stats
-  getPostedJobsStats: () => request<PostedJobsStats>("/api/jobs/posted/stats"),
-  getAcceptedJobsStats: () => request<AcceptedJobsStats>("/api/jobs/accepted/stats"),
+  // Lấy chi tiết job
+  getJobById: (id: number) => request<Job>(`/api/jobs/${id}`),
+
+  // Lấy danh sách jobs của tôi (employer)
+  getMyJobs: (params?: { status?: JobStatus; page?: number; size?: number; sortBy?: string; sortDir?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    if (params?.sortBy) query.append("sortBy", params.sortBy);
+    if (params?.sortDir) query.append("sortDir", params.sortDir);
+    return request<Page<Job>>(`/api/jobs/my-jobs${query.toString() ? `?${query}` : ""}`);
+  },
+
+  // Tìm kiếm jobs
+  searchJobs: (params: { keyword: string; page?: number; size?: number }) => {
+    const query = new URLSearchParams({ keyword: params.keyword });
+    if (params.page !== undefined) query.append("page", params.page.toString());
+    if (params.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Job>>(`/api/jobs/search?${query}`);
+  },
+
+  // Tìm jobs theo skills
+  getJobsBySkills: (params: { skills: string[]; page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    params.skills.forEach((skill) => query.append("skills", skill));
+    if (params.page !== undefined) query.append("page", params.page.toString());
+    if (params.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Job>>(`/api/jobs/by-skills?${query}`);
+  },
+
+  // Cập nhật job
+  updateJob: (id: number, data: UpdateJobRequest) =>
+    request<Job>(`/api/jobs/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+
+  // Đóng tin tuyển dụng
+  closeJob: (id: number) =>
+    request<Job>(`/api/jobs/${id}/close`, { method: "PATCH" }),
+
+  // Xóa job
+  deleteJob: (id: number) =>
+    request<void>(`/api/jobs/${id}`, { method: "DELETE" }),
+
+  // Payments
+  // Tạo thanh toán cho job
+  createPayment: (jobId: number) =>
+    request<Payment>(`/api/payments/jobs/${jobId}`, { method: "POST" }),
+
+  // Query trạng thái thanh toán
+  queryPaymentStatus: (appTransId: string) =>
+    request<Payment>(`/api/payments/query/${appTransId}`),
+
+  // Lấy payment của job
+  getPaymentByJobId: (jobId: number) =>
+    request<Payment>(`/api/payments/jobs/${jobId}`),
+
+  // Lấy lịch sử thanh toán của tôi
+  getMyPayments: (params?: { status?: PaymentStatus; page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Payment>>(`/api/payments/my-payments${query.toString() ? `?${query}` : ""}`);
+  },
 };

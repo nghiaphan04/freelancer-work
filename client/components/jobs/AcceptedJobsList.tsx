@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAcceptedJobs } from "@/hooks/useAcceptedJobs";
 import { JOB_STATUS_CONFIG } from "@/types/job";
@@ -63,14 +64,15 @@ export default function AcceptedJobsList() {
           <h1 className="text-2xl font-bold text-gray-900">Quản lý công việc đã nhận</h1>
           <p className="text-gray-500 mt-1">Theo dõi và cập nhật tiến độ các công việc của bạn</p>
         </div>
-        <Button 
-          variant="outline" 
-          className="border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f] hover:text-white w-full sm:w-auto"
-          onClick={() => router.push("/find-work")}
-        >
-          <Icon name="search" size={20} />
-          Tìm việc mới
-        </Button>
+        <Link href="/jobs">
+          <Button 
+            variant="outline" 
+            className="border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f] hover:text-white w-full sm:w-auto"
+          >
+            <Icon name="search" size={20} />
+            Tìm việc mới
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Summary */}
@@ -128,9 +130,9 @@ export default function AcceptedJobsList() {
         <div className="flex flex-wrap border-b border-gray-200">
           {[
             { key: "all", label: "Tất cả" },
-            { key: "in_progress", label: "Đang làm" },
-            { key: "pending_review", label: "Chờ nghiệm thu" },
-            { key: "completed", label: "Hoàn thành" },
+            { key: "IN_PROGRESS", label: "Đang làm" },
+            { key: "PENDING_REVIEW", label: "Chờ nghiệm thu" },
+            { key: "COMPLETED", label: "Hoàn thành" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -166,12 +168,11 @@ export default function AcceptedJobsList() {
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">Không có công việc nào</p>
-              <Button 
-                className="mt-4 bg-[#00b14f] hover:bg-[#009643]"
-                onClick={() => router.push("/find-work")}
-              >
-                Tìm việc ngay
-              </Button>
+              <Link href="/jobs">
+                <Button className="mt-4 bg-[#00b14f] hover:bg-[#009643]">
+                  Tìm việc ngay
+                </Button>
+              </Link>
             </div>
           ) : (
             jobs.map((job) => (
@@ -180,9 +181,9 @@ export default function AcceptedJobsList() {
                   {/* Employer Info */}
                   {job.employer && (
                     <Avatar className="w-12 h-12 shrink-0 hidden sm:flex">
-                      <AvatarImage src={job.employer.avatar} alt={job.employer.name} />
+                      <AvatarImage src={job.employer.avatarUrl} alt={job.employer.fullName} />
                       <AvatarFallback className="bg-[#00b14f] text-white">
-                        {job.employer.name.charAt(0)}
+                        {job.employer.fullName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -198,78 +199,41 @@ export default function AcceptedJobsList() {
                     </div>
 
                     {job.employer && (
-                      <p className="text-sm text-gray-600 mb-2">{job.employer.name}</p>
+                      <p className="text-sm text-gray-600 mb-2">{job.employer.fullName}</p>
                     )}
                     
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
                       <span className="flex items-center gap-1">
                         <Icon name="payments" size={16} />
-                        {job.budget}
+                        {job.budget ? `${job.budget.toLocaleString("vi-VN")} ${job.currency}` : "Thương lượng"}
                       </span>
-                      {job.startDate && (
+                      {job.expectedStartDate && (
                         <span className="flex items-center gap-1">
                           <Icon name="event" size={16} />
-                          Bắt đầu: {new Date(job.startDate).toLocaleDateString("vi-VN")}
+                          Bắt đầu: {new Date(job.expectedStartDate).toLocaleDateString("vi-VN")}
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Icon name="schedule" size={16} />
-                        Hạn: {new Date(job.deadline).toLocaleDateString("vi-VN")}
-                      </span>
+                      {job.applicationDeadline && (
+                        <span className="flex items-center gap-1">
+                          <Icon name="schedule" size={16} />
+                          Hạn: {new Date(job.applicationDeadline).toLocaleDateString("vi-VN")}
+                        </span>
+                      )}
                     </div>
-
-                    {/* Progress Bar */}
-                    {job.progress !== undefined && (
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-gray-600">Tiến độ</span>
-                          <span className="font-medium text-gray-900">{job.progress}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all ${
-                              job.progress === 100 ? "bg-green-500" : "bg-[#00b14f]"
-                            }`}
-                            style={{ width: `${job.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Rating if completed */}
-                    {job.status === "completed" && job.rating && (
-                      <div className="flex items-center gap-1 text-sm">
-                        <span className="text-gray-600">Đánh giá:</span>
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Icon 
-                              key={i} 
-                              name="star" 
-                              size={16} 
-                              className={i < job.rating! ? "text-yellow-400" : "text-gray-300"} 
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex flex-row sm:flex-col gap-2 shrink-0">
-                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                      <Icon name="visibility" size={16} />
-                      <span className="sm:hidden lg:inline">Chi tiết</span>
-                    </Button>
-                    {job.status === "in_progress" && (
-                      <Button size="sm" className="flex-1 sm:flex-none bg-[#00b14f] hover:bg-[#009643]">
-                        <Icon name="upload" size={16} />
-                        <span className="sm:hidden lg:inline">Nộp bài</span>
+                    <Link href={`/jobs/${job.id}`}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Icon name="visibility" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                       </Button>
-                    )}
-                    {job.status === "pending_review" && (
-                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-yellow-600 border-yellow-600">
-                        <Icon name="chat" size={16} />
-                        <span className="sm:hidden lg:inline">Liên hệ</span>
+                    </Link>
+                    {job.status === "IN_PROGRESS" && (
+                      <Button size="sm" className="bg-[#00b14f] hover:bg-[#009643]">
+                        <Icon name="upload" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Nộp bài</span>
                       </Button>
                     )}
                   </div>
