@@ -1,0 +1,284 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { useAcceptedJobs } from "@/hooks/useAcceptedJobs";
+import { JOB_STATUS_CONFIG } from "@/types/job";
+import Icon from "@/components/ui/Icon";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+export default function AcceptedJobsList() {
+  const router = useRouter();
+  const { user, isAuthenticated, isHydrated } = useAuth();
+  const { jobs, stats, isLoading, error, fetchJobs, fetchStats } = useAcceptedJobs();
+  const [filter, setFilter] = useState<string>("all");
+
+  const hasAccess = user?.roles?.includes("ROLE_FREELANCER");
+
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isHydrated, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isHydrated && isAuthenticated && !hasAccess) {
+      router.push("/");
+    }
+  }, [isHydrated, isAuthenticated, hasAccess, router]);
+
+  useEffect(() => {
+    if (isHydrated && isAuthenticated && hasAccess) {
+      fetchJobs(filter);
+      fetchStats();
+    }
+  }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs, fetchStats]);
+
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) {
+      return `${(amount / 1000000).toFixed(1)}M`;
+    }
+    return amount.toLocaleString("vi-VN");
+  };
+
+  if (!isHydrated) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user || !hasAccess) {
+    return null;
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý công việc đã nhận</h1>
+          <p className="text-gray-500 mt-1">Theo dõi và cập nhật tiến độ các công việc của bạn</p>
+        </div>
+        <Button 
+          variant="outline" 
+          className="border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f] hover:text-white w-full sm:w-auto"
+          onClick={() => router.push("/find-work")}
+        >
+          <Icon name="search" size={20} />
+          Tìm việc mới
+        </Button>
+      </div>
+
+      {/* Stats Summary */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <Icon name="pending_actions" size={20} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
+                <p className="text-xs text-gray-500">Đang làm</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Icon name="hourglass_top" size={20} className="text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats.pendingReview}</p>
+                <p className="text-xs text-gray-500">Chờ duyệt</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <Icon name="check_circle" size={20} className="text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                <p className="text-xs text-gray-500">Hoàn thành</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#00b14f]/10 flex items-center justify-center">
+                <Icon name="payments" size={20} className="text-[#00b14f]" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{formatCurrency(stats.totalEarnings)}</p>
+                <p className="text-xs text-gray-500">Tổng thu nhập</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="bg-white rounded-lg shadow mb-4">
+        <div className="flex flex-wrap border-b border-gray-200">
+          {[
+            { key: "all", label: "Tất cả" },
+            { key: "in_progress", label: "Đang làm" },
+            { key: "pending_review", label: "Chờ nghiệm thu" },
+            { key: "completed", label: "Hoàn thành" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`px-4 py-3 text-sm font-medium transition-colors ${
+                filter === tab.key
+                  ? "text-[#00b14f] border-b-2 border-[#00b14f]"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="bg-white rounded-lg shadow p-8 flex justify-center">
+          <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        /* Job List */
+        <div className="space-y-4">
+          {jobs.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">Không có công việc nào</p>
+              <Button 
+                className="mt-4 bg-[#00b14f] hover:bg-[#009643]"
+                onClick={() => router.push("/find-work")}
+              >
+                Tìm việc ngay
+              </Button>
+            </div>
+          ) : (
+            jobs.map((job) => (
+              <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  {/* Employer Info */}
+                  {job.employer && (
+                    <Avatar className="w-12 h-12 shrink-0 hidden sm:flex">
+                      <AvatarImage src={job.employer.avatar} alt={job.employer.name} />
+                      <AvatarFallback className="bg-[#00b14f] text-white">
+                        {job.employer.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900 hover:text-[#00b14f] cursor-pointer truncate">
+                        {job.title}
+                      </h3>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${JOB_STATUS_CONFIG[job.status]?.color || "bg-gray-100 text-gray-700"}`}>
+                        {JOB_STATUS_CONFIG[job.status]?.label || job.status}
+                      </span>
+                    </div>
+
+                    {job.employer && (
+                      <p className="text-sm text-gray-600 mb-2">{job.employer.name}</p>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
+                      <span className="flex items-center gap-1">
+                        <Icon name="payments" size={16} />
+                        {job.budget}
+                      </span>
+                      {job.startDate && (
+                        <span className="flex items-center gap-1">
+                          <Icon name="event" size={16} />
+                          Bắt đầu: {new Date(job.startDate).toLocaleDateString("vi-VN")}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Icon name="schedule" size={16} />
+                        Hạn: {new Date(job.deadline).toLocaleDateString("vi-VN")}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    {job.progress !== undefined && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="text-gray-600">Tiến độ</span>
+                          <span className="font-medium text-gray-900">{job.progress}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all ${
+                              job.progress === 100 ? "bg-green-500" : "bg-[#00b14f]"
+                            }`}
+                            style={{ width: `${job.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rating if completed */}
+                    {job.status === "completed" && job.rating && (
+                      <div className="flex items-center gap-1 text-sm">
+                        <span className="text-gray-600">Đánh giá:</span>
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Icon 
+                              key={i} 
+                              name="star" 
+                              size={16} 
+                              className={i < job.rating! ? "text-yellow-400" : "text-gray-300"} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-row sm:flex-col gap-2 shrink-0">
+                    <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                      <Icon name="visibility" size={16} />
+                      <span className="sm:hidden lg:inline">Chi tiết</span>
+                    </Button>
+                    {job.status === "in_progress" && (
+                      <Button size="sm" className="flex-1 sm:flex-none bg-[#00b14f] hover:bg-[#009643]">
+                        <Icon name="upload" size={16} />
+                        <span className="sm:hidden lg:inline">Nộp bài</span>
+                      </Button>
+                    )}
+                    {job.status === "pending_review" && (
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-none text-yellow-600 border-yellow-600">
+                        <Icon name="chat" size={16} />
+                        <span className="sm:hidden lg:inline">Liên hệ</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

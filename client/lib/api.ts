@@ -1,4 +1,5 @@
 import { User } from "@/types/user";
+import { Job, PostedJobsStats, AcceptedJobsStats } from "@/types/job";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -47,4 +48,16 @@ export const api = {
 
   updateProfile: (data: Partial<User>) =>
     request<User>("/api/users/me", { method: "PUT", body: JSON.stringify(data) }),
+
+  // Jobs - Posted (for Employer)
+  getPostedJobs: (status?: string) =>
+    request<Job[]>(`/api/jobs/posted${status ? `?status=${status}` : ""}`),
+
+  // Jobs - Accepted (for Freelancer)
+  getAcceptedJobs: (status?: string) =>
+    request<Job[]>(`/api/jobs/accepted${status ? `?status=${status}` : ""}`),
+
+  // Job Stats
+  getPostedJobsStats: () => request<PostedJobsStats>("/api/jobs/posted/stats"),
+  getAcceptedJobsStats: () => request<AcceptedJobsStats>("/api/jobs/accepted/stats"),
 };

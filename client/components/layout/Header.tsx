@@ -326,6 +326,42 @@ export default function Header() {
                   )}
                 </div>
               ))}
+
+              {/* Quản lý công việc - chỉ hiện khi có role */}
+              {isAuthenticated && (user?.roles?.includes("ROLE_FREELANCER") || user?.roles?.includes("ROLE_EMPLOYER")) && (
+                <div
+                  className="relative group"
+                  onMouseEnter={() => setActiveDropdown("my-jobs")}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button className="flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap text-gray-700 hover:text-[#00b14f] group/nav">
+                    Quản lý công việc
+                    <Icon 
+                      name={activeDropdown === "my-jobs" ? "expand_less" : "expand_more"} 
+                      size={16} 
+                      className="text-gray-400 group-hover/nav:text-[#00b14f]" 
+                    />
+                  </button>
+                  {activeDropdown === "my-jobs" && (
+                    <div className="absolute top-full left-0 z-[9999] w-[220px]">
+                      <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] py-2">
+                        {user?.roles?.includes("ROLE_FREELANCER") && (
+                          <Link href="/my-accepted-jobs" className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group">
+                            <Icon name="work" size={20} className="text-gray-500 group-hover:text-[#00b14f]" />
+                            <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">Việc đã nhận</span>
+                          </Link>
+                        )}
+                        {user?.roles?.includes("ROLE_EMPLOYER") && (
+                          <Link href="/my-posted-jobs" className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group">
+                            <Icon name="post_add" size={20} className="text-gray-500 group-hover:text-[#00b14f]" />
+                            <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">Việc đã đăng</span>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </nav>
           </div>
 
@@ -561,6 +597,26 @@ export default function Header() {
                     <Icon name="person" size={20} className="text-gray-400" />
                     <span>Hồ sơ của tôi</span>
                   </Link>
+                  {user.roles?.includes("ROLE_FREELANCER") && (
+                    <Link
+                      href="/my-accepted-jobs"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                    >
+                      <Icon name="work" size={20} className="text-gray-400" />
+                      <span>Việc đã nhận</span>
+                    </Link>
+                  )}
+                  {user.roles?.includes("ROLE_EMPLOYER") && (
+                    <Link
+                      href="/my-posted-jobs"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                    >
+                      <Icon name="post_add" size={20} className="text-gray-400" />
+                      <span>Việc đã đăng</span>
+                    </Link>
+                  )}
                   <Link
                     href="/settings"
                     onClick={() => setMobileMenuOpen(false)}
