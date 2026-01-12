@@ -150,9 +150,9 @@ export default function JobDetail() {
         Quay lại
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3">
           {/* Header Card */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-start justify-between gap-4 mb-4">
@@ -264,7 +264,7 @@ export default function JobDetail() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Employer Card */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Bên thuê</h2>

@@ -94,7 +94,7 @@ export default function BlogGrid() {
       {/* Blog Grid - Mobile: 1 col, Tablet: 2 cols, Desktop: 4 cols */}
       
       {/* Mobile Layout - Simple Stack */}
-      <div className="grid grid-cols-1 gap-4 md:hidden">
+      <div className="grid grid-cols-1 gap-2 md:hidden">
         {blogArticles.map((article, idx) => (
           <div key={article.id} className={idx === 0 ? "h-[300px]" : "h-[200px]"}>
             <ArticleCard article={article} size={idx === 0 ? "large" : "medium"} />
@@ -103,7 +103,7 @@ export default function BlogGrid() {
       </div>
 
       {/* Tablet Layout - 2 cols */}
-      <div className="hidden md:grid lg:hidden grid-cols-2 gap-4">
+      <div className="hidden md:grid lg:hidden grid-cols-2 gap-2">
         {blogArticles.map((article, idx) => (
           <div key={article.id} className={idx === 0 ? "col-span-2 h-[350px]" : "h-[200px]"}>
             <ArticleCard article={article} size={idx === 0 ? "large" : "medium"} />
@@ -113,7 +113,7 @@ export default function BlogGrid() {
 
       {/* Desktop Layout - 4 cols with complex grid */}
       <div 
-        className="hidden lg:grid grid-cols-4 gap-4"
+        className="hidden lg:grid grid-cols-4 gap-2"
         style={{ gridAutoRows: "60px" }}
       >
         {/* Article 1 - Large featured (2 cols, 6 rows) */}

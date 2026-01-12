@@ -204,13 +204,13 @@ export default function EditJobForm() {
         <p className="text-gray-500 mt-1">Mã công việc: #{jobId}</p>
       </div>
 
-      <fieldset disabled={isSubmitting} className="space-y-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <fieldset disabled={isSubmitting} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Basic Info */}
           <div className={`bg-white rounded-lg shadow p-6 ${isSubmitting ? "opacity-60" : ""}`}>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Thông tin cơ bản</h2>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tiêu đề công việc <span className="text-red-500">*</span>
@@ -316,7 +316,7 @@ export default function EditJobForm() {
           <div className={`bg-white rounded-lg shadow p-6 ${isSubmitting ? "opacity-60" : ""}`}>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Chi tiết công việc</h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Độ phức tạp</label>
                 <select

@@ -175,7 +175,7 @@ export default function PostedJobsList() {
         </div>
       ) : (
         /* Job List */
-        <div className="space-y-4">
+        <div className="space-y-3">
           {jobs.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />

@@ -209,7 +209,7 @@ export default function JobsList() {
 
           {/* Jobs Grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {Array.from({ length: 9 }).map((_, idx) => (
                 <div key={idx} className="bg-white rounded-xl border border-gray-200 p-4">
                   <div className="flex gap-3">
@@ -247,7 +247,7 @@ export default function JobsList() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {jobs.map((job) => (
                   <JobCardWithPreview
                     key={job.id}
