@@ -8,16 +8,24 @@ import ProfileCard from "@/components/profile/ProfileCard";
 import ProfileAbout from "@/components/profile/ProfileAbout";
 import ProfileSkills from "@/components/profile/ProfileSkills";
 import { useAuth } from "@/context/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isAuthenticated, isHydrated } = useAuth();
+  const { isAuthenticated, isHydrated } = useAuth();
+  const { user, isLoading, updateProfile, fetchProfile } = useProfile();
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
       router.push("/login");
     }
   }, [isHydrated, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) {
+      fetchProfile();
+    }
+  }, [isHydrated, isAuthenticated, fetchProfile]);
 
   if (!isHydrated) {
     return (
@@ -37,9 +45,9 @@ export default function ProfilePage() {
 
       <main className="flex-1 py-6">
         <div className="max-w-4xl mx-auto px-4 space-y-4">
-          <ProfileCard user={user} />
-          <ProfileAbout bio={user.bio} />
-          <ProfileSkills skills={user.skills} />
+          <ProfileCard user={user} onUpdate={updateProfile} isLoading={isLoading} />
+          <ProfileAbout bio={user.bio} onUpdate={updateProfile} isLoading={isLoading} />
+          <ProfileSkills skills={user.skills} onUpdate={updateProfile} isLoading={isLoading} />
         </div>
       </main>
 
