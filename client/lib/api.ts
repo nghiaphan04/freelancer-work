@@ -49,6 +49,9 @@ export const api = {
   updateProfile: (data: Partial<User>) =>
     request<User>("/api/users/me", { method: "PUT", body: JSON.stringify(data) }),
 
+  // Roles
+  becomeEmployer: () => request<User>("/api/users/me/become-employer", { method: "POST" }),
+
   // Jobs - Posted (for Employer)
   getPostedJobs: (status?: string) =>
     request<Job[]>(`/api/jobs/posted${status ? `?status=${status}` : ""}`),

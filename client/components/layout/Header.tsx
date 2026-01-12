@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "sonner";
 import Icon from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -29,7 +31,21 @@ export default function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileNav, setExpandedMobileNav] = useState<string | null>(null);
+  const [isBecomingEmployer, setIsBecomingEmployer] = useState(false);
   const { user, isAuthenticated, isHydrated, logout } = useAuth();
+  const { becomeEmployer } = useProfile();
+
+  const handleBecomeEmployer = async () => {
+    setIsBecomingEmployer(true);
+    const success = await becomeEmployer();
+    setIsBecomingEmployer(false);
+    if (success) {
+      toast.success("Đăng ký thành công! Bạn có thể đăng việc.");
+      setActiveDropdown(null);
+    } else {
+      toast.error("Đăng ký thất bại. Vui lòng thử lại.");
+    }
+  };
 
   return (
     <header className="bg-white text-gray-800 border-b border-gray-200 w-full sticky top-0 z-[9999]">
@@ -343,7 +359,7 @@ export default function Header() {
                     />
                   </button>
                   {activeDropdown === "my-jobs" && (
-                    <div className="absolute top-full left-0 z-[9999] w-[220px]">
+                    <div className="absolute top-full left-0 z-[9999] w-[280px]">
                       <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] py-2">
                         {user?.roles?.includes("ROLE_FREELANCER") && (
                           <Link href="/my-accepted-jobs" className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group">
@@ -351,11 +367,26 @@ export default function Header() {
                             <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">Việc đã nhận</span>
                           </Link>
                         )}
-                        {user?.roles?.includes("ROLE_EMPLOYER") && (
+                        {user?.roles?.includes("ROLE_EMPLOYER") ? (
                           <Link href="/my-posted-jobs" className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group">
                             <Icon name="post_add" size={20} className="text-gray-500 group-hover:text-[#00b14f]" />
                             <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">Việc đã đăng</span>
                           </Link>
+                        ) : (
+                          <button 
+                            onClick={handleBecomeEmployer}
+                            disabled={isBecomingEmployer}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors group w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isBecomingEmployer ? (
+                              <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Icon name="add_business" size={20} className="text-gray-500 group-hover:text-[#00b14f]" />
+                            )}
+                            <span className="text-sm text-gray-700 group-hover:text-[#00b14f]">
+                              {isBecomingEmployer ? "Đang xử lý..." : "Đăng ký trở thành bên thuê"}
+                            </span>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -607,7 +638,7 @@ export default function Header() {
                       <span>Việc đã nhận</span>
                     </Link>
                   )}
-                  {user.roles?.includes("ROLE_EMPLOYER") && (
+                  {user.roles?.includes("ROLE_EMPLOYER") ? (
                     <Link
                       href="/my-posted-jobs"
                       onClick={() => setMobileMenuOpen(false)}
@@ -616,6 +647,19 @@ export default function Header() {
                       <Icon name="post_add" size={20} className="text-gray-400" />
                       <span>Việc đã đăng</span>
                     </Link>
+                  ) : (
+                    <button
+                      onClick={async () => { await handleBecomeEmployer(); setMobileMenuOpen(false); }}
+                      disabled={isBecomingEmployer}
+                      className="flex items-center gap-3 px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isBecomingEmployer ? (
+                        <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Icon name="add_business" size={20} className="text-gray-400" />
+                      )}
+                      <span>{isBecomingEmployer ? "Đang xử lý..." : "Đăng ký trở thành bên thuê"}</span>
+                    </button>
                   )}
                   <Link
                     href="/settings"

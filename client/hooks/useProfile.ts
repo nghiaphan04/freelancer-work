@@ -45,11 +45,32 @@ export function useProfile() {
     }
   }, [setUser]);
 
+  const becomeEmployer = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.becomeEmployer();
+      if (response.status === "SUCCESS" && response.data) {
+        setUser(response.data);
+        saveAuthData({ user: response.data });
+        return true;
+      }
+      setError(response.message || "Đăng ký thất bại");
+      return false;
+    } catch {
+      setError("Không thể đăng ký");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [setUser]);
+
   return {
     user,
     isLoading,
     error,
     fetchProfile,
     updateProfile,
+    becomeEmployer,
   };
 }
