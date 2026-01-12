@@ -18,8 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  findWorkCategories,
-  findWorkActions,
   toolsMenu,
   careerMenuLeft,
   careerMenuArticles,
@@ -106,77 +104,33 @@ export default function Header() {
                 <div
                   key={index}
                   className="relative group"
-                  onMouseEnter={() => setActiveDropdown(item.dropdownId)}
+                  onMouseEnter={() => item.hasDropdown && item.dropdownId && setActiveDropdown(item.dropdownId)}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  <button
-                    className="flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap text-gray-700 hover:text-[#00b14f] group/nav"
-                  >
-                    {item.label}
-                    {item.hasDropdown && (
-                      <Icon 
-                        name={activeDropdown === item.dropdownId ? "expand_less" : "expand_more"} 
-                        size={16} 
-                        className="text-gray-400 group-hover/nav:text-[#00b14f]" 
-                      />
-                    )}
-                  </button>
-
-                  {/* Tìm việc Dropdown */}
-                  {item.dropdownId === "find-work" && activeDropdown === "find-work" && (
-                    <div className="absolute top-full left-0 z-[9999] w-[900px]">
-                      <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] p-6">
-                        {/* Grid 4 columns - row 1 */}
-                        <div className="grid grid-cols-4 gap-6">
-                          {findWorkCategories.slice(0, 4).map((category, idx) => (
-                            <div key={idx}>
-                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
-                              <ul className="space-y-2">
-                                {category.items.map((jobItem, iIdx) => (
-                                  <li key={iIdx}>
-                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
-                                      {jobItem}
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Grid 4 columns - row 2 */}
-                        <div className="grid grid-cols-4 gap-6 mt-6 pt-6 border-t border-gray-100">
-                          {findWorkCategories.slice(4, 7).map((category, idx) => (
-                            <div key={idx}>
-                              <h4 className="font-semibold text-gray-900 mb-3">{category.title}</h4>
-                              <ul className="space-y-2">
-                                {category.items.map((jobItem, iIdx) => (
-                                  <li key={iIdx}>
-                                    <a href="#" className="text-sm text-gray-600 hover:text-[#00b14f] transition-colors">
-                                      {jobItem}
-                                    </a>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                          
-                          {/* Actions column */}
-                          <div className="flex flex-col justify-start gap-3">
-                            {findWorkActions.map((action, aIdx) => (
-                              <a
-                                key={aIdx}
-                                href={action.href}
-                                className="inline-flex items-center gap-1 text-sm font-medium text-[#00b14f] hover:underline"
-                              >
-                                {action.label}
-                                <Icon name={action.icon} size={16} />
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap group/nav ${
+                        isActive(item.href) || isActivePrefix(item.href)
+                          ? "text-[#00b14f]"
+                          : "text-gray-700 hover:text-[#00b14f]"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <button
+                      className="flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap text-gray-700 hover:text-[#00b14f] group/nav"
+                    >
+                      {item.label}
+                      {item.hasDropdown && (
+                        <Icon 
+                          name={activeDropdown === item.dropdownId ? "expand_less" : "expand_more"} 
+                          size={16} 
+                          className="text-gray-400 group-hover/nav:text-[#00b14f]" 
+                        />
+                      )}
+                    </button>
                   )}
 
                   {/* Công cụ Dropdown */}
@@ -459,17 +413,32 @@ export default function Header() {
             <nav className="py-2">
               {navItems.map((item, index) => (
                 <div key={index}>
-                  <button
-                        onClick={() => setExpandedMobileNav(expandedMobileNav === item.dropdownId ? null : item.dropdownId)}
-                        className="flex items-center justify-between w-full px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
-                      >
-                        <span className="font-medium">{item.label}</span>
-                        <Icon 
-                          name={expandedMobileNav === item.dropdownId ? "expand_less" : "expand_more"} 
-                          size={20} 
-                          className="text-gray-400" 
-                        />
-                      </button>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between w-full px-5 py-3.5 transition-colors ${
+                        isActive(item.href) || isActivePrefix(item.href)
+                          ? "bg-[#00b14f]/5 text-[#00b14f]"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                      }`}
+                    >
+                      <span className="font-medium">{item.label}</span>
+                      <Icon name="chevron_right" size={20} className="text-gray-400" />
+                    </Link>
+                  ) : item.dropdownId ? (
+                    <button
+                      onClick={() => setExpandedMobileNav(expandedMobileNav === item.dropdownId ? null : item.dropdownId!)}
+                      className="flex items-center justify-between w-full px-5 py-3.5 text-gray-700 hover:bg-gray-50 hover:text-[#00b14f] transition-colors"
+                    >
+                      <span className="font-medium">{item.label}</span>
+                      <Icon 
+                        name={expandedMobileNav === item.dropdownId ? "expand_less" : "expand_more"} 
+                        size={20} 
+                        className="text-gray-400" 
+                      />
+                    </button>
+                  ) : null}
                       
                       {/* Công cụ Sub-items */}
                       {item.dropdownId === "tools" && expandedMobileNav === "tools" && (
@@ -507,39 +476,6 @@ export default function Header() {
                         </div>
                       )}
 
-                      {/* Tìm việc Sub-items */}
-                      {item.dropdownId === "find-work" && expandedMobileNav === "find-work" && (
-                        <div className="bg-gray-50 py-2 max-h-[60vh] overflow-y-auto">
-                          {findWorkCategories.map((category, cIdx) => (
-                            <div key={cIdx} className={cIdx > 0 ? "mt-3 pt-3 border-t border-gray-200" : ""}>
-                              <p className="px-7 py-1 text-xs font-semibold text-gray-900">{category.title}</p>
-                              {category.items.map((jobItem, jIdx) => (
-                                <Link
-                                  key={jIdx}
-                                  href="#"
-                                  onClick={() => setMobileMenuOpen(false)}
-                                  className="block px-7 py-2 text-sm text-gray-600 hover:text-[#00b14f]"
-                                >
-                                  {jobItem}
-                                </Link>
-                              ))}
-                            </div>
-                          ))}
-                          <div className="mt-3 pt-3 border-t border-gray-200 px-7">
-                            {findWorkActions.map((action, aIdx) => (
-                              <Link
-                                key={aIdx}
-                                href={action.href}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="flex items-center gap-1 py-2 text-sm font-medium text-[#00b14f]"
-                              >
-                                {action.label}
-                                <Icon name={action.icon} size={16} />
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                  )}
                 </div>
               ))}
             </nav>
