@@ -107,6 +107,10 @@ export const api = {
   closeJob: (id: number) =>
     request<Job>(`/api/jobs/${id}/close`, { method: "PATCH" }),
 
+  // Chuyển đổi trạng thái (DRAFT <-> OPEN)
+  toggleJobStatus: (id: number) =>
+    request<Job>(`/api/jobs/${id}/toggle-status`, { method: "PATCH" }),
+
   // Xóa job
   deleteJob: (id: number) =>
     request<void>(`/api/jobs/${id}`, { method: "DELETE" }),

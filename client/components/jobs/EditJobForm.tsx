@@ -1,44 +1,93 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
-  CreateJobRequest,
+  UpdateJobRequest,
+  Job,
   JobComplexity,
   JobDuration,
   WorkType,
   JOB_COMPLEXITY_CONFIG,
   JOB_DURATION_CONFIG,
   WORK_TYPE_CONFIG,
+  JOB_STATUS_CONFIG,
 } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function PostJobForm() {
+export default function EditJobForm() {
+  const params = useParams();
   const router = useRouter();
+  const jobId = Number(params.id);
+
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [job, setJob] = useState<Job | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [skillInput, setSkillInput] = useState("");
 
-  const [formData, setFormData] = useState<CreateJobRequest>({
-    title: "Thiết kế website bán hàng thời trang",
-    description: "Cần tìm freelancer thiết kế website bán hàng thời trang với giao diện hiện đại, responsive trên mọi thiết bị. Website cần tích hợp giỏ hàng, thanh toán online và quản lý đơn hàng.",
-    context: "Chúng tôi là startup thời trang mới thành lập, cần một website chuyên nghiệp để bán hàng online. Hiện tại đang bán qua các kênh social media nhưng muốn có website riêng.",
-    requirements: "- Có kinh nghiệm thiết kế website e-commerce\n- Thành thạo React/Next.js và TailwindCSS\n- Hiểu về UX/UI cho e-commerce\n- Có portfolio các dự án tương tự",
-    deliverables: "- Source code hoàn chỉnh\n- Hướng dẫn deploy và sử dụng\n- Hỗ trợ fix bug trong 30 ngày",
-    skills: ["React", "Next.js", "TailwindCSS", "TypeScript", "UI/UX"],
+  const [formData, setFormData] = useState<UpdateJobRequest>({
+    title: "",
+    description: "",
+    context: "",
+    requirements: "",
+    deliverables: "",
+    skills: [],
     complexity: "INTERMEDIATE",
     duration: "SHORT_TERM",
     workType: "PART_TIME",
-    budget: 15000000,
+    budget: undefined,
     currency: "VND",
-    applicationDeadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-    expectedStartDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    applicationDeadline: "",
+    expectedStartDate: "",
   });
+
+  useEffect(() => {
+    const fetchJob = async () => {
+      try {
+        const response = await api.getJobById(jobId);
+        if (response.status === "SUCCESS" && response.data) {
+          const jobData = response.data;
+          setJob(jobData);
+          setFormData({
+            title: jobData.title,
+            description: jobData.description,
+            context: jobData.context || "",
+            requirements: jobData.requirements || "",
+            deliverables: jobData.deliverables || "",
+            skills: jobData.skills || [],
+            complexity: jobData.complexity,
+            duration: jobData.duration,
+            workType: jobData.workType,
+            budget: jobData.budget,
+            currency: jobData.currency,
+            applicationDeadline: jobData.applicationDeadline 
+              ? new Date(jobData.applicationDeadline).toISOString().slice(0, 16) 
+              : "",
+            expectedStartDate: jobData.expectedStartDate 
+              ? new Date(jobData.expectedStartDate).toISOString().slice(0, 16) 
+              : "",
+          });
+        } else {
+          setError(response.message || "Không tìm thấy công việc");
+        }
+      } catch {
+        setError("Đã có lỗi xảy ra");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (jobId) {
+      fetchJob();
+    }
+  }, [jobId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -71,18 +120,18 @@ export default function PostJobForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim()) {
+    if (!formData.title?.trim()) {
       toast.error("Vui lòng nhập tiêu đề công việc");
       return;
     }
-    if (!formData.description.trim()) {
+    if (!formData.description?.trim()) {
       toast.error("Vui lòng nhập mô tả công việc");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await api.createJob({
+      const response = await api.updateJob(jobId, {
         ...formData,
         applicationDeadline: formData.applicationDeadline
           ? new Date(formData.applicationDeadline).toISOString()
@@ -92,11 +141,11 @@ export default function PostJobForm() {
           : undefined,
       });
 
-      if (response.status === "SUCCESS" && response.data) {
-        toast.success("Tạo công việc thành công! Vui lòng thanh toán để đăng tin.");
-        router.push(`/jobs/${response.data.id}/payment`);
+      if (response.status === "SUCCESS") {
+        toast.success("Cập nhật công việc thành công!");
+        router.push("/my-posted-jobs");
       } else {
-        toast.error(response.message || "Không thể tạo công việc");
+        toast.error(response.message || "Không thể cập nhật công việc");
       }
     } catch {
       toast.error("Đã có lỗi xảy ra");
@@ -104,6 +153,36 @@ export default function PostJobForm() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-3xl mx-auto px-4">
+        <div className="bg-white rounded-lg shadow p-8 flex flex-col items-center justify-center">
+          <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
+          <p className="mt-4 text-gray-600">Đang tải thông tin...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !job) {
+    return (
+      <div className="max-w-md mx-auto px-4">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Icon name="error" size={32} className="text-red-500" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Lỗi</h1>
+          <p className="text-gray-600 mb-6">{error || "Không tìm thấy công việc"}</p>
+          <Link href="/my-posted-jobs">
+            <Button variant="outline" className="w-full">
+              Quay lại
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4">
@@ -116,8 +195,13 @@ export default function PostJobForm() {
           <Icon name="arrow_back" size={20} />
           Quay lại
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Đăng việc mới</h1>
-        <p className="text-gray-500 mt-1">Điền thông tin để tìm kiếm freelancer phù hợp</p>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900">Chỉnh sửa công việc</h1>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${JOB_STATUS_CONFIG[job.status]?.color}`}>
+            {JOB_STATUS_CONFIG[job.status]?.label}
+          </span>
+        </div>
+        <p className="text-gray-500 mt-1">Mã công việc: #{jobId}</p>
       </div>
 
       <fieldset disabled={isSubmitting} className="space-y-4">
@@ -138,7 +222,7 @@ export default function PostJobForm() {
                   placeholder="VD: Thiết kế website bán hàng"
                   maxLength={200}
                 />
-                <p className="text-xs text-gray-400 mt-1">{formData.title.length}/200 ký tự</p>
+                <p className="text-xs text-gray-400 mt-1">{(formData.title || "").length}/200 ký tự</p>
               </div>
 
               <div>
@@ -330,12 +414,12 @@ export default function PostJobForm() {
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Đang tạo...
+                  Đang lưu...
                 </>
               ) : (
                 <>
-                  <Icon name="add" size={20} />
-                  Tạo công việc
+                  <Icon name="save" size={20} />
+                  Lưu thay đổi
                 </>
               )}
             </Button>

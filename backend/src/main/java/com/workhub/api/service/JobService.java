@@ -163,6 +163,37 @@ public class JobService {
     }
 
     @Transactional
+    public ApiResponse<JobResponse> toggleJobStatus(Long jobId, Long userId) {
+        Job job = getById(jobId);
+
+        if (!job.isOwnedBy(userId)) {
+            throw new UnauthorizedAccessException("Bạn không có quyền thay đổi trạng thái job này");
+        }
+
+        // Kiểm tra đã thanh toán chưa
+        Payment payment = paymentRepository.findByJobId(jobId).orElse(null);
+        if (payment == null || payment.getStatus() != EPaymentStatus.PAID) {
+            throw new IllegalStateException("Vui lòng thanh toán trước khi đăng tin");
+        }
+
+        // Toggle giữa DRAFT và OPEN
+        if (job.getStatus() == EJobStatus.DRAFT) {
+            job.setStatus(EJobStatus.OPEN);
+        } else if (job.getStatus() == EJobStatus.OPEN) {
+            job.setStatus(EJobStatus.DRAFT);
+        } else {
+            throw new IllegalStateException("Chỉ có thể chuyển đổi giữa trạng thái Nháp và Công khai");
+        }
+
+        Job updatedJob = jobRepository.save(job);
+        String message = updatedJob.getStatus() == EJobStatus.OPEN 
+                ? "Đã đăng tin công khai" 
+                : "Đã chuyển về bản nháp";
+        
+        return ApiResponse.success(message, buildJobResponse(updatedJob));
+    }
+
+    @Transactional
     public ApiResponse<Void> deleteJob(Long jobId, Long userId) {
         Job job = getById(jobId);
         User user = userService.getById(userId);

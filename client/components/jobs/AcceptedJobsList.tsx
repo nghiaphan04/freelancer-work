@@ -168,11 +168,7 @@ export default function AcceptedJobsList() {
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">Không có công việc nào</p>
-              <Link href="/jobs">
-                <Button className="mt-4 bg-[#00b14f] hover:bg-[#009643]">
-                  Tìm việc ngay
-                </Button>
-              </Link>
+
             </div>
           ) : (
             jobs.map((job) => (

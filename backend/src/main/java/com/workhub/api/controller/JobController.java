@@ -120,6 +120,18 @@ public class JobController {
     }
 
     /**
+     * Chuyển đổi trạng thái job (DRAFT <-> OPEN)
+     * Yêu cầu: Job đã được thanh toán
+     */
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<ApiResponse<JobResponse>> toggleJobStatus(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        return ResponseEntity.ok(jobService.toggleJobStatus(id, userDetails.getId()));
+    }
+
+    /**
      * Xóa job
      */
     @DeleteMapping("/{id}")
