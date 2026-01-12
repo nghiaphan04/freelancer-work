@@ -64,6 +64,15 @@ export default function AcceptedJobsList() {
           <h1 className="text-2xl font-bold text-gray-900">Quản lý công việc đã nhận</h1>
           <p className="text-gray-500 mt-1">Theo dõi và cập nhật tiến độ các công việc của bạn</p>
         </div>
+        <Link href="/jobs">
+          <Button 
+            variant="outline" 
+            className="border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f] hover:text-white w-full sm:w-auto"
+          >
+            <Icon name="search" size={20} />
+            Tìm việc mới
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Summary */}
