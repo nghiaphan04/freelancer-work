@@ -90,6 +90,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/{id}").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/search").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/by-skills").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/payments/callback").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );

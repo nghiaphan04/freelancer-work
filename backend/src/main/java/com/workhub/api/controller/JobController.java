@@ -25,7 +25,7 @@ public class JobController {
     private final JobService jobService;
 
     /**
-     * Tạo job mới (lưu nháp hoặc đăng luôn)
+     * Tạo job mới (DRAFT - cần thanh toán để đăng tin)
      */
     @PostMapping
     public ResponseEntity<ApiResponse<JobResponse>> createJob(
@@ -106,17 +106,6 @@ public class JobController {
             @Valid @RequestBody UpdateJobRequest req) {
 
         return ResponseEntity.ok(jobService.updateJob(id, userDetails.getId(), req));
-    }
-
-    /**
-     * Đăng tin (chuyển từ DRAFT sang OPEN)
-     */
-    @PatchMapping("/{id}/publish")
-    public ResponseEntity<ApiResponse<JobResponse>> publishJob(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-
-        return ResponseEntity.ok(jobService.publishJob(id, userDetails.getId()));
     }
 
     /**

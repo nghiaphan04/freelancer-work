@@ -48,17 +48,9 @@ public class JobService {
                 .employer(employer)
                 .build();
 
-        if (Boolean.TRUE.equals(req.getPublishNow())) {
-            job.publish();
-        }
-
         Job savedJob = jobRepository.save(job);
 
-        String message = Boolean.TRUE.equals(req.getPublishNow()) 
-                ? "Đăng tin tuyển dụng thành công" 
-                : "Lưu nháp thành công";
-
-        return ApiResponse.success(message, buildJobResponse(savedJob));
+        return ApiResponse.success("Tạo job thành công. Vui lòng thanh toán để đăng tin.", buildJobResponse(savedJob));
     }
 
     public ApiResponse<JobResponse> getJobById(Long jobId) {
@@ -143,19 +135,6 @@ public class JobService {
 
         Job updatedJob = jobRepository.save(job);
         return ApiResponse.success("Cập nhật job thành công", buildJobResponse(updatedJob));
-    }
-
-    @Transactional
-    public ApiResponse<JobResponse> publishJob(Long jobId, Long userId) {
-        Job job = getById(jobId);
-
-        if (!job.isOwnedBy(userId)) {
-            throw new UnauthorizedAccessException("Bạn không có quyền đăng job này");
-        }
-
-        job.publish();
-        Job updatedJob = jobRepository.save(job);
-        return ApiResponse.success("Đăng tin tuyển dụng thành công", buildJobResponse(updatedJob));
     }
 
     @Transactional

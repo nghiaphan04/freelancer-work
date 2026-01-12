@@ -49,6 +49,4 @@ public class CreateJobRequest {
     private LocalDateTime applicationDeadline;
 
     private LocalDateTime expectedStartDate;
-
-    private Boolean publishNow;
 }
