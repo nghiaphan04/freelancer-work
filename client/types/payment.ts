@@ -8,6 +8,8 @@ export interface Payment {
   zpTransId?: number;
   jobId: number;
   jobTitle: string;
+  employerId?: number;
+  employerName?: string;
   escrowAmount: number;
   feeAmount: number;
   feePercent: number;
@@ -24,6 +26,22 @@ export interface Payment {
   refundAmount?: number;
   refundedAt?: string;
   refundReason?: string;
+}
+
+// Payment statistics for admin
+export interface PaymentStatistics {
+  totalRevenue: number;
+  totalEscrowAmount: number;
+  totalFeeAmount: number;
+  totalTransactions: number;
+  paidTransactions: number;
+  pendingTransactions: number;
+  cancelledTransactions: number;
+  expiredTransactions: number;
+  todayRevenue: number;
+  todayTransactions: number;
+  monthRevenue: number;
+  monthTransactions: number;
 }
 
 // UI Config

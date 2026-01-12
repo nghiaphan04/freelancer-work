@@ -43,10 +43,16 @@ export default function LoginForm() {
     try {
       const response = await api.login(formData);
       if (response.status === "SUCCESS") {
-        saveAuthData({ user: (response.data as { user: User }).user });
-        setUser((response.data as unknown as { user: User }).user);
+        const userData = (response.data as { user: User }).user;
+        saveAuthData({ user: userData });
+        setUser(userData);
         toast.success("Đăng nhập thành công!");
-        router.push("/");
+        
+        if (userData.roles?.includes("ROLE_ADMIN")) {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
       } else {
         if (response.message?.includes("chưa xác thực")) {
           toast.error("Email chưa được xác thực");

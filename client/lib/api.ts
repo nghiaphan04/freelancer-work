@@ -1,6 +1,6 @@
 import { User } from "@/types/user";
 import { Job, Page, CreateJobRequest, UpdateJobRequest, JobStatus } from "@/types/job";
-import { Payment, PaymentStatus } from "@/types/payment";
+import { Payment, PaymentStatus, PaymentStatistics } from "@/types/payment";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -136,4 +136,42 @@ export const api = {
     if (params?.size !== undefined) query.append("size", params.size.toString());
     return request<Page<Payment>>(`/api/payments/my-payments${query.toString() ? `?${query}` : ""}`);
   },
+
+  // ADMIN 
+
+  // Admin - Users
+  adminGetAllUsers: (params?: { page?: number; size?: number; sortBy?: string; sortDir?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    if (params?.sortBy) query.append("sortBy", params.sortBy);
+    if (params?.sortDir) query.append("sortDir", params.sortDir);
+    return request<Page<User>>(`/api/users${query.toString() ? `?${query}` : ""}`);
+  },
+
+  adminGetUserById: (id: number) => request<User>(`/api/users/${id}`),
+
+  adminUpdateUserStatus: (id: number, enabled: boolean) =>
+    request<User>(`/api/users/${id}/status`, { method: "PUT", body: JSON.stringify({ enabled }) }),
+
+  // Admin - Payments
+  adminGetPaymentStatistics: () =>
+    request<PaymentStatistics>("/api/admin/payments/statistics"),
+
+  adminGetAllPayments: (params?: { status?: PaymentStatus; page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Payment>>(`/api/admin/payments${query.toString() ? `?${query}` : ""}`);
+  },
+
+  adminSearchPayments: (params: { keyword: string; page?: number; size?: number }) => {
+    const query = new URLSearchParams({ keyword: params.keyword });
+    if (params.page !== undefined) query.append("page", params.page.toString());
+    if (params.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Payment>>(`/api/admin/payments/search?${query}`);
+  },
+
+  adminGetRecentPayments: () => request<Payment[]>("/api/admin/payments/recent"),
 };
