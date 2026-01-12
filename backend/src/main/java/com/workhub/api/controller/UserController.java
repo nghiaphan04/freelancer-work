@@ -91,7 +91,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(message, buildUserResponse(user)));
     }
 
+    @PostMapping("/me/become-employer")
+    public ResponseEntity<ApiResponse<AuthResponse.UserResponse>> becomeEmployer(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
+        User user = userService.addEmployerRole(userDetails.getId());
+        return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công! Bạn có thể đăng việc.", buildUserResponse(user)));
+    }
 
     private AuthResponse.UserResponse buildUserResponse(User user) {
         List<String> roles = user.getRoles().stream()

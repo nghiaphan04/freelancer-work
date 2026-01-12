@@ -2,8 +2,11 @@ package com.workhub.api.service;
 
 import com.workhub.api.dto.request.ChangePasswordRequest;
 import com.workhub.api.dto.request.UpdateProfileRequest;
+import com.workhub.api.entity.ERole;
+import com.workhub.api.entity.Role;
 import com.workhub.api.entity.User;
 import com.workhub.api.exception.UserNotFoundException;
+import com.workhub.api.repository.RoleRepository;
 import com.workhub.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +22,7 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     public Optional<User> findByEmail(String email) {
@@ -90,6 +94,21 @@ public class UserService {
         } else {
             user.disable();
         }
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User addEmployerRole(Long userId) {
+        User user = getById(userId);
+        
+        if (user.hasRole(ERole.ROLE_EMPLOYER)) {
+            throw new IllegalArgumentException("Bạn đã có quyền đăng việc");
+        }
+        
+        Role employerRole = roleRepository.findByName(ERole.ROLE_EMPLOYER)
+                .orElseThrow(() -> new RuntimeException("Role EMPLOYER không tồn tại"));
+        
+        user.assignRole(employerRole);
         return userRepository.save(user);
     }
 }

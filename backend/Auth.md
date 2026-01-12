@@ -1050,6 +1050,7 @@ import { GoogleLogin } from "@react-oauth/google";
 | `GET` | `/api/users/me` | Lấy thông tin user hiện tại | ✅ | ALL |
 | `PUT` | `/api/users/me` | Cập nhật profile | ✅ | ALL |
 | `PUT` | `/api/users/me/password` | Đổi mật khẩu | ✅ | ALL |
+| `POST` | `/api/users/me/become-employer` | Đăng ký quyền đăng việc | ✅ | ALL |
 | `GET` | `/api/users` | Lấy danh sách users | ✅ | ADMIN |
 | `GET` | `/api/users/{id}` | Lấy user theo ID | ✅ | ADMIN |
 | `PUT` | `/api/users/{id}/status` | Enable/Disable user | ✅ | ADMIN |
@@ -1299,6 +1300,70 @@ Request + Cookie accessToken
    │
    ▼
    RESPONSE: 200 OK hoặc 400 Bad Request (nếu mật khẩu sai)
+
+---
+
+### /api/users/me/become-employer
+POST /api/users/me/become-employer - Đăng ký quyền đăng việc (EMPLOYER)
+Auth: Cookie accessToken
+
+```
+Request + Cookie accessToken
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/me/become-employer")                                  │
+│ public ResponseEntity<ApiResponse<UserResponse>> becomeEmployer(     │
+│     @AuthenticationPrincipal UserDetailsImpl userDetails) {          │
+│                                                                      │
+│     User user = userService.addEmployerRole(userDetails.getId());    │
+│     return ResponseEntity.ok(ApiResponse.success(                    │
+│         "Đăng ký thành công! Bạn có thể đăng việc.",                 │
+│         buildUserResponse(user)));                                   │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/UserService.java                                       │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public User addEmployerRole(Long userId) {                           │
+│     User user = getById(userId);                                     │
+│                                                                      │
+│     if (user.hasRole(ERole.ROLE_EMPLOYER)) {                         │
+│         throw new IllegalArgumentException("Bạn đã có quyền...");    │
+│     }                                                                │
+│                                                                      │
+│     Role employerRole = roleRepository                               │
+│         .findByName(ERole.ROLE_EMPLOYER)                             │
+│         .orElseThrow(...);                                           │
+│                                                                      │
+│     user.assignRole(employerRole);                                   │
+│     return userRepository.save(user);                                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+RESPONSE: 200 OK
+{
+    "status": "SUCCESS",
+    "message": "Đăng ký thành công! Bạn có thể đăng việc.",
+    "data": {
+        "id": 1,
+        "email": "user@example.com",
+        "roles": ["ROLE_FREELANCER", "ROLE_EMPLOYER"]  ◄── Có thêm EMPLOYER
+    }
+}
+
+ERRORS:
+- 400: Bạn đã có quyền đăng việc (đã là EMPLOYER)
+```
+
+---
+
 ### /api/users` | Lấy danh sách users (admin)
 Request + Cookie accessToken (ADMIN)
    │
