@@ -160,31 +160,31 @@ export const toolsMenu = {
   title: "CÔNG CỤ",
   items: [
     [
-      { icon: "calculate", label: "Tính lương Gross - Net", href: "/tools/salary" },
-      { icon: "elderly", label: "Tính bảo hiểm xã hội một lần", href: "/tools/social-insurance" },
+      { icon: "calculate", label: "Tính lương Gross - Net", href: "/coming-soon" },
+      { icon: "elderly", label: "Tính bảo hiểm xã hội một lần", href: "/coming-soon" },
     ],
     [
-      { icon: "receipt_long", label: "Tính thuế thu nhập cá nhân", href: "/tools/tax" },
-      { icon: "savings", label: "Lập kế hoạch tiết kiệm", href: "/tools/savings" },
+      { icon: "receipt_long", label: "Tính thuế thu nhập cá nhân", href: "/coming-soon" },
+      { icon: "savings", label: "Lập kế hoạch tiết kiệm", href: "/coming-soon" },
     ],
     [
-      { icon: "percent", label: "Tính lãi suất kép", href: "/tools/compound-interest" },
-      { icon: "smartphone", label: "Mobile App Freelancer", href: "/tools/mobile-app" },
+      { icon: "percent", label: "Tính lãi suất kép", href: "/coming-soon" },
+      { icon: "smartphone", label: "Mobile App Freelancer", href: "/coming-soon" },
     ],
     [
-      { icon: "account_balance", label: "Tính bảo hiểm thất nghiệp", href: "/tools/unemployment" },
+      { icon: "account_balance", label: "Tính bảo hiểm thất nghiệp", href: "/coming-soon" },
       null,
     ],
   ]
 };
 
 export const careerMenuLeft = [
-  { icon: "explore", label: "Định hướng nghề nghiệp", href: "/career/orientation" },
-  { icon: "lightbulb", label: "Bí kíp tìm việc", href: "/career/job-tips" },
-  { icon: "payments", label: "Chế độ lương thưởng", href: "/career/salary" },
-  { icon: "school", label: "Kiến thức chuyên ngành", href: "/career/knowledge" },
-  { icon: "work_outline", label: "Hành trang nghề nghiệp", href: "/career/preparation" },
-  { icon: "trending_up", label: "Thị trường & xu hướng tuyển dụng", href: "/career/trends" },
+  { icon: "explore", label: "Định hướng nghề nghiệp", href: "/blog" },
+  { icon: "lightbulb", label: "Bí kíp tìm việc", href: "/blog" },
+  { icon: "payments", label: "Chế độ lương thưởng", href: "/blog" },
+  { icon: "school", label: "Kiến thức chuyên ngành", href: "/blog" },
+  { icon: "work_outline", label: "Hành trang nghề nghiệp", href: "/blog" },
+  { icon: "trending_up", label: "Thị trường & xu hướng tuyển dụng", href: "/blog" },
 ];
 
 export const careerMenuArticles = [
@@ -192,17 +192,18 @@ export const careerMenuArticles = [
     image: "/logo.svg",
     title: "Ngành Marketing là gì? Cơ hội việc làm mới nhất",
     desc: "Marketing là một trong những ngành đóng vai trò quan trọng trong hầu hết các doanh nghiệp...",
-    href: "/career/marketing"
+    href: "/blog"
   },
   {
     image: "/logo.svg",
     title: "Tài mẫu sơ yếu lý lịch xin việc chuẩn nhất 2026",
     desc: "Sơ yếu lý lịch là một trong những giấy tờ quan trọng nhất khi chuẩn bị hồ sơ xin việc, bởi nó...",
-    href: "/career/cv-template"
+    href: "/blog"
   },
 ];
 
 export const navItems = [
+  { label: "Trang chủ", hasDropdown: false, href: "/" },
   { label: "Tìm việc", hasDropdown: false, href: "/jobs" },
   { label: "Công cụ", hasDropdown: true, dropdownId: "tools" },
   { label: "Cẩm nang nghề nghiệp", hasDropdown: true, dropdownId: "career" },

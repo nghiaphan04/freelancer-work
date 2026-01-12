@@ -111,23 +111,35 @@ export default function Header() {
                     <Link
                       href={item.href}
                       className={`flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap group/nav ${
-                        isActive(item.href) || isActivePrefix(item.href)
-                          ? "text-[#00b14f]"
-                          : "text-gray-700 hover:text-[#00b14f]"
+                        item.href === "/" 
+                          ? isActive(item.href) 
+                            ? "text-[#00b14f]" 
+                            : "text-gray-700 hover:text-[#00b14f]"
+                          : (isActive(item.href) || isActivePrefix(item.href))
+                            ? "text-[#00b14f]"
+                            : "text-gray-700 hover:text-[#00b14f]"
                       }`}
                     >
                       {item.label}
                     </Link>
                   ) : (
                     <button
-                      className="flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap text-gray-700 hover:text-[#00b14f] group/nav"
+                      className={`flex items-center gap-0.5 px-1.5 py-4 text-[13px] font-medium transition-colors whitespace-nowrap group/nav ${
+                        item.dropdownId === "career" && (isActivePrefix("/blog") || isActivePrefix("/career"))
+                          ? "text-[#00b14f]"
+                          : "text-gray-700 hover:text-[#00b14f]"
+                      }`}
                     >
                       {item.label}
                       {item.hasDropdown && (
                         <Icon 
                           name={activeDropdown === item.dropdownId ? "expand_less" : "expand_more"} 
                           size={16} 
-                          className="text-gray-400 group-hover/nav:text-[#00b14f]" 
+                          className={`group-hover/nav:text-[#00b14f] ${
+                            item.dropdownId === "career" && (isActivePrefix("/blog") || isActivePrefix("/career"))
+                              ? "text-[#00b14f]"
+                              : "text-gray-400"
+                          }`}
                         />
                       )}
                     </button>
@@ -229,13 +241,13 @@ export default function Header() {
                               </a>
                             ))}
                           </div>
-                          <a 
-                            href="/career" 
+                          <Link 
+                            href="/blog" 
                             className="inline-flex items-center gap-1 mt-4 text-sm font-medium text-[#00b14f] hover:underline"
                           >
                             Xem thêm bài viết nổi bật
                             <Icon name="arrow_forward" size={16} />
-                          </a>
+                          </Link>
                         </div>
                         </div>
                       </div>
@@ -418,9 +430,13 @@ export default function Header() {
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={`flex items-center justify-between w-full px-5 py-3.5 transition-colors ${
-                        isActive(item.href) || isActivePrefix(item.href)
-                          ? "bg-[#00b14f]/5 text-[#00b14f]"
-                          : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                        item.href === "/"
+                          ? isActive(item.href)
+                            ? "bg-[#00b14f]/5 text-[#00b14f]"
+                            : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                          : (isActive(item.href) || isActivePrefix(item.href))
+                            ? "bg-[#00b14f]/5 text-[#00b14f]"
+                            : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
                       }`}
                     >
                       <span className="font-medium">{item.label}</span>
