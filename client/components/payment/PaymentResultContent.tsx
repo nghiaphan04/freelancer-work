@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 type Status = "loading" | "success" | "cancelled";
 
-export default function PaymentSuccessContent() {
+export default function PaymentResultContent() {
   const searchParams = useSearchParams();
   const appTransId = searchParams.get("apptransid");
   const jobId = searchParams.get("jobId");

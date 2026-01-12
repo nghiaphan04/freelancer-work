@@ -28,8 +28,6 @@ public class ZaloPayConfig {
     @Value("${app.payment.return-url}")
     private String returnUrl;
 
-    @Value("${app.payment.cancel-url}")
-    private String cancelUrl;
 
     /**
      * Tạo MAC cho request tạo đơn hàng
