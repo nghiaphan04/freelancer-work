@@ -84,6 +84,7 @@ public class AuthService {
         return buildAuthResponse(user, "Xác thực email thành công");
     }
 
+    @Transactional
     public ApiResponse<AuthResponse> login(LoginRequest req) {
         User user = userService.findByEmail(req.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("Email không tồn tại"));
@@ -96,7 +97,15 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
 
-        return buildAuthResponse(user, "Đăng nhập thành công");
+        boolean dailyClaimed = user.claimDailyCredits();
+        if (dailyClaimed) {
+            userService.save(user);
+        }
+
+        String message = dailyClaimed 
+                ? "Đăng nhập thành công. Bạn đã nhận 10 credit hôm nay!" 
+                : "Đăng nhập thành công";
+        return buildAuthResponse(user, message);
     }
 
     public ApiResponse<AuthResponse> refreshToken(RefreshTokenRequest req) {
@@ -179,10 +188,15 @@ public class AuthService {
 
             if (!user.getEmailVerified()) {
                 user.verifyEmail();
-                userService.save(user);
             }
 
-            return buildAuthResponse(user, "Đăng nhập Google thành công");
+            boolean dailyClaimed = user.claimDailyCredits();
+            userService.save(user);
+
+            String message = dailyClaimed 
+                    ? "Đăng nhập Google thành công. Bạn đã nhận 10 credit hôm nay!" 
+                    : "Đăng nhập Google thành công";
+            return buildAuthResponse(user, message);
         } catch (Exception e) {
             log.error("Google auth failed", e);
             return ApiResponse.error("Xác thực Google thất bại");
@@ -235,6 +249,11 @@ public class AuthService {
                 .emailVerified(user.getEmailVerified())
                 .enabled(user.getEnabled())
                 .roles(roleList)
+                .credits(user.getCredits())
+                .balance(user.getBalance())
+                .bankAccountNumber(user.getBankAccountNumber())
+                .bankName(user.getBankName())
+                .hasBankInfo(user.hasBankInfo())
                 .build();
 
         AuthResponse authRes = AuthResponse.builder()

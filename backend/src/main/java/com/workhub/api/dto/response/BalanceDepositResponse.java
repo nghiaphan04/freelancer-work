@@ -1,6 +1,6 @@
 package com.workhub.api.dto.response;
 
-import com.workhub.api.entity.EPaymentStatus;
+import com.workhub.api.entity.EDepositStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,36 +13,21 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentResponse {
+public class BalanceDepositResponse {
 
     private Long id;
-    
     private String appTransId;
-    
     private Long zpTransId;
-    
-    private Long jobId;
-    private String jobTitle;
-    private BigDecimal escrowAmount;
-    private BigDecimal feeAmount;
-    private BigDecimal feePercent;
-    private BigDecimal totalAmount;
-    private String currency;
+    private Long userId;
+    private String userFullName;
+    private BigDecimal amount;
     private String description;
-    
     private String orderUrl;
-    
     private String qrCode;
-    
-    private EPaymentStatus status;
-    
+    private String zpTransToken;
+    private EDepositStatus status;
     private Integer paymentChannel;
-    
     private LocalDateTime expiredAt;
     private LocalDateTime paidAt;
     private LocalDateTime createdAt;
-    
-    private BigDecimal refundAmount;
-    private LocalDateTime refundedAt;
-    private String refundReason;
 }

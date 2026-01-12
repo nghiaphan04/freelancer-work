@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -81,6 +83,23 @@ public class User {
     @Column(nullable = false)
     @Builder.Default
     private Boolean enabled = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer credits = 20;  // 10 tạo tài khoản + 10 daily
+
+    @Column(name = "balance", precision = 15, scale = 2, nullable = false)
+    @Builder.Default
+    private BigDecimal balance = BigDecimal.ZERO;
+
+    @Column(name = "last_daily_credit_date")
+    private LocalDate lastDailyCreditDate;
+
+    @Column(name = "bank_account_number", length = 50)
+    private String bankAccountNumber;
+
+    @Column(name = "bank_name", length = 100)
+    private String bankName;
     
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -109,7 +128,8 @@ public class User {
     public void updateProfile(String fullName, String phoneNumber, String avatarUrl,
                               String coverImageUrl, String title, String location,
                               String company, String bio, Set<String> skills,
-                              Boolean isOpenToWork, Set<String> openToWorkRoles) {
+                              Boolean isOpenToWork, Set<String> openToWorkRoles,
+                              String bankAccountNumber, String bankName) {
         if (fullName != null && !fullName.isBlank()) {
             this.fullName = fullName;
         }
@@ -129,6 +149,8 @@ public class User {
         if (openToWorkRoles != null) {
             this.openToWorkRoles = openToWorkRoles;
         }
+        this.bankAccountNumber = bankAccountNumber;
+        this.bankName = bankName;
     }
     
     public void verify() {
@@ -160,5 +182,56 @@ public class User {
     
     public boolean isAdmin() {
         return hasRole(ERole.ROLE_ADMIN);
+    }
+
+    public boolean hasEnoughCredits(int amount) {
+        return this.credits >= amount;
+    }
+
+    public void deductCredits(int amount) {
+        if (!hasEnoughCredits(amount)) {
+            throw new IllegalStateException("Không đủ credit");
+        }
+        this.credits -= amount;
+    }
+
+    public void addCredits(int amount) {
+        this.credits += amount;
+    }
+
+    public boolean hasEnoughBalance(BigDecimal amount) {
+        return this.balance.compareTo(amount) >= 0;
+    }
+
+    public void deductBalance(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số tiền không hợp lệ");
+        }
+        if (!hasEnoughBalance(amount)) {
+            throw new IllegalStateException("Không đủ số dư");
+        }
+        this.balance = this.balance.subtract(amount);
+    }
+
+    public void addBalance(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Số tiền không hợp lệ");
+        }
+        this.balance = this.balance.add(amount);
+    }
+
+    public boolean claimDailyCredits() {
+        LocalDate today = LocalDate.now();
+        if (this.lastDailyCreditDate == null || !this.lastDailyCreditDate.equals(today)) {
+            this.credits += 10;
+            this.lastDailyCreditDate = today;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean hasBankInfo() {
+        return this.bankAccountNumber != null && !this.bankAccountNumber.isBlank()
+                && this.bankName != null && !this.bankName.isBlank();
     }
 }

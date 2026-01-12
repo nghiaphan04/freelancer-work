@@ -11,21 +11,19 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentStatisticsResponse {
-    
-    private BigDecimal totalRevenue;
-    private BigDecimal totalEscrowAmount;
-    private BigDecimal totalFeeAmount;
-    
+public class BalanceStatisticsResponse {
+
+    private BigDecimal totalDeposited;
+
     private Long totalTransactions;
     private Long paidTransactions;
     private Long pendingTransactions;
     private Long cancelledTransactions;
     private Long expiredTransactions;
-    
-    private BigDecimal todayRevenue;
+
+    private BigDecimal todayDeposited;
     private Long todayTransactions;
-    
-    private BigDecimal monthRevenue;
+
+    private BigDecimal monthDeposited;
     private Long monthTransactions;
 }

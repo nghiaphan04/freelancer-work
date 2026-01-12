@@ -42,4 +42,10 @@ public class UpdateProfileRequest {
     private Boolean isOpenToWork;
     
     private Set<String> openToWorkRoles;
+
+    @Size(max = 50, message = "Bank account number must be less than 50 characters")
+    private String bankAccountNumber;
+
+    @Size(max = 100, message = "Bank name must be less than 100 characters")
+    private String bankName;
 }

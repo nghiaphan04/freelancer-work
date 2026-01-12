@@ -9,12 +9,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "credit_purchases")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Payment {
+public class CreditPurchase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,22 +27,15 @@ public class Payment {
     private Long zpTransId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_id", nullable = false)
-    private Job job;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "escrow_amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal escrowAmount;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "credit_package", nullable = false, length = 20)
+    private ECreditPackage creditPackage;
 
-    @Column(name = "fee_amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal feeAmount;
-
-    @Column(name = "fee_percent", precision = 5, scale = 2, nullable = false)
-    @Builder.Default
-    private BigDecimal feePercent = new BigDecimal("5.00");
+    @Column(name = "credits_amount", nullable = false)
+    private Integer creditsAmount;
 
     @Column(name = "total_amount", precision = 15, scale = 2, nullable = false)
     private BigDecimal totalAmount;
@@ -77,17 +70,9 @@ public class Payment {
     @Column(name = "payment_channel")
     private Integer paymentChannel;
 
-    @Column(name = "refund_amount", precision = 15, scale = 2)
-    private BigDecimal refundAmount;
-
-    @Column(name = "refunded_at")
-    private LocalDateTime refundedAt;
-
-    @Column(name = "refund_reason", length = 500)
-    private String refundReason;
-
-    @Column(name = "m_refund_id", length = 50)
-    private String mRefundId;
+    @Column(name = "credits_granted")
+    @Builder.Default
+    private Boolean creditsGranted = false;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -118,12 +103,8 @@ public class Payment {
         this.status = EPaymentStatus.EXPIRED;
     }
 
-    public void markAsRefunded(BigDecimal refundAmount, String reason, String mRefundId) {
-        this.status = EPaymentStatus.REFUNDED;
-        this.refundAmount = refundAmount;
-        this.refundReason = reason;
-        this.refundedAt = LocalDateTime.now();
-        this.mRefundId = mRefundId;
+    public void markCreditsGranted() {
+        this.creditsGranted = true;
     }
 
     public boolean isPending() {
@@ -134,11 +115,7 @@ public class Payment {
         return this.status == EPaymentStatus.PAID;
     }
 
-    public boolean isRefunded() {
-        return this.status == EPaymentStatus.REFUNDED;
-    }
-
-    public boolean canRefund() {
-        return this.status == EPaymentStatus.PAID && this.zpTransId != null;
+    public boolean canGrantCredits() {
+        return this.status == EPaymentStatus.PAID && !this.creditsGranted;
     }
 }

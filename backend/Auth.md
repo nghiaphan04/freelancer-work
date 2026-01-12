@@ -1,5 +1,79 @@
 # WorkHub - Authentication System Documentation
 
+> Cập nhật 2026-01: User có trường `balance` để nạp/tiêu số dư; AuthResponse trả thêm `balance`.
+
+## 1. Kiến trúc tổng quan
+```
+Client (Next.js)
+  → RateLimiter (Redis)
+  → JWT Filter
+  → Controllers (Auth, OTP)
+  → Services (AuthService, OtpService, EmailService)
+  → Repos (User, Role, RefreshToken)
+  → DB (PostgreSQL) + Redis (OTP/Rate-limit)
+```
+
+## 2. Database schema (rút gọn)
+```
+users
+- id (PK), email (unique), password (BCrypt)
+- full_name, phone_number, avatar_url, cover_image_url
+- title, location, company, bio
+- credits (INT, default 20)      ◄─ apply job
+- balance (DECIMAL 15,2)         ◄─ ví nội bộ
+- last_daily_credit_date         ◄─ claim 10 credit/daily
+- email_verified (BOOL), enabled (BOOL)
+- bank_account_number, bank_name
+- created_at, updated_at
+
+roles, user_roles (N:M)
+
+refresh_tokens
+- id, user_id (FK), token (unique), expires_at, created_at, updated_at
+```
+
+## 3. Auth flows
+- Đăng ký: tạo user emailVerified=false → gửi OTP (Redis) → verify OTP để kích hoạt.
+- Login: kiểm tra emailVerified, rate-limit; `claimDailyCredits()` +10 nếu chưa nhận hôm nay; trả tokens + user info (có balance).
+- Refresh token: verify refresh_token DB, cấp access token mới.
+- Google Auth: lấy userinfo, auto-verify email, claimDailyCredits.
+- Quên/đổi mật khẩu: OTP FORGOT_PASSWORD, đổi password, revoke refresh tokens.
+
+## 4. Bảo mật
+- JWT chứa danh sách roles (comma-separated) trong claim.
+- Rate-limit login/register bằng Redis.
+- OTP lưu Redis với TTL theo EOtpType.
+- SecurityConfig: JWT filter, CORS; public endpoints cho auth/otp/health.
+
+## 5. Response mẫu (AuthResponse)
+```jsonc
+{
+  "accessToken": "...",
+  "refreshToken": "...",
+  "tokenType": "Bearer",
+  "expiresIn": 900,
+  "user": {
+    "id": 1,
+    "email": "user@workhub.vn",
+    "fullName": "...",
+    "credits": 20,
+    "balance": 0.00,
+    "roles": ["ROLE_FREELANCER"],
+    "hasBankInfo": false,
+    "emailVerified": true,
+    "enabled": true
+  }
+}
+```
+
+## 6. Ghi chú
+- `balance` dùng cho nạp/tiêu số dư (xem `balance.md`).
+- `credits` dùng khi ứng tuyển job; +10 mỗi ngày khi login.
+- `hasBankInfo` bắt buộc để đăng job hoặc apply job.
+# WorkHub - Authentication System Documentation
+
+> Cập nhật 2026-01: User có trường `balance` (DECIMAL 15,2) để nạp/tiêu số dư. Auth response trả thêm balance.
+
 ## 1. KIẾN TRÚC TỔNG QUAN
 
 ```
@@ -57,9 +131,15 @@
 │   │ avatar_url              │         └─────────────────────────┘           │
 │   │ email_verified (BOOL)   │                                               │
 │   │ enabled (BOOL)          │         ┌─────────────────────────┐           │
-│   │ created_at              │         │      user_roles         │           │
-│   │ updated_at              │         ├─────────────────────────┤           │
-│   └────────────┬────────────┘         │ user_id (FK)            │           │
+│   │ credits (INT, DEF 20)   │◄── Credit để apply job            │           │
+│   │ balance (DECIMAL 15,2)  │◄── Số dư ví nội bộ                │           │
+│   │ last_daily_credit_date  │◄── Ngày nhận credit hàng ngày     │           │
+│   │ bank_account_number     │◄── STK ngân hàng (PRIVATE)        │           │
+│   │ bank_name               │◄── Tên ngân hàng (PRIVATE)        │           │
+│   │ created_at              │         ┌─────────────────────────┐           │
+│   │ updated_at              │         │      user_roles         │           │
+│   └────────────┬────────────┘         ├─────────────────────────┤           │
+│                │                      │ user_id (FK)            │           │
 │                │                      │ role_id (FK)            │           │
 │                │                      └─────────────────────────┘           │
 │                │                                                            │
@@ -1054,6 +1134,7 @@ import { GoogleLogin } from "@react-oauth/google";
 | `GET` | `/api/users` | Lấy danh sách users | ✅ | ADMIN |
 | `GET` | `/api/users/{id}` | Lấy user theo ID | ✅ | ADMIN |
 | `PUT` | `/api/users/{id}/status` | Enable/Disable user | ✅ | ADMIN |
+| `POST` | `/api/users/{id}/credits` | Cấp credit cho user | ✅ | ADMIN |
 
 ---
 ### /api/users/me
@@ -1567,4 +1648,318 @@ docker run -d --name redis -p 6379:6379 redis
 JWT
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+```
+
+---
+
+## 11. CREDIT SYSTEM
+
+### 11.1 Tổng quan Credit
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           CREDIT SYSTEM                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   Credit là đơn vị để apply vào các job trên WorkHub.                       │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ Nguồn credit:                                                       │   │
+│   │ - Tạo tài khoản mới: +10 credit                                     │   │
+│   │ - Đăng nhập hàng ngày: +10 credit/ngày (daily bonus)                │   │
+│   │ - Mua credit: 10,000 VND/credit (có gói giảm giá)                   │   │
+│   │ - Admin cấp: Không giới hạn                                         │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ Sử dụng credit:                                                     │   │
+│   │ - Apply job: -1 credit/lần apply                                    │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 11.2 Daily Credit Bonus
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: entity/User.java                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Column(nullable = false)                                            │
+│ @Builder.Default                                                     │
+│ private Integer credits = 20;  // 10 tạo tài khoản + 10 daily        │
+│                                                                      │
+│ @Column(name = "last_daily_credit_date")                             │
+│ private LocalDate lastDailyCreditDate;                               │
+│                                                                      │
+│ public boolean claimDailyCredits() {                                 │
+│     LocalDate today = LocalDate.now();                               │
+│     if (lastDailyCreditDate == null ||                               │
+│         !lastDailyCreditDate.equals(today)) {                        │
+│         this.credits += 10;                                          │
+│         this.lastDailyCreditDate = today;                            │
+│         return true;                                                 │
+│     }                                                                │
+│     return false;                                                    │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Daily credit được claim tự động khi:
+- Đăng nhập (POST /api/auth/login)
+- Đăng nhập Google (POST /api/auth/google)
+
+### 11.3 Credit Methods trong User Entity
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: entity/User.java                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ public boolean hasEnoughCredits(int amount) {                        │
+│     return this.credits >= amount;                                   │
+│ }                                                                    │
+│                                                                      │
+│ public void deductCredits(int amount) {                              │
+│     if (!hasEnoughCredits(amount)) {                                 │
+│         throw new IllegalStateException("Không đủ credit");          │
+│     }                                                                │
+│     this.credits -= amount;                                          │
+│ }                                                                    │
+│                                                                      │
+│ public void addCredits(int amount) {                                 │
+│     this.credits += amount;                                          │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 12. BANK ACCOUNT INFO (PRIVATE)
+
+### 12.1 Tổng quan
+
+Thông tin ngân hàng là bắt buộc trước khi freelancer có thể apply job.
+Thông tin này chỉ được hiển thị cho:
+- Chính user đó
+- Admin
+
+### 12.2 Bank Fields trong User Entity
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: entity/User.java                                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Column(name = "bank_account_number", length = 50)                   │
+│ private String bankAccountNumber;                                    │
+│                                                                      │
+│ @Column(name = "bank_name", length = 100)                            │
+│ private String bankName;                                             │
+│                                                                      │
+│ public boolean hasBankInfo() {                                       │
+│     return this.bankAccountNumber != null &&                         │
+│            !this.bankAccountNumber.isBlank() &&                      │
+│            this.bankName != null &&                                  │
+│            !this.bankName.isBlank();                                 │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.3 UpdateProfileRequest với Bank Info
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/UpdateProfileRequest.java                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Size(max = 50)                                                      │
+│ private String bankAccountNumber;                                    │
+│                                                                      │
+│ @Size(max = 100)                                                     │
+│ private String bankName;                                             │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.4 AuthResponse với Credit và Bank Info
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/response/AuthResponse.java                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Data                                                                │
+│ @Builder                                                             │
+│ public static class UserResponse {                                   │
+│     private Long id;                                                 │
+│     private String email;                                            │
+│     private String fullName;                                         │
+│     private String phoneNumber;                                      │
+│     private String avatarUrl;                                        │
+│     private Boolean emailVerified;                                   │
+│     private Boolean enabled;                                         │
+│     private List<String> roles;                                      │
+│                                                                      │
+│     // Credit fields                                                 │
+│     private Integer credits;           ◄── Số credit hiện có         │
+│                                                                      │
+│     // Bank fields (PRIVATE - chỉ user/admin thấy)                   │
+│     private String bankAccountNumber;  ◄── STK ngân hàng             │
+│     private String bankName;           ◄── Tên ngân hàng             │
+│     private Boolean hasBankInfo;       ◄── Đã có thông tin ngân hàng │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 13. ADMIN GRANT CREDITS
+
+### POST /api/users/{id}/credits
+Admin cấp credit cho user
+
+```
+Request + Cookie accessToken (ROLE_ADMIN)
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/UserController.java                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/{id}/credits")                                        │
+│ @PreAuthorize("hasRole('ADMIN')")                                    │
+│ public ResponseEntity<ApiResponse<UserResponse>> grantCredits(       │
+│     @PathVariable Long id,                                           │
+│     @Valid @RequestBody GrantCreditsRequest req) {                   │
+│                                                                      │
+│     User user = userService.grantCredits(id, req.getAmount());       │
+│     return ResponseEntity.ok(ApiResponse.success(                    │
+│         "Đã cộng " + req.getAmount() + " credit cho user",           │
+│         buildUserResponse(user, true)));                             │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/GrantCreditsRequest.java                           │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Data                                                                │
+│ public class GrantCreditsRequest {                                   │
+│     @NotNull(message = "Số credit không được để trống")              │
+│     @Min(value = 1, message = "Số credit phải >= 1")                 │
+│     private Integer amount;                                          │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/UserService.java                                       │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public User grantCredits(Long userId, int amount) {                  │
+│     User user = getById(userId);                                     │
+│     user.addCredits(amount);                                         │
+│     return userRepository.save(user);                                │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "message": "Đã cộng 50 credit cho user",
+    "data": {
+        "id": 1,
+        "email": "user@example.com",
+        "fullName": "Nguyen Van A",
+        "credits": 170,
+        ...
+    }
+}
+```
+
+---
+
+## 14. POSTMAN TEST - CREDIT & BANK
+
+### 14.1 Cập nhật Profile với Bank Info
+```http
+PUT http://localhost:8080/api/users/me
+Cookie: accessToken=eyJ...
+Content-Type: application/json
+
+{
+    "fullName": "Nguyen Van A",
+    "phoneNumber": "0901234567",
+    "bankAccountNumber": "1234567890",
+    "bankName": "Vietcombank"
+}
+```
+
+**Response: 200 OK**
+```json
+{
+    "status": "SUCCESS",
+    "message": "Cập nhật profile thành công",
+    "data": {
+        "id": 1,
+        "email": "user@example.com",
+        "fullName": "Nguyen Van A",
+        "phoneNumber": "0901234567",
+        "credits": 120,
+        "bankAccountNumber": "1234567890",
+        "bankName": "Vietcombank",
+        "hasBankInfo": true
+    }
+}
+```
+
+### 14.2 Admin cấp credit
+```http
+POST http://localhost:8080/api/users/5/credits
+Cookie: accessToken={{admin_token}}
+Content-Type: application/json
+
+{
+    "amount": 100
+}
+```
+
+**Response: 200 OK**
+```json
+{
+    "status": "SUCCESS",
+    "message": "Đã cộng 100 credit cho user",
+    "data": {
+        "id": 5,
+        "credits": 220
+    }
+}
+```
+
+### 14.3 Flow đầy đủ - Credit và Bank Info
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     FLOW: CREDIT VÀ BANK INFO                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. POST /api/auth/register        → Tạo tài khoản (+10 credit khởi tạo)   │
+│                                                                             │
+│  2. POST /api/auth/verify-otp      → Xác thực email                        │
+│                                                                             │
+│  3. POST /api/auth/login           → Đăng nhập (+10 daily credit)          │
+│     Response: { user: { credits: 20 } }  ◄── 10 + 10                       │
+│                                                                             │
+│  4. GET /api/users/me              → Kiểm tra thông tin                    │
+│     Response: { credits: 20, hasBankInfo: false }                          │
+│                                                                             │
+│  5. PUT /api/users/me              → Cập nhật bank info                    │
+│     Body: { bankAccountNumber: "...", bankName: "..." }                    │
+│     Response: { hasBankInfo: true }                                        │
+│                                                                             │
+│  6. POST /api/jobs/1/apply         → Apply job (tiêu 1 credit)             │
+│     → Kiểm tra hasBankInfo = true ✅                                       │
+│     → Kiểm tra credits >= 1 ✅                                             │
+│     → Trừ 1 credit → credits = 19                                          │
+│                                                                             │
+│  7. Ngày hôm sau: POST /api/auth/login → +10 daily credit                  │
+│     Response: { credits: 29 }                                               │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```

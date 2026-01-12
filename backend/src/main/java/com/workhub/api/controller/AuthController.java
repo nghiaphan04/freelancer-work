@@ -28,11 +28,14 @@ public class AuthController {
     @Value("${app.jwt.refresh-expiration}")
     private long refreshTokenExpiry;
     
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
+    
     private void setTokenCookies(HttpServletResponse response, AuthResponse auth) {
         response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("accessToken", auth.getAccessToken())
-                .httpOnly(true).secure(true).path("/").maxAge(accessTokenExpiry / 1000).sameSite("Strict").build().toString());
+                .httpOnly(true).secure(cookieSecure).path("/").maxAge(accessTokenExpiry / 1000).sameSite("Lax").build().toString());
         response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", auth.getRefreshToken())
-                .httpOnly(true).secure(true).path("/api/auth").maxAge(refreshTokenExpiry / 1000).sameSite("Strict").build().toString());
+                .httpOnly(true).secure(cookieSecure).path("/api/auth").maxAge(refreshTokenExpiry / 1000).sameSite("Lax").build().toString());
     }
     
     private void clearTokenCookies(HttpServletResponse response) {

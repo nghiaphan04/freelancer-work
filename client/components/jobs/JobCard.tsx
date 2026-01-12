@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Job, JOB_COMPLEXITY_CONFIG, WORK_TYPE_CONFIG } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMemo } from "react";
+
+const BADGE_IMAGES = ["/1-sao.png", "/2-sao.png", "/3-sao.png"];
 
 interface JobCardProps {
   job: Job;
@@ -12,6 +15,7 @@ interface JobCardProps {
 }
 
 export default function JobCard({ job, onFavorite, isFavorite = false }: JobCardProps) {
+  const badgeImage = useMemo(() => BADGE_IMAGES[job.id % BADGE_IMAGES.length], [job.id]);
   const formatBudget = (budget?: number) => {
     if (!budget) return "Thỏa thuận";
     if (budget >= 1000000) {
@@ -30,7 +34,7 @@ export default function JobCard({ job, onFavorite, isFavorite = false }: JobCard
         <Link href={`/jobs/${job.id}`} className="shrink-0">
           <Avatar className="w-14 h-14 rounded-lg border border-gray-100">
             <AvatarImage 
-              src={job.employer.avatarUrl} 
+              src={badgeImage} 
               alt={job.employer.company || job.employer.fullName} 
               className="object-cover"
             />

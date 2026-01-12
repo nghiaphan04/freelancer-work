@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Job, JOB_COMPLEXITY_CONFIG, WORK_TYPE_CONFIG, JOB_DURATION_CONFIG } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const BADGE_IMAGES = ["/1-sao.png", "/2-sao.png", "/3-sao.png"];
 
 interface JobCardWithPreviewProps {
   job: Job;
@@ -13,6 +15,7 @@ interface JobCardWithPreviewProps {
 }
 
 export default function JobCardWithPreview({ job, onFavorite, isFavorite = false }: JobCardWithPreviewProps) {
+  const badgeImage = useMemo(() => BADGE_IMAGES[job.id % BADGE_IMAGES.length], [job.id]);
   const [showPreview, setShowPreview] = useState(false);
   const [previewPosition, setPreviewPosition] = useState<"right" | "left">("right");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -77,7 +80,7 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
           <Link href={`/jobs/${job.id}`} className="shrink-0">
             <Avatar className="w-14 h-14 rounded-lg border border-gray-100">
               <AvatarImage 
-                src={job.employer.avatarUrl} 
+                src={badgeImage} 
                 alt={job.employer.company || job.employer.fullName} 
                 className="object-cover"
               />
@@ -152,7 +155,7 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
           <div className="p-4 border-b border-gray-100">
             <div className="flex gap-3">
               <Avatar className="w-12 h-12 rounded-lg border border-gray-100 shrink-0">
-                <AvatarImage src={job.employer.avatarUrl} alt={job.employer.company || job.employer.fullName} />
+                <AvatarImage src={badgeImage} alt={job.employer.company || job.employer.fullName} />
                 <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#00b14f] to-[#009643] text-white font-semibold">
                   {(job.employer.company || job.employer.fullName)?.charAt(0)?.toUpperCase() || "C"}
                 </AvatarFallback>

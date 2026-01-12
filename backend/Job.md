@@ -1,4 +1,90 @@
+# WorkHub - Job System Documentation
+
+> Cập nhật 2026-01: PaymentService/ZaloPay đã bỏ. Đăng job trừ trực tiếp số dư `balance` của employer: chi phí = `budget + 5% fee`, job OPEN ngay sau khi trừ.
+
+## 1. Kiến trúc tổng quan
+```
+Client → RateLimiter → JWT Filter → JobController
+                                  → JobService
+                                  → JobRepository, JobApplicationRepository, UserService
+                                  → DB (jobs, job_applications, users)
+```
+
+## 2. Database schema (rút gọn)
+```
+jobs
+- id (PK), title, description, context, requirements, deliverables
+- skills (set<string>), complexity (ENUM), duration (ENUM), work_type (ENUM)
+- budget (DECIMAL), currency (VARCHAR), application_deadline, expected_start_date
+- status (ENUM: DRAFT/OPEN/CLOSED), view_count, application_count
+- employer_id (FK → users)
+- created_at, updated_at
+
+job_applications
+- id (PK), job_id (FK), freelancer_id (FK)
+- cover_letter, status (ENUM: PENDING/ACCEPTED/REJECTED/WITHDRAWN)
+- created_at, updated_at
+
+users (liên quan)
+- balance (DECIMAL 15,2) ◄─ dùng để trả phí đăng job
+- credits (INT)          ◄─ freelancer apply job trừ 1 credit
+- hasBankInfo (bank_account_number, bank_name) bắt buộc khi đăng/apply
+```
+
+## 3. Luồng đăng job (dùng balance)
+1) Employer gửi `CreateJob`.
+2) JobService:
+   - Yêu cầu `hasBankInfo`.
+   - Kiểm tra `budget > 0`.
+   - Tính phí: `fee = budget * 5%` (ceil); `total = budget + fee`.
+   - Kiểm tra `employer.hasEnoughBalance(total)`, trừ balance.
+   - Lưu job với `status=OPEN`.
+3) Trả JobResponse; không có bước thanh toán ngoài.
+
+## 4. Trạng thái job
+- DRAFT: chưa hiển thị (toggle được).
+- OPEN: hiển thị, nhận ứng tuyển.
+- CLOSED: đóng tay hoặc business logic khác.
+
+## 5. Ứng tuyển job (freelancer)
+- Yêu cầu role FREELANCER, không phải chủ job, job OPEN, có bank info.
+- Trừ 1 credit khi apply; nếu thiếu credit → lỗi.
+- Ghi `job_applications` trạng thái PENDING; tăng `application_count`.
+- Accept: đặt đơn ACCEPTED, từ chối các PENDING khác của cùng job.
+- Reject / Withdraw: đổi trạng thái tương ứng.
+
+## 6. API (rút gọn)
+- Job public:
+  - `GET /api/jobs/open?page=&size=&sortBy=&sortDir=`
+  - `GET /api/jobs/{id}` (+increment view)
+  - `GET /api/jobs/search?keyword=`
+  - `GET /api/jobs/by-skills?skills=`
+- Employer:
+  - `POST /api/jobs` (create + trừ balance ngay)
+  - `PUT /api/jobs/{id}` (update)
+  - `POST /api/jobs/{id}/toggle` (OPEN/DRAFT) — không cần payment
+  - `POST /api/jobs/{id}/close`
+  - `DELETE /api/jobs/{id}`
+  - `GET /api/jobs/my?status=&page=&size=&sortBy=&sortDir=`
+  - `GET /api/jobs/{id}/applications` (xem danh sách ứng tuyển)
+  - `POST /api/jobs/applications/{applicationId}/accept|reject`
+- Freelancer:
+  - `POST /api/jobs/{id}/apply`
+  - `POST /api/jobs/applications/{applicationId}/withdraw`
+  - `GET /api/jobs/my-applications?status=&page=&size=`
+
+## 7. Phí & số dư
+- Phí đăng job: 5% trên budget, làm tròn lên (ceiling).
+- Số dư cần có: `budget + fee`.
+- Không còn escrow/refund qua ZaloPay; hoàn/tái mở job do business sẽ thao tác trực tiếp (nếu cần) bằng cách điều chỉnh balance thủ công/feature riêng.
+
+## 8. Lưu ý
+- Với luồng mới, mọi thanh toán ngoài đều đi qua nạp balance (xem `balance.md`).
+- PaymentService, Payment entity, PaymentController đã loại bỏ.
+- Đảm bảo front-end điều chỉnh thông báo và UI theo luồng trừ balance.***
 # WorkHub - Job & Payment System Documentation
+
+> Cập nhật 2026-01: PaymentService/ZaloPay đã loại bỏ. Đăng job trừ trực tiếp số dư (budget + 5% phí) từ `balance` của employer, job mở ngay sau khi trừ tiền.
 
 ## 1. KIẾN TRÚC TỔNG QUAN
 
@@ -94,6 +180,19 @@
 │                                  │ refund_reason (VARCHAR)             │   │
 │                                  └─────────────────────────────────────┘   │
 │                                                                             │
+│   ┌─────────────────────────────────┐                                       │
+│   │       job_applications          │                                       │
+│   ├─────────────────────────────────┤                                       │
+│   │ id (PK, BIGINT)                 │                                       │
+│   │ job_id (FK → jobs)              │◄── Job được apply                     │
+│   │ freelancer_id (FK → users)      │◄── Người apply                        │
+│   │ cover_letter (TEXT)             │◄── Thư giới thiệu                     │
+│   │ status (ENUM)                   │◄── PENDING/ACCEPTED/REJECTED/WITHDRAWN│
+│   │ created_at (DATETIME)           │                                       │
+│   │ updated_at (DATETIME)           │                                       │
+│   │ UNIQUE(job_id, freelancer_id)   │◄── Mỗi user chỉ apply 1 lần/job      │
+│   └─────────────────────────────────┘                                       │
+│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -114,26 +213,31 @@ backend/src/main/java/com/workhub/api/
 │
 ├── repository/
 │   ├── JobRepository.java              # Truy vấn jobs
-│   └── PaymentRepository.java          # Truy vấn payments
+│   ├── PaymentRepository.java          # Truy vấn payments
+│   └── JobApplicationRepository.java   # Truy vấn đơn ứng tuyển
 │
 ├── entity/
 │   ├── Job.java                        # Entity job
 │   ├── Payment.java                    # Entity thanh toán
+│   ├── JobApplication.java             # Entity đơn ứng tuyển
 │   ├── EJobComplexity.java             # ENTRY/INTERMEDIATE/EXPERT
 │   ├── EJobDuration.java               # SHORT/MEDIUM/LONG_TERM
 │   ├── EWorkType.java                  # PART_TIME/FULL_TIME
 │   ├── EJobStatus.java                 # DRAFT/OPEN/IN_PROGRESS/...
-│   └── EPaymentStatus.java             # PENDING/PAID/CANCELLED/EXPIRED
+│   ├── EPaymentStatus.java             # PENDING/PAID/CANCELLED/EXPIRED
+│   └── EApplicationStatus.java         # PENDING/ACCEPTED/REJECTED/WITHDRAWN
 │
 ├── dto/
 │   ├── request/
 │   │   ├── CreateJobRequest.java
 │   │   ├── UpdateJobRequest.java
+│   │   ├── ApplyJobRequest.java        # Request ứng tuyển
 │   │   └── ZaloPayCallbackRequest.java
 │   └── response/
 │       ├── JobResponse.java
 │       ├── PaymentResponse.java
-│       └── PaymentStatisticsResponse.java
+│       ├── PaymentStatisticsResponse.java
+│       └── JobApplicationResponse.java # Response đơn ứng tuyển
 │
 ├── config/
 │   └── ZaloPayConfig.java              # Cấu hình ZaloPay + HMAC
@@ -244,6 +348,17 @@ backend/src/main/java/com/workhub/api/
 | `PATCH` | `/api/jobs/{id}/close` | Đóng tin | ✅ Owner |
 | `DELETE` | `/api/jobs/{id}` | Xóa | ✅ Owner/Admin |
 
+### Job Application Endpoints
+
+| Method | Endpoint | Mô tả | Auth | Role |
+|--------|----------|-------|------|------|
+| `POST` | `/api/jobs/{id}/apply` | Ứng tuyển vào job | ✅ | FREELANCER |
+| `GET` | `/api/jobs/my-applications` | Đơn ứng tuyển của tôi | ✅ | FREELANCER |
+| `DELETE` | `/api/jobs/applications/{id}` | Rút đơn ứng tuyển | ✅ | FREELANCER |
+| `GET` | `/api/jobs/{id}/applications` | Danh sách đơn của job (poster) | ✅ | OWNER |
+| `PUT` | `/api/jobs/applications/{id}/accept` | Duyệt đơn (auto reject các đơn pending khác) | ✅ | OWNER |
+| `PUT` | `/api/jobs/applications/{id}/reject` | Từ chối đơn | ✅ | OWNER |
+
 ### Payment Endpoints
 
 | Method | Endpoint | Mô tả | Auth |
@@ -329,6 +444,13 @@ Request + Cookie accessToken
 │                                           CreateJobRequest req) {    │
 │     // 1. Lấy thông tin employer                                     │
 │     User employer = userService.getById(employerId);                 │
+│                                                                      │
+│     // 1.1 YÊU CẦU: employer phải có thông tin bank                  │
+│     if (!employer.hasBankInfo()) {                                   │
+│         throw new IllegalStateException(                             │
+│             "Vui lòng cập nhật số tài khoản ngân hàng " +            │
+│             "trong profile trước khi đăng tin tuyển dụng");         │
+│     }                                                                │
 │                                                                      │
 │     // 2. Tạo Job entity                                             │
 │     Job job = Job.builder()                                          │
@@ -1242,6 +1364,507 @@ Response: 200 OK
 
 ---
 
+## 7.6 CHI TIẾT API - JOB APPLICATION
+
+### POST /api/jobs/{id}/apply
+Ứng tuyển vào job (chỉ FREELANCER, tốn 1 credit)
+
+```
+Request + Cookie accessToken
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/JobController.java                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PostMapping("/{id}/apply")                                          │
+│ public ResponseEntity<ApiResponse<JobApplicationResponse>> applyJob( │
+│     @PathVariable Long id,                                           │
+│     @AuthenticationPrincipal UserDetailsImpl userDetails,            │
+│     @RequestBody(required = false) ApplyJobRequest req) {            │
+│                                                                      │
+│     ApiResponse<JobApplicationResponse> response =                   │
+│         jobService.applyJob(id, userDetails.getId(), req);           │
+│     return ResponseEntity.status(HttpStatus.CREATED).body(response); │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: dto/request/ApplyJobRequest.java                               │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Data                                                                │
+│ public class ApplyJobRequest {                                       │
+│     private String coverLetter;   // Thư giới thiệu (optional)       │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/JobService.java                                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public ApiResponse<JobApplicationResponse> applyJob(Long jobId,      │
+│                         Long userId, ApplyJobRequest req) {          │
+│                                                                      │
+│     User user = userService.getById(userId);                         │
+│                                                                      │
+│     // 1. Kiểm tra role FREELANCER                                   │
+│     if (!user.hasRole(ERole.ROLE_FREELANCER)) {                      │
+│         throw new IllegalStateException(                             │
+│             "Chỉ freelancer mới được ứng tuyển");                    │
+│     }                                                                │
+│                                                                      │
+│     Job job = getById(jobId);                                        │
+│                                                                      │
+│     // 2. Kiểm tra không phải owner của job                          │
+│     if (job.isOwnedBy(userId)) {                                     │
+│         throw new IllegalStateException(                             │
+│             "Bạn không thể ứng tuyển vào job của chính mình");       │
+│     }                                                                │
+│                                                                      │
+│     // 3. Kiểm tra job status = OPEN                                 │
+│     if (job.getStatus() != EJobStatus.OPEN) {                        │
+│         throw new IllegalStateException(                             │
+│             "Job này không còn nhận đơn ứng tuyển");                 │
+│     }                                                                │
+│                                                                      │
+│     // 4. Kiểm tra chưa apply job này                                │
+│     if (applicationRepository.existsByJobIdAndFreelancerId(          │
+│             jobId, userId)) {                                        │
+│         throw new IllegalStateException(                             │
+│             "Bạn đã ứng tuyển vào job này rồi");                     │
+│     }                                                                │
+│                                                                      │
+│     // 5. Kiểm tra có bank info                                      │
+│     if (!user.hasBankInfo()) {                                       │
+│         throw new IllegalStateException(                             │
+│             "Vui lòng cập nhật thông tin ngân hàng trước khi apply");│
+│     }                                                                │
+│                                                                      │
+│     // 6. Kiểm tra đủ credit                                         │
+│     if (!user.hasEnoughCredits(1)) {                                 │
+│         throw new IllegalStateException(                             │
+│             "Bạn không đủ credit. Vui lòng mua thêm credit.");       │
+│     }                                                                │
+│                                                                      │
+│     // 7. Trừ credit                                                 │
+│     user.deductCredits(1);                                           │
+│     userService.save(user);                                          │
+│                                                                      │
+│     // 8. Tạo application                                            │
+│     JobApplication application = JobApplication.builder()            │
+│         .job(job)                                                    │
+│         .freelancer(user)                                            │
+│         .coverLetter(req != null ? req.getCoverLetter() : null)      │
+│         .status(EApplicationStatus.PENDING)                          │
+│         .build();                                                    │
+│                                                                      │
+│     // 9. Tăng application count                                     │
+│     job.incrementApplicationCount();                                 │
+│     jobRepository.save(job);                                         │
+│                                                                      │
+│     JobApplication saved = applicationRepository.save(application);  │
+│     return ApiResponse.success("Ứng tuyển thành công",               │
+│                                buildApplicationResponse(saved));     │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 201 Created
+{
+    "status": "SUCCESS",
+    "message": "Ứng tuyển thành công",
+    "data": {
+        "id": 1,
+        "jobId": 5,
+        "jobTitle": "Viết bài SEO...",
+        "coverLetter": "Tôi có 3 năm kinh nghiệm...",
+        "status": "PENDING",
+        "freelancer": {
+            "id": 2,
+            "fullName": "Nguyen Van B",
+            "avatarUrl": "https://...",
+            "phoneNumber": "0901234567",
+            "bio": "Freelancer content writer",
+            "skills": ["SEO", "Content Writing"]
+        },
+        "createdAt": "2026-01-12T10:00:00"
+    }
+}
+
+Errors:
+- 400: "Chỉ freelancer mới được ứng tuyển"
+- 400: "Bạn không thể ứng tuyển vào job của chính mình"
+- 400: "Job này không còn nhận đơn ứng tuyển"
+- 400: "Bạn đã ứng tuyển vào job này rồi"
+- 400: "Vui lòng cập nhật thông tin ngân hàng trước khi apply"
+- 400: "Bạn không đủ credit. Vui lòng mua thêm credit."
+```
+
+---
+
+### GET /api/jobs/my-applications
+Lấy danh sách đơn ứng tuyển của tôi
+
+```
+Request + Cookie accessToken
+GET /api/jobs/my-applications?status=PENDING&page=0&size=10
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/JobController.java                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping("/my-applications")                                      │
+│ public ResponseEntity<ApiResponse<Page<JobApplicationResponse>>>    │
+│         getMyApplications(                                           │
+│             @AuthenticationPrincipal UserDetailsImpl userDetails,    │
+│             @RequestParam(required = false) EApplicationStatus status,│
+│             @RequestParam(defaultValue = "0") int page,              │
+│             @RequestParam(defaultValue = "10") int size) {           │
+│                                                                      │
+│     return ResponseEntity.ok(                                        │
+│         jobService.getMyApplications(userDetails.getId(),            │
+│                                      status, page, size));           │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "data": {
+        "content": [
+            {
+                "id": 1,
+                "jobId": 5,
+                "jobTitle": "Viết bài SEO...",
+                "status": "PENDING",
+                "createdAt": "2026-01-12T10:00:00"
+            },
+            {
+                "id": 2,
+                "jobId": 8,
+                "jobTitle": "Thiết kế logo...",
+                "status": "ACCEPTED",
+                "createdAt": "2026-01-11T15:30:00"
+            }
+        ],
+        "totalPages": 1,
+        "totalElements": 2
+    }
+}
+
+Query params:
+- status: PENDING, ACCEPTED, REJECTED, WITHDRAWN
+```
+
+---
+
+### DELETE /api/jobs/applications/{applicationId}
+Rút đơn ứng tuyển (chỉ được rút khi status = PENDING)
+
+```
+Request + Cookie accessToken
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/JobController.java                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ @DeleteMapping("/applications/{applicationId}")                      │
+│ public ResponseEntity<ApiResponse<Void>> withdrawApplication(        │
+│     @PathVariable Long applicationId,                                │
+│     @AuthenticationPrincipal UserDetailsImpl userDetails) {          │
+│                                                                      │
+│     return ResponseEntity.ok(                                        │
+│         jobService.withdrawApplication(applicationId,                │
+│                                        userDetails.getId()));        │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/JobService.java                                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public ApiResponse<Void> withdrawApplication(Long applicationId,     │
+│                                              Long userId) {          │
+│     JobApplication application = applicationRepository               │
+│         .findById(applicationId)                                     │
+│         .orElseThrow(() -> new RuntimeException("Không tìm thấy"));  │
+│                                                                      │
+│     // Kiểm tra quyền sở hữu                                         │
+│     if (!application.isOwnedBy(userId)) {                            │
+│         throw new UnauthorizedAccessException(                       │
+│             "Bạn không có quyền rút đơn này");                       │
+│     }                                                                │
+│                                                                      │
+│     // Chỉ được rút khi đang PENDING                                 │
+│     if (!application.isPending()) {                                  │
+│         throw new IllegalStateException(                             │
+│             "Chỉ có thể rút đơn khi đang chờ xử lý");                │
+│     }                                                                │
+│                                                                      │
+│     application.withdraw();  // status = WITHDRAWN                   │
+│     applicationRepository.save(application);                         │
+│                                                                      │
+│     return ApiResponse.success("Đã rút đơn ứng tuyển");              │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+Response: 200 OK
+{
+    "status": "SUCCESS",
+    "message": "Đã rút đơn ứng tuyển"
+}
+
+Errors:
+- 403: "Bạn không có quyền rút đơn này"
+- 400: "Chỉ có thể rút đơn khi đang chờ xử lý"
+```
+
+---
+
+### GET /api/jobs/{id}/applications
+Poster xem danh sách đơn ứng tuyển của job
+
+```
+Request + Cookie accessToken
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/JobController.java                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ @GetMapping("/{id}/applications")                                    │
+│ public ResponseEntity<ApiResponse<List<JobApplicationResponse>>>     │
+│         getJobApplications(                                          │
+│             @PathVariable Long id,                                   │
+│             @AuthenticationPrincipal UserDetailsImpl userDetails) {  │
+│                                                                      │
+│     return ResponseEntity.ok(                                        │
+│         jobService.getJobApplications(id, userDetails.getId()));     │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/JobService.java                                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ public ApiResponse<List<JobApplicationResponse>> getJobApplications( │
+│         Long jobId, Long userId) {                                   │
+│     Job job = jobRepository.findById(jobId)                          │
+│         .orElseThrow(() -> new JobNotFoundException(jobId));         │
+│                                                                      │
+│     if (!job.isOwnedBy(userId)) {                                    │
+│         throw new UnauthorizedAccessException(                       │
+│             "Bạn không có quyền xem đơn ứng tuyển của job này");     │
+│     }                                                                │
+│                                                                      │
+│     List<JobApplication> applications =                              │
+│         jobApplicationRepository.findByJobIdOrderByCreatedAtDesc(jobId);│
+│     List<JobApplicationResponse> responses = applications.stream()   │
+│         .map(this::buildApplicationResponse)                         │
+│         .toList();                                                   │
+│                                                                      │
+│     return ApiResponse.success("Thành công", responses);             │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### PUT /api/jobs/applications/{applicationId}/accept
+Duyệt đơn ứng tuyển (poster). Khi duyệt 1 đơn, **tất cả đơn khác đang PENDING của job đó sẽ bị tự động REJECT**.
+
+```
+Request + Cookie accessToken
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/JobController.java                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PutMapping("/applications/{applicationId}/accept")                  │
+│ public ResponseEntity<ApiResponse<JobApplicationResponse>>           │
+│         acceptApplication(                                           │
+│             @PathVariable Long applicationId,                        │
+│             @AuthenticationPrincipal UserDetailsImpl userDetails) {  │
+│                                                                      │
+│     return ResponseEntity.ok(                                        │
+│         jobService.acceptApplication(applicationId,                  │
+│                                       userDetails.getId()));         │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/JobService.java                                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public ApiResponse<JobApplicationResponse>                           │
+│         acceptApplication(Long applicationId, Long userId) {         │
+│     JobApplication application = jobApplicationRepository            │
+│         .findById(applicationId)                                     │
+│         .orElseThrow(() ->                                           │
+│             new IllegalArgumentException("Không tìm thấy đơn"));     │
+│                                                                      │
+│     if (!application.isJobOwnedBy(userId)) {                         │
+│         throw new UnauthorizedAccessException(                       │
+│             "Bạn không có quyền duyệt đơn này");                     │
+│     }                                                                │
+│     if (!application.isPending()) {                                  │
+│         throw new IllegalStateException(                             │
+│             "Chỉ có thể duyệt đơn đang chờ xử lý");                  │
+│     }                                                                │
+│                                                                      │
+│     // Duyệt đơn này                                                 │
+│     application.accept();                                            │
+│     jobApplicationRepository.save(application);                      │
+│                                                                      │
+│     // AUTO reject các đơn PENDING khác của job                      │
+│     Long jobId = application.getJob().getId();                       │
+│     List<JobApplication> otherPending = jobApplicationRepository     │
+│         .findByJobIdAndStatusAndIdNot(jobId,                         │
+│                 EApplicationStatus.PENDING, applicationId);          │
+│     for (JobApplication other : otherPending) {                      │
+│         other.reject();                                              │
+│     }                                                                │
+│     jobApplicationRepository.saveAll(otherPending);                  │
+│                                                                      │
+│     return ApiResponse.success(                                      │
+│         otherPending.isEmpty()                                       │
+│             ? "Đã duyệt đơn ứng tuyển"                               │
+│             : "Đã duyệt đơn và từ chối " + otherPending.size()       │
+│                 + " đơn khác",                                       │
+│         buildApplicationResponse(application));                      │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Lỗi thường gặp:
+- 403: "Bạn không có quyền duyệt đơn này"
+- 400: "Chỉ có thể duyệt đơn đang chờ xử lý"
+
+---
+
+### PUT /api/jobs/applications/{applicationId}/reject
+Từ chối đơn ứng tuyển (poster)
+
+```
+Request + Cookie accessToken
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: controller/JobController.java                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ @PutMapping("/applications/{applicationId}/reject")                  │
+│ public ResponseEntity<ApiResponse<JobApplicationResponse>>           │
+│         rejectApplication(                                           │
+│             @PathVariable Long applicationId,                        │
+│             @AuthenticationPrincipal UserDetailsImpl userDetails) {  │
+│                                                                      │
+│     return ResponseEntity.ok(                                        │
+│         jobService.rejectApplication(applicationId,                  │
+│                                        userDetails.getId()));        │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: service/JobService.java                                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ @Transactional                                                       │
+│ public ApiResponse<JobApplicationResponse>                           │
+│         rejectApplication(Long applicationId, Long userId) {         │
+│     JobApplication application = jobApplicationRepository            │
+│         .findById(applicationId)                                     │
+│         .orElseThrow(() -> new IllegalArgumentException(             │
+│             "Không tìm thấy đơn ứng tuyển"));                        │
+│                                                                      │
+│     if (!application.isJobOwnedBy(userId)) {                         │
+│         throw new UnauthorizedAccessException(                       │
+│             "Bạn không có quyền từ chối đơn này");                   │
+│     }                                                                │
+│     if (!application.isPending()) {                                  │
+│         throw new IllegalStateException(                             │
+│             "Chỉ có thể từ chối đơn đang chờ xử lý");                │
+│     }                                                                │
+│                                                                      │
+│     application.reject();                                            │
+│     jobApplicationRepository.save(application);                      │
+│                                                                      │
+│     return ApiResponse.success(                                      │
+│         "Đã từ chối đơn ứng tuyển",                                  │
+│         buildApplicationResponse(application));                      │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Lỗi thường gặp:
+- 403: "Bạn không có quyền từ chối đơn này"
+- 400: "Chỉ có thể từ chối đơn đang chờ xử lý"
+
+---
+
+### Application Status Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    APPLICATION STATUS TRANSITIONS                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                              ┌─────────┐                                    │
+│                              │ PENDING │ ◄── POST /api/jobs/{id}/apply      │
+│                              └────┬────┘                                    │
+│                                   │                                         │
+│           ┌───────────────────────┼───────────────────────┐                 │
+│           │                       │                       │                 │
+│           ▼                       ▼                       ▼                 │
+│    ┌─────────────┐         ┌───────────┐         ┌───────────────┐         │
+│    │  WITHDRAWN  │         │ ACCEPTED  │         │   REJECTED    │         │
+│    │(Freelancer) │         │ (Poster)  │         │   (Poster)    │         │
+│    └─────────────┘         └───────────┘         └───────────────┘         │
+│                                                                             │
+│   Lưu ý:                                                                    │
+│   - WITHDRAWN: Freelancer tự rút đơn                                        │
+│   - ACCEPTED/REJECTED: Job poster quyết định                                │
+│   - Credit KHÔNG được hoàn khi rút đơn                                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Freelancer Info Visibility (Privacy)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              FREELANCER INFO TRONG APPLICATION RESPONSE                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   Khi job poster xem đơn ứng tuyển, họ CHỈ thấy các thông tin:             │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │ FreelancerResponse (Limited Fields)                                 │   │
+│   ├─────────────────────────────────────────────────────────────────────┤   │
+│   │ - id          : Long                                                │   │
+│   │ - fullName    : String        ◄── Tên đầy đủ                        │   │
+│   │ - avatarUrl   : String        ◄── Ảnh đại diện                      │   │
+│   │ - phoneNumber : String        ◄── Số điện thoại                     │   │
+│   │ - bio         : String        ◄── Giới thiệu bản thân               │   │
+│   │ - skills      : Set<String>   ◄── Kỹ năng                           │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   KHÔNG hiển thị:                                                           │
+│   - email                                                                   │
+│   - bankAccountNumber                                                       │
+│   - bankName                                                                │
+│   - credits                                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 8. POSTMAN TEST
 
 ### 8.0 Đăng nhập (Lấy Token)
@@ -1298,6 +1921,10 @@ Content-Type: application/json
     }
 }
 ```
+
+Errors:
+- 400: "Vui lòng cập nhật số tài khoản ngân hàng trong profile trước khi đăng tin tuyển dụng"
+- 400: Validate request body (title, description, budget, deadline...)
 
 ---
 
@@ -1494,7 +2121,154 @@ Cookie: accessToken=eyJ...
 
 ---
 
-### 8.2 PAYMENT APIs
+### 8.2 JOB APPLICATION APIs
+
+#### POST /api/jobs/{id}/apply - Ứng tuyển vào job
+```http
+POST http://localhost:8080/api/jobs/5/apply
+Cookie: accessToken=eyJ...
+Content-Type: application/json
+
+{
+    "coverLetter": "Tôi có 3 năm kinh nghiệm viết content SEO. Đã từng làm việc cho các dự án du lịch lớn."
+}
+```
+
+**Response: 201 Created**
+```json
+{
+    "status": "SUCCESS",
+    "message": "Ứng tuyển thành công",
+    "data": {
+        "id": 1,
+        "jobId": 5,
+        "jobTitle": "Viết bài SEO cho website du lịch",
+        "coverLetter": "Tôi có 3 năm kinh nghiệm...",
+        "status": "PENDING",
+        "freelancer": {
+            "id": 2,
+            "fullName": "Nguyen Van B",
+            "avatarUrl": "https://...",
+            "phoneNumber": "0901234567",
+            "bio": "Freelancer content writer",
+            "skills": ["SEO", "Content Writing"]
+        },
+        "createdAt": "2026-01-12T10:00:00"
+    }
+}
+```
+
+**Error Responses:**
+```json
+// Không phải FREELANCER
+{
+    "status": "ERROR",
+    "message": "Chỉ freelancer mới được ứng tuyển"
+}
+
+// Apply vào job của mình
+{
+    "status": "ERROR",
+    "message": "Bạn không thể ứng tuyển vào job của chính mình"
+}
+
+// Job không OPEN
+{
+    "status": "ERROR",
+    "message": "Job này không còn nhận đơn ứng tuyển"
+}
+
+// Đã apply rồi
+{
+    "status": "ERROR",
+    "message": "Bạn đã ứng tuyển vào job này rồi"
+}
+
+// Chưa có bank info
+{
+    "status": "ERROR",
+    "message": "Vui lòng cập nhật thông tin ngân hàng trước khi ứng tuyển"
+}
+
+// Không đủ credit
+{
+    "status": "ERROR",
+    "message": "Bạn không đủ credit để ứng tuyển. Vui lòng mua thêm credit."
+}
+```
+
+---
+
+#### GET /api/jobs/my-applications - Đơn ứng tuyển của tôi
+```http
+GET http://localhost:8080/api/jobs/my-applications?status=PENDING&page=0&size=10
+Cookie: accessToken=eyJ...
+```
+
+**Query params:**
+- `status` (optional): `PENDING`, `ACCEPTED`, `REJECTED`, `WITHDRAWN`
+
+**Response: 200 OK**
+```json
+{
+    "status": "SUCCESS",
+    "data": {
+        "content": [
+            {
+                "id": 1,
+                "jobId": 5,
+                "jobTitle": "Viết bài SEO cho website du lịch",
+                "status": "PENDING",
+                "createdAt": "2026-01-12T10:00:00"
+            },
+            {
+                "id": 2,
+                "jobId": 8,
+                "jobTitle": "Thiết kế logo công ty",
+                "status": "ACCEPTED",
+                "createdAt": "2026-01-11T15:30:00"
+            }
+        ],
+        "totalPages": 1,
+        "totalElements": 2
+    }
+}
+```
+
+---
+
+#### DELETE /api/jobs/applications/{id} - Rút đơn ứng tuyển
+```http
+DELETE http://localhost:8080/api/jobs/applications/1
+Cookie: accessToken=eyJ...
+```
+
+**Response: 200 OK**
+```json
+{
+    "status": "SUCCESS",
+    "message": "Đã rút đơn ứng tuyển"
+}
+```
+
+**Error Responses:**
+```json
+// Không phải owner
+{
+    "status": "ERROR",
+    "message": "Bạn không có quyền rút đơn này"
+}
+
+// Không còn PENDING
+{
+    "status": "ERROR",
+    "message": "Chỉ có thể rút đơn khi đang chờ xử lý"
+}
+```
+
+---
+
+### 8.4 PAYMENT APIs
 
 #### POST /api/payments/jobs/{jobId} - Tạo Đơn Thanh Toán
 ```http
@@ -1630,7 +2404,7 @@ Cookie: accessToken=eyJ...
 
 ---
 
-### 8.3 TEST FLOW HOÀN CHỈNH
+### 8.5 TEST FLOW HOÀN CHỈNH
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -1682,9 +2456,47 @@ Cookie: accessToken=eyJ...
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         FLOW TEST ỨNG TUYỂN JOB                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  === CHUẨN BỊ (Freelancer) ===                                              │
+│                                                                             │
+│  1. POST /api/auth/login          → Đăng nhập (nhận daily credit)           │
+│     Response: { user: { credits: 30 } }                                     │
+│                                                                             │
+│  2. PUT /api/users/me             → Cập nhật bank info (bắt buộc)           │
+│     Body: { bankAccountNumber: "...", bankName: "..." }                     │
+│     Response: { hasBankInfo: true }                                         │
+│                                                                             │
+│  === ỨNG TUYỂN ===                                                          │
+│                                                                             │
+│  3. GET /api/jobs                 → Xem danh sách jobs OPEN                 │
+│                                                                             │
+│  4. GET /api/jobs/5               → Xem chi tiết job                        │
+│                                                                             │
+│  5. POST /api/jobs/5/apply        → Ứng tuyển (tốn 1 credit)                │
+│     Body: { coverLetter: "..." }                                            │
+│     Response: { status: "PENDING" }                                         │
+│     → credits: 30 - 1 = 29                                                  │
+│                                                                             │
+│  6. GET /api/jobs/my-applications → Xem đơn của tôi                         │
+│     Response: { content: [{ jobId: 5, status: "PENDING" }] }                │
+│                                                                             │
+│  === RÚT ĐƠN (nếu muốn) ===                                                 │
+│                                                                             │
+│  7. DELETE /api/jobs/applications/1 → Rút đơn                               │
+│     Response: "Đã rút đơn ứng tuyển"                                        │
+│     → status = WITHDRAWN                                                    │
+│     → Credit KHÔNG được hoàn                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
-### 8.4 ERROR RESPONSES
+### 8.6 ERROR RESPONSES
 
 #### 400 Bad Request - Validation Error
 ```json
@@ -1724,7 +2536,7 @@ Cookie: accessToken=eyJ...
 
 ---
 
-### 8.5 ADMIN PAYMENT APIs (Yêu cầu ROLE_ADMIN)
+### 8.7 ADMIN PAYMENT APIs (Yêu cầu ROLE_ADMIN)
 
 #### GET /api/admin/payments/statistics - Thống kê tổng quan
 ```http
@@ -1853,7 +2665,24 @@ ALTER TABLE payments ADD COLUMN m_refund_id VARCHAR(50);
 
 ---
 
-## 11. PAYMENT STATUS FLOW
+## 11. APPLICATION STATUS ENUM
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ FILE: entity/EApplicationStatus.java                                 │
+├──────────────────────────────────────────────────────────────────────┤
+│ public enum EApplicationStatus {                                     │
+│     PENDING,      // Chờ xử lý (mới apply)                           │
+│     ACCEPTED,     // Đã chấp nhận (poster duyệt)                     │
+│     REJECTED,     // Đã từ chối (poster từ chối)                     │
+│     WITHDRAWN     // Đã rút đơn (freelancer rút)                     │
+│ }                                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 12. PAYMENT STATUS FLOW
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐

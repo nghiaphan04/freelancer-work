@@ -1,6 +1,7 @@
 package com.workhub.api.controller;
 
 import com.workhub.api.dto.request.ChangePasswordRequest;
+import com.workhub.api.dto.request.GrantCreditsRequest;
 import com.workhub.api.dto.request.UpdateProfileRequest;
 import com.workhub.api.dto.request.UpdateUserStatusRequest;
 import com.workhub.api.dto.response.ApiResponse;
@@ -99,12 +100,28 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("Đăng ký thành công! Bạn có thể đăng việc.", buildUserResponse(user)));
     }
 
+    @PostMapping("/{id}/credits")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AuthResponse.UserResponse>> grantCredits(
+            @PathVariable Long id,
+            @Valid @RequestBody GrantCreditsRequest req) {
+
+        User user = userService.grantCredits(id, req.getAmount());
+        return ResponseEntity.ok(ApiResponse.success(
+                "Đã cấp " + req.getAmount() + " credit cho user (tổng: " + user.getCredits() + ")", 
+                buildUserResponse(user)));
+    }
+
     private AuthResponse.UserResponse buildUserResponse(User user) {
+        return buildUserResponse(user, true);
+    }
+
+    private AuthResponse.UserResponse buildUserResponse(User user, boolean includeBankInfo) {
         List<String> roles = user.getRoles().stream()
                 .map(r -> r.getName().name())
                 .toList();
 
-        return AuthResponse.UserResponse.builder()
+        AuthResponse.UserResponse.UserResponseBuilder builder = AuthResponse.UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
@@ -122,6 +139,14 @@ public class UserController {
                 .emailVerified(user.getEmailVerified())
                 .enabled(user.getEnabled())
                 .roles(roles)
-                .build();
+                .credits(user.getCredits())
+                .hasBankInfo(user.hasBankInfo());
+
+        if (includeBankInfo) {
+            builder.bankAccountNumber(user.getBankAccountNumber())
+                   .bankName(user.getBankName());
+        }
+
+        return builder.build();
     }
 }

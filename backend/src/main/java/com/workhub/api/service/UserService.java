@@ -65,7 +65,9 @@ public class UserService {
                 req.getBio(),
                 req.getSkills(),
                 req.getIsOpenToWork(),
-                req.getOpenToWorkRoles()
+                req.getOpenToWorkRoles(),
+                req.getBankAccountNumber(),
+                req.getBankName()
         );
         return userRepository.save(user);
     }
@@ -110,5 +112,22 @@ public class UserService {
         
         user.assignRole(employerRole);
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public User grantCredits(Long userId, int amount) {
+        User user = getById(userId);
+        user.addCredits(amount);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public boolean claimDailyCredits(Long userId) {
+        User user = getById(userId);
+        boolean claimed = user.claimDailyCredits();
+        if (claimed) {
+            userRepository.save(user);
+        }
+        return claimed;
     }
 }
