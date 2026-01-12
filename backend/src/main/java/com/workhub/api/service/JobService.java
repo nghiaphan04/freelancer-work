@@ -151,7 +151,7 @@ public class JobService {
         job.close();
         Job updatedJob = jobRepository.save(job);
         
-        boolean hasRefundablePayment = paymentRepository.findByJobId(jobId)
+        boolean hasRefundablePayment = paymentRepository.findByJobIdAndStatus(jobId, EPaymentStatus.PAID)
                 .map(p -> p.canRefund())
                 .orElse(false);
         
@@ -171,8 +171,8 @@ public class JobService {
         }
 
         // Kiểm tra đã thanh toán chưa
-        Payment payment = paymentRepository.findByJobId(jobId).orElse(null);
-        if (payment == null || payment.getStatus() != EPaymentStatus.PAID) {
+        Payment payment = paymentRepository.findByJobIdAndStatus(jobId, EPaymentStatus.PAID).orElse(null);
+        if (payment == null) {
             throw new IllegalStateException("Vui lòng thanh toán trước khi đăng tin");
         }
 
@@ -203,15 +203,16 @@ public class JobService {
         }
 
         boolean refunded = false;
-        Payment payment = paymentRepository.findByJobId(jobId).orElse(null);
+        List<Payment> payments = paymentRepository.findByJobId(jobId);
         
-        if (payment != null) {
+        for (Payment payment : payments) {
             if (payment.getStatus() == EPaymentStatus.PAID && !payment.isRefunded()) {
                 paymentService.refundPayment(jobId, userId, "Xóa job - tự động hoàn tiền");
                 refunded = true;
             }
-            paymentRepository.delete(payment);
         }
+        // Xóa tất cả payments liên quan
+        paymentRepository.deleteAll(payments);
 
         jobRepository.delete(job);
         

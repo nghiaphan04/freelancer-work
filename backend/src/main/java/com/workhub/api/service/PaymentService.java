@@ -237,8 +237,9 @@ public class PaymentService {
     }
 
     public ApiResponse<PaymentResponse> getPaymentByJobId(Long jobId, Long userId) {
-        Payment payment = paymentRepository.findByJobId(jobId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán cho job này"));
+        Payment payment = paymentRepository.findByJobIdAndStatus(jobId, EPaymentStatus.PAID)
+                .orElseGet(() -> paymentRepository.findFirstByJobIdOrderByCreatedAtDesc(jobId)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán cho job này")));
         
         if (!payment.getUser().getId().equals(userId)) {
             throw new RuntimeException("Bạn không có quyền xem thanh toán này");
@@ -347,8 +348,8 @@ public class PaymentService {
 
     @Transactional
     public ApiResponse<PaymentResponse> refundPayment(Long jobId, Long userId, String reason) {
-        Payment payment = paymentRepository.findByJobId(jobId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán cho job này"));
+        Payment payment = paymentRepository.findByJobIdAndStatus(jobId, EPaymentStatus.PAID)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán đã hoàn thành cho job này"));
 
         if (!payment.getUser().getId().equals(userId)) {
             throw new RuntimeException("Bạn không có quyền hoàn tiền thanh toán này");

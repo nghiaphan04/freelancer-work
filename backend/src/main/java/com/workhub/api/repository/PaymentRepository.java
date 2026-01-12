@@ -21,7 +21,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findByZpTransId(Long zpTransId);
 
-    Optional<Payment> findByJobId(Long jobId);
+    List<Payment> findByJobId(Long jobId);
+
+    Optional<Payment> findFirstByJobIdOrderByCreatedAtDesc(Long jobId);
 
     Optional<Payment> findByJobIdAndStatus(Long jobId, EPaymentStatus status);
 
