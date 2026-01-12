@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
 import { api } from "@/lib/api";
 import { Payment } from "@/types/payment";
 import Icon from "@/components/ui/Icon";
@@ -132,11 +132,16 @@ export default function JobPaymentForm() {
 
 
           {/* QR Code */}
-          {payment?.qrCode && (
+          {payment?.orderUrl && (
             <div className="mt-6 text-center">
               <p className="text-gray-600 mb-3">Quét mã QR bằng ứng dụng ZaloPay:</p>
               <div className="inline-block p-4 bg-white border-2 border-gray-200 rounded-lg">
-                <img src={payment.qrCode} alt="QR Code thanh toán" className="w-48 h-48 mx-auto" />
+                <QRCodeSVG 
+                  value={payment.orderUrl} 
+                  size={192}
+                  level="M"
+                  includeMargin={true}
+                />
               </div>
             </div>
           )}
