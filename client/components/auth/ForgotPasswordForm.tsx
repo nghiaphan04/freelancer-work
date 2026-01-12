@@ -51,7 +51,7 @@ export default function ForgotPasswordForm() {
       if (response.status === "SUCCESS") {
         toast.success("Đã gửi mã OTP đến email");
         setStep("otp");
-        setOtpTimer(response.data?.expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
+        setOtpTimer((response.data as { expiresIn: number }).expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
         setCanResend(false);
       } else { toast.error(response.message || "Không thể gửi OTP"); }
     } catch { toast.error(AUTH_MESSAGES.ERROR_GENERIC); }
@@ -65,7 +65,7 @@ export default function ForgotPasswordForm() {
       const response = await api.resendOtp({ email, otpType: "FORGOT_PASSWORD" });
       if (response.status === "SUCCESS") {
         toast.success("Đã gửi lại mã OTP");
-        setOtpTimer(response.data?.expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
+        setOtpTimer((response.data as { expiresIn: number }).expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
         setCanResend(false);
         setOtpCode("");
       } else { toast.error(response.message || "Không thể gửi lại OTP"); }

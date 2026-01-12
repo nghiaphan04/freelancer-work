@@ -12,6 +12,7 @@ import Icon from "@/components/ui/Icon";
 import { api } from "@/lib/api";
 import { validateEmail, validatePassword, formatOtpTime, saveAuthData, AUTH_CONSTANTS, AUTH_MESSAGES } from "@/constant/auth";
 import { useAuthLoading, useAuth } from "@/context/AuthContext";
+import { User } from "@/types/user";
 
 type Step = "register" | "otp";
 
@@ -77,7 +78,7 @@ export default function RegisterForm() {
       if (response.status === "SUCCESS") {
         toast.success("Đăng ký thành công! Vui lòng kiểm tra email.");
         setStep("otp");
-        setOtpTimer(response.data?.expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
+        setOtpTimer((response.data as { expiresIn: number }).expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
         setCanResend(false);
       } else { toast.error(response.message || "Đăng ký thất bại"); }
     } catch { toast.error(AUTH_MESSAGES.ERROR_GENERIC); }
@@ -92,8 +93,8 @@ export default function RegisterForm() {
     try {
       const response = await api.verifyOtp({ email: formData.email, otp: otpCode });
       if (response.status === "SUCCESS") {
-        saveAuthData(response.data);
-        setUser(response.data.user);
+        saveAuthData({ user: (response.data as { user: User }).user });
+        setUser((response.data as { user: User }).user);
         toast.success("Xác thực thành công!");
         router.push("/");
       } else { setErrors({ ...errors, otp: response.message || "Mã OTP không đúng" }); }
@@ -108,7 +109,7 @@ export default function RegisterForm() {
       const response = await api.resendOtp({ email: formData.email, otpType: "REGISTRATION" });
       if (response.status === "SUCCESS") {
         toast.success("Đã gửi lại mã OTP.");
-        setOtpTimer(response.data?.expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
+        setOtpTimer((response.data as { expiresIn: number }).expiresIn || AUTH_CONSTANTS.OTP_EXPIRES_IN);
         setCanResend(false);
         setOtpCode("");
       } else { toast.error(response.message || "Không thể gửi lại OTP"); }

@@ -6,6 +6,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { api } from "@/lib/api";
 import { saveAuthData } from "@/constant/auth";
 import { useAuth, useAuthLoading } from "@/context/AuthContext";
+import { User } from "@/types/user";
 
 export function useGoogleAuth() {
   const router = useRouter();
@@ -18,8 +19,8 @@ export function useGoogleAuth() {
       try {
         const response = await api.googleAuth(tokenResponse.access_token);
         if (response.status === "SUCCESS") {
-          saveAuthData(response.data);
-          setUser(response.data.user);
+          saveAuthData({ user: (response.data as { user: User }).user });
+          setUser((response.data as { user: User }).user);
           toast.success("Đăng nhập thành công!");
           router.push("/");
         } else {

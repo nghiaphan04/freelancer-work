@@ -11,6 +11,7 @@ import Icon from "@/components/ui/Icon";
 import { api } from "@/lib/api";
 import { validateEmail, saveAuthData, AUTH_MESSAGES } from "@/constant/auth";
 import { useAuthLoading, useAuth } from "@/context/AuthContext";
+import { User } from "@/types/user";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -42,8 +43,8 @@ export default function LoginForm() {
     try {
       const response = await api.login(formData);
       if (response.status === "SUCCESS") {
-        saveAuthData(response.data);
-        setUser(response.data.user);
+        saveAuthData({ user: (response.data as { user: User }).user });
+        setUser((response.data as unknown as { user: User }).user);
         toast.success("Đăng nhập thành công!");
         router.push("/");
       } else {
