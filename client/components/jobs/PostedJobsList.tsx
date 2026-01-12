@@ -78,12 +78,6 @@ export default function PostedJobsList() {
             {page ? `${page.totalElements} công việc` : "Xem và quản lý các công việc bạn đã đăng tuyển"}
           </p>
         </div>
-        <Link href="/my-posted-jobs/create">
-          <Button className="bg-[#00b14f] hover:bg-[#009643] w-full sm:w-auto">
-            <Icon name="add" size={20} />
-            Đăng việc mới
-          </Button>
-        </Link>
       </div>
 
       {/* Filter Tabs */}
