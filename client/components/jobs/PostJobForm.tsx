@@ -106,7 +106,7 @@ export default function PostJobForm() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4">
+    <div className="max-w-7xl mx-auto px-4">
       {/* Header */}
       <div className="mb-6">
         <Link

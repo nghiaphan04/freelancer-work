@@ -101,10 +101,19 @@ export default function JobPaymentForm() {
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {/* Header */}
-        <div className="bg-[#00b14f] text-white p-6 text-center">
-          <Icon name="payment" size={48} className="mx-auto mb-2" />
-          <h1 className="text-2xl font-bold">Thanh toán đăng tin</h1>
-          <p className="text-green-100 mt-1">Hoàn tất thanh toán để công việc được hiển thị</p>
+        <div 
+          className="relative bg-cover bg-center text-white p-8 text-center"
+          style={{ backgroundImage: "url('/landing/slide1.png')" }}
+        >
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/60" />
+          
+          {/* Content */}
+          <div className="relative z-10">
+            <Icon name="payment" size={48} className="mx-auto mb-2" />
+            <h1 className="text-2xl font-bold">Thanh toán đăng tin</h1>
+            <p className="text-gray-200 mt-1">Hoàn tất thanh toán để công việc được hiển thị</p>
+          </div>
         </div>
 
         {/* Payment Details */}

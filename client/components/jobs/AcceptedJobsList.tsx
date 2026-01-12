@@ -57,7 +57,7 @@ export default function AcceptedJobsList() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4">
+    <div className="max-w-7xl mx-auto px-4">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

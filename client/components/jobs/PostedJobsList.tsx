@@ -25,7 +25,6 @@ const FILTER_TABS: { key: JobStatus | "all"; label: string }[] = [
   { key: "OPEN", label: "Đang tuyển" },
   { key: "IN_PROGRESS", label: "Đang thực hiện" },
   { key: "COMPLETED", label: "Hoàn thành" },
-  { key: "CANCELLED", label: "Đã hủy" },
 ];
 
 export default function PostedJobsList() {
@@ -36,6 +35,7 @@ export default function PostedJobsList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loadingDeleteId, setLoadingDeleteId] = useState<number | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<{ hasPaidPayment: boolean } | null>(null);
 
   const hasAccess = user?.roles?.includes("ROLE_EMPLOYER");
@@ -72,6 +72,7 @@ export default function PostedJobsList() {
   };
 
   const handleDeleteClick = async (job: Job) => {
+    setLoadingDeleteId(job.id);
     setJobToDelete(job);
     setPaymentInfo(null);
     
@@ -86,6 +87,7 @@ export default function PostedJobsList() {
       setPaymentInfo({ hasPaidPayment: false });
     }
     
+    setLoadingDeleteId(null);
     setDeleteDialogOpen(true);
   };
 
@@ -123,7 +125,7 @@ export default function PostedJobsList() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4">
+    <div className="max-w-7xl mx-auto px-4">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
@@ -235,33 +237,45 @@ export default function PostedJobsList() {
                       </div>
                     )}
 
-                    {job.status === "CANCELLED" && (
-                      <div className="mt-3 flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-                        <Icon name="cancel" size={16} />
-                        <span>Công việc đã bị hủy - Đã hoàn tiền escrow (nếu có)</span>
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex flex-row sm:flex-col gap-2">
                     {job.status === "DRAFT" && (
-                      <Link href={`/jobs/${job.id}/payment`} className="flex-1 sm:flex-none">
-                        <Button size="sm" className="w-full bg-[#00b14f] hover:bg-[#009643] text-white">
+                      <Link 
+                        href={`/jobs/${job.id}/payment`} 
+                        className={`flex-1 sm:flex-none ${loadingDeleteId === job.id ? "pointer-events-none" : ""}`}
+                      >
+                        <Button 
+                          size="sm" 
+                          className="w-full bg-[#00b14f] hover:bg-[#009643] text-white"
+                          disabled={loadingDeleteId === job.id}
+                        >
                           <Icon name="payment" size={16} />
                           <span className="ml-1">Thanh toán</span>
                         </Button>
                       </Link>
                     )}
-                    <Link href={`/jobs/${job.id}`} className="flex-1 sm:flex-none">
-                      <Button variant="outline" size="sm" className="w-full">
+                    <Link 
+                      href={`/jobs/${job.id}`} 
+                      className={`flex-1 sm:flex-none ${loadingDeleteId === job.id ? "pointer-events-none" : ""}`}
+                    >
+                      <Button variant="outline" size="sm" className="w-full" disabled={loadingDeleteId === job.id}>
                         <Icon name="visibility" size={16} />
                         <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                       </Button>
                     </Link>
                     {(job.status === "DRAFT" || job.status === "OPEN") && (
                       <>
-                        <Link href={`/jobs/${job.id}/edit`} className="flex-1 sm:flex-none">
-                          <Button variant="outline" size="sm" className="w-full text-[#00b14f] border-[#00b14f] hover:bg-[#00b14f]/5">
+                        <Link 
+                          href={`/jobs/${job.id}/edit`} 
+                          className={`flex-1 sm:flex-none ${loadingDeleteId === job.id ? "pointer-events-none" : ""}`}
+                        >
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full text-[#00b14f] border-[#00b14f] hover:bg-[#00b14f]/5"
+                            disabled={loadingDeleteId === job.id}
+                          >
                             <Icon name="edit" size={16} />
                             <span className="sm:hidden lg:inline ml-1">Sửa</span>
                           </Button>
@@ -271,8 +285,13 @@ export default function PostedJobsList() {
                           size="sm"
                           className="flex-1 sm:flex-none text-red-600 border-red-200 hover:bg-red-50"
                           onClick={() => handleDeleteClick(job)}
+                          disabled={loadingDeleteId === job.id}
                         >
-                          <Icon name="delete" size={16} />
+                          {loadingDeleteId === job.id ? (
+                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Icon name="delete" size={16} />
+                          )}
                           <span className="sm:hidden lg:inline ml-1">Xóa</span>
                         </Button>
                       </>

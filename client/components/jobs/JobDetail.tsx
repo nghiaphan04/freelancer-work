@@ -113,7 +113,7 @@ export default function JobDetail() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow p-8 flex flex-col items-center justify-center">
           <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
           <p className="mt-4 text-gray-600">Đang tải thông tin...</p>
@@ -140,7 +140,7 @@ export default function JobDetail() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4">
+    <div className="max-w-7xl mx-auto px-4">
       {/* Back button */}
       <button
         onClick={() => router.back()}

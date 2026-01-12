@@ -44,7 +44,7 @@ export default function ProfilePage() {
       <Header />
 
       <main className="flex-1 py-6">
-        <div className="max-w-4xl mx-auto px-4 space-y-4">
+        <div className="max-w-7xl mx-auto px-4 space-y-4">
           <ProfileCard user={user} onUpdate={updateProfile} isLoading={isLoading} />
           <ProfileAbout bio={user.bio} onUpdate={updateProfile} isLoading={isLoading} />
           <ProfileSkills skills={user.skills} onUpdate={updateProfile} isLoading={isLoading} />
