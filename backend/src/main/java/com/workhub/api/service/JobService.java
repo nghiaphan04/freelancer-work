@@ -31,6 +31,7 @@ public class JobService {
     private final JobRepository jobRepository;
     private final JobApplicationRepository jobApplicationRepository;
     private final UserService userService;
+    private final JobHistoryService jobHistoryService;
 
     private static final BigDecimal FEE_PERCENT = new BigDecimal("5.00");
 
@@ -204,6 +205,13 @@ public class JobService {
         if (job.getStatus() == EJobStatus.DRAFT) {
             job.setStatus(EJobStatus.OPEN);
         } else if (job.getStatus() == EJobStatus.OPEN) {
+            if (job.getApplicationCount() > 0) {
+                throw new IllegalStateException("Không thể chuyển về Bản nháp khi đã có người ứng tuyển");
+            }
+            boolean hasAcceptedApplication = jobApplicationRepository.existsByJobIdAndStatus(jobId, EApplicationStatus.ACCEPTED);
+            if (hasAcceptedApplication) {
+                throw new IllegalStateException("Không thể chuyển về Bản nháp khi đã có người làm tham gia");
+            }
             job.setStatus(EJobStatus.DRAFT);
         } else {
             throw new IllegalStateException("Chỉ có thể chuyển đổi giữa trạng thái Nháp và Công khai");
@@ -234,6 +242,33 @@ public class JobService {
     public Job getById(Long id) {
         return jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException(id));
+    }
+
+    /**
+     * Kiểm tra quyền xem lịch sử job
+     * - Employer của job
+     * - Freelancer đã được accept vào job
+     * - Admin
+     */
+    public void validateHistoryAccess(Long jobId, Long userId) {
+        Job job = getById(jobId);
+        User user = userService.getById(userId);
+
+        if (user.isAdmin()) {
+            return;
+        }
+
+        if (job.isOwnedBy(userId)) {
+            return;
+        }
+
+        boolean isAcceptedFreelancer = jobApplicationRepository
+                .existsByJobIdAndFreelancerIdAndStatus(jobId, userId, EApplicationStatus.ACCEPTED);
+        if (isAcceptedFreelancer) {
+            return;
+        }
+
+        throw new UnauthorizedAccessException("Bạn không có quyền xem lịch sử công việc này");
     }
 
     // ===== ADMIN APPROVAL METHODS =====
@@ -367,6 +402,10 @@ public class JobService {
             jobRepository.save(job);
         }
 
+        // Ghi lịch sử - Freelancer ứng tuyển
+        jobHistoryService.logHistory(job, user, EJobHistoryAction.APPLICATION_SUBMITTED,
+                "Đã nộp đơn ứng tuyển");
+
         return ApiResponse.success("Ứng tuyển thành công (còn " + user.getCredits() + " credit)", buildApplicationResponse(saved));
     }
 
@@ -446,6 +485,8 @@ public class JobService {
     /**
      * Duyệt đơn ứng tuyển (poster)
      * - Tự động từ chối tất cả đơn pending khác của job đó
+     * - Chuyển job sang IN_PROGRESS
+     * - Ghi lịch sử
      */
     @Transactional
     public ApiResponse<JobApplicationResponse> acceptApplication(Long applicationId, Long userId) {
@@ -464,8 +505,13 @@ public class JobService {
         application.accept();
         jobApplicationRepository.save(application);
 
+        // Chuyển job sang IN_PROGRESS
+        Job job = application.getJob();
+        job.setStatus(EJobStatus.IN_PROGRESS);
+        jobRepository.save(job);
+
         // Từ chối tất cả đơn pending khác của job này
-        Long jobId = application.getJob().getId();
+        Long jobId = job.getId();
         List<JobApplication> otherPendingApplications = jobApplicationRepository
                 .findByJobIdAndStatusAndIdNot(jobId, EApplicationStatus.PENDING, applicationId);
         
@@ -473,6 +519,12 @@ public class JobService {
             other.reject();
         }
         jobApplicationRepository.saveAll(otherPendingApplications);
+
+        // Ghi lịch sử - Employer duyệt ứng viên
+        User employer = userService.getById(userId);
+        User freelancer = application.getFreelancer();
+        jobHistoryService.logHistory(job, employer, EJobHistoryAction.APPLICATION_ACCEPTED,
+                "Đã duyệt ứng viên " + freelancer.getFullName());
 
         int rejectedCount = otherPendingApplications.size();
         String message = rejectedCount > 0 
@@ -500,6 +552,13 @@ public class JobService {
 
         application.reject();
         jobApplicationRepository.save(application);
+
+        // Ghi lịch sử
+        Job job = application.getJob();
+        User employer = userService.getById(userId);
+        User freelancer = application.getFreelancer();
+        jobHistoryService.logHistory(job, employer, EJobHistoryAction.APPLICATION_REJECTED,
+                "Đã từ chối ứng viên " + freelancer.getFullName());
 
         return ApiResponse.success("Đã từ chối đơn ứng tuyển", buildApplicationResponse(application));
     }

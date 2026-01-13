@@ -6,10 +6,12 @@ import com.workhub.api.dto.request.RejectJobRequest;
 import com.workhub.api.dto.request.UpdateJobRequest;
 import com.workhub.api.dto.response.ApiResponse;
 import com.workhub.api.dto.response.JobApplicationResponse;
+import com.workhub.api.dto.response.JobHistoryResponse;
 import com.workhub.api.dto.response.JobResponse;
 import com.workhub.api.entity.EApplicationStatus;
 import com.workhub.api.entity.EJobStatus;
 import com.workhub.api.security.UserDetailsImpl;
+import com.workhub.api.service.JobHistoryService;
 import com.workhub.api.service.JobService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import java.util.List;
 public class JobController {
 
     private final JobService jobService;
+    private final JobHistoryService jobHistoryService;
 
     /**
      * Tạo job mới (chỉ EMPLOYER, trừ balance ngay)
@@ -295,5 +298,36 @@ public class JobController {
     public ResponseEntity<ApiResponse<Long>> countPendingJobs() {
 
         return ResponseEntity.ok(jobService.countPendingJobs());
+    }
+
+    /**
+     * Lấy lịch sử hoạt động của job
+     * - Employer xem được lịch sử job của mình
+     * - Freelancer đã được accept xem được lịch sử
+     */
+    @GetMapping("/{id}/history")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<JobHistoryResponse>>> getJobHistory(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        // Kiểm tra quyền xem: employer của job hoặc freelancer đã được accept
+        jobService.validateHistoryAccess(id, userDetails.getId());
+        return ResponseEntity.ok(jobHistoryService.getJobHistory(id));
+    }
+
+    /**
+     * Lấy lịch sử hoạt động của job (phân trang)
+     */
+    @GetMapping("/{id}/history/paged")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Page<JobHistoryResponse>>> getJobHistoryPaged(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        jobService.validateHistoryAccess(id, userDetails.getId());
+        return ResponseEntity.ok(jobHistoryService.getJobHistoryPaged(id, page, size));
     }
 }

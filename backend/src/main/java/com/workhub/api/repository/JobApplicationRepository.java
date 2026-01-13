@@ -32,4 +32,6 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     List<JobApplication> findByJobIdAndStatusAndIdNot(Long jobId, EApplicationStatus status, Long excludeId);
 
     boolean existsByJobIdAndStatus(Long jobId, EApplicationStatus status);
+
+    boolean existsByJobIdAndFreelancerIdAndStatus(Long jobId, Long freelancerId, EApplicationStatus status);
 }
