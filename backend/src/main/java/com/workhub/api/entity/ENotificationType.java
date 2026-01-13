@@ -23,6 +23,11 @@ public enum ENotificationType {
     PAYMENT_RELEASED,         // Thanh toán đã được chuyển
     JOB_COMPLETED,            // Công việc hoàn thành
     
+    // Timeout notifications
+    WORK_SUBMISSION_TIMEOUT,  // Freelancer không nộp đúng hạn → bị clear
+    WORK_REVIEW_TIMEOUT,      // Employer không review đúng hạn → auto approve
+    JOB_REOPENED,             // Job được mở lại sau khi clear freelancer
+    
     // General
     SYSTEM                    // Thông báo hệ thống
 }

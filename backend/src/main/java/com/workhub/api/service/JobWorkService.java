@@ -52,6 +52,12 @@ public class JobWorkService {
         application.submitWork(url, note);
         jobApplicationRepository.save(application);
 
+        // Set review deadline (3 ngày để employer review)
+        // Clear submission deadline và set review deadline
+        job.setWorkSubmissionDeadline(null);
+        job.setWorkReviewDeadline(java.time.LocalDateTime.now().plusDays(3));
+        jobRepository.save(job);
+
         // Ghi lịch sử
         User freelancer = userService.getById(userId);
         jobHistoryService.logHistory(job, freelancer, EJobHistoryAction.WORK_SUBMITTED,
@@ -85,8 +91,9 @@ public class JobWorkService {
         application.approveWork();
         jobApplicationRepository.save(application);
 
-        // Complete job
+        // Complete job và clear deadlines
         job.complete();
+        job.clearDeadlines();
         jobRepository.save(job);
 
         // Thanh toán escrow cho freelancer (budget, không bao gồm fee)
@@ -147,6 +154,11 @@ public class JobWorkService {
         // Request revision
         application.requestRevision(note);
         jobApplicationRepository.save(application);
+
+        // Clear review deadline, set new submission deadline (thêm 3 ngày để sửa)
+        job.setWorkReviewDeadline(null);
+        job.setWorkSubmissionDeadline(java.time.LocalDateTime.now().plusDays(3));
+        jobRepository.save(job);
 
         // Ghi lịch sử
         User employer = userService.getById(userId);

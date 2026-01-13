@@ -341,6 +341,8 @@ public class JobService {
                 .expectedStartDate(job.getExpectedStartDate())
                 .status(job.getStatus())
                 .rejectionReason(job.getRejectionReason())
+                .workSubmissionDeadline(job.getWorkSubmissionDeadline())
+                .workReviewDeadline(job.getWorkReviewDeadline())
                 .viewCount(job.getViewCount())
                 .applicationCount(job.getApplicationCount())
                 .employer(employerResponse)

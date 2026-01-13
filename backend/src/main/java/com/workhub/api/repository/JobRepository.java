@@ -48,4 +48,11 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     // Get jobs by status with employer details for admin
     @Query("SELECT j FROM Job j JOIN FETCH j.employer WHERE j.status = :status ORDER BY j.createdAt DESC")
     Page<Job> findByStatusWithEmployer(@Param("status") EJobStatus status, Pageable pageable);
+
+    // Timeout queries for scheduler
+    @Query("SELECT j FROM Job j WHERE j.status = :status AND j.workSubmissionDeadline IS NOT NULL AND j.workSubmissionDeadline < :deadline")
+    List<Job> findByStatusAndWorkSubmissionDeadlineBefore(@Param("status") EJobStatus status, @Param("deadline") java.time.LocalDateTime deadline);
+
+    @Query("SELECT j FROM Job j WHERE j.status = :status AND j.workReviewDeadline IS NOT NULL AND j.workReviewDeadline < :deadline")
+    List<Job> findByStatusAndWorkReviewDeadlineBefore(@Param("status") EJobStatus status, @Param("deadline") java.time.LocalDateTime deadline);
 }

@@ -36,6 +36,8 @@ public class JobResponse {
     private LocalDateTime expectedStartDate;
     private EJobStatus status;
     private String rejectionReason;  // Lý do từ chối (nếu bị reject)
+    private LocalDateTime workSubmissionDeadline;  // Hạn nộp sản phẩm
+    private LocalDateTime workReviewDeadline;      // Hạn review sản phẩm
     private Integer viewCount;
     private Integer applicationCount;
     private EmployerResponse employer;

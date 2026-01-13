@@ -52,6 +52,10 @@ public class JobHistoryResponse {
             case WITHDRAWAL_APPROVED -> "Chấp nhận yêu cầu";
             case WITHDRAWAL_REJECTED -> "Từ chối yêu cầu";
             case WITHDRAWAL_CANCELLED -> "Hủy yêu cầu";
+            case FREELANCER_TIMEOUT -> "Freelancer quá hạn";
+            case EMPLOYER_TIMEOUT -> "Employer quá hạn";
+            case JOB_REOPENED -> "Mở lại công việc";
+            case AUTO_APPROVED -> "Tự động duyệt";
         };
     }
 }

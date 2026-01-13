@@ -50,6 +50,9 @@ public class NotificationResponse {
             case WORK_REVISION_REQUESTED -> "Yêu cầu chỉnh sửa";
             case PAYMENT_RELEASED -> "Đã nhận thanh toán";
             case JOB_COMPLETED -> "Công việc hoàn thành";
+            case WORK_SUBMISSION_TIMEOUT -> "Quá hạn nộp sản phẩm";
+            case WORK_REVIEW_TIMEOUT -> "Quá hạn duyệt sản phẩm";
+            case JOB_REOPENED -> "Công việc được mở lại";
             case SYSTEM -> "Thông báo hệ thống";
         };
     }

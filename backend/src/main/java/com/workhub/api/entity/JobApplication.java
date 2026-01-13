@@ -140,4 +140,19 @@ public class JobApplication {
                     || this.workStatus == EWorkStatus.NOT_STARTED
                     || this.workStatus == EWorkStatus.REVISION_REQUESTED);
     }
+
+    public void setStatus(EApplicationStatus status) {
+        this.status = status;
+    }
+
+    /**
+     * Clear work submission data (dùng khi freelancer bị timeout)
+     */
+    public void clearWorkSubmission() {
+        this.workStatus = EWorkStatus.NOT_STARTED;
+        this.workSubmissionUrl = null;
+        this.workSubmissionNote = null;
+        this.workSubmittedAt = null;
+        this.workRevisionNote = null;
+    }
 }

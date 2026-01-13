@@ -382,6 +382,9 @@ export type NotificationType =
   | "WORK_REVISION_REQUESTED"
   | "PAYMENT_RELEASED"
   | "JOB_COMPLETED"
+  | "WORK_SUBMISSION_TIMEOUT"
+  | "WORK_REVIEW_TIMEOUT"
+  | "JOB_REOPENED"
   | "SYSTEM";
 
 export interface Notification {
@@ -411,6 +414,9 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; 
   WORK_REVISION_REQUESTED: { icon: "edit_note", color: "text-yellow-600" },
   PAYMENT_RELEASED: { icon: "payments", color: "text-emerald-600" },
   JOB_COMPLETED: { icon: "done_all", color: "text-green-600" },
+  WORK_SUBMISSION_TIMEOUT: { icon: "timer_off", color: "text-red-600" },
+  WORK_REVIEW_TIMEOUT: { icon: "schedule", color: "text-orange-600" },
+  JOB_REOPENED: { icon: "refresh", color: "text-blue-600" },
   SYSTEM: { icon: "info", color: "text-gray-600" },
 };
 

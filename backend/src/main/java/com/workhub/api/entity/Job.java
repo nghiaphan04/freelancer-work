@@ -101,6 +101,13 @@ public class Job {
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;  // Lý do từ chối (nếu bị reject)
 
+    // Deadline fields cho TH2 timeout
+    @Column(name = "work_submission_deadline")
+    private LocalDateTime workSubmissionDeadline;  // Hạn nộp sản phẩm (set khi accept freelancer)
+
+    @Column(name = "work_review_deadline")
+    private LocalDateTime workReviewDeadline;  // Hạn review sản phẩm (set khi freelancer nộp)
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -223,5 +230,40 @@ public class Job {
 
     public void setStatus(EJobStatus status) {
         this.status = status;
+    }
+
+    // Deadline methods
+    public void setWorkSubmissionDeadline(LocalDateTime deadline) {
+        this.workSubmissionDeadline = deadline;
+    }
+
+    public void setWorkReviewDeadline(LocalDateTime deadline) {
+        this.workReviewDeadline = deadline;
+    }
+
+    public void clearDeadlines() {
+        this.workSubmissionDeadline = null;
+        this.workReviewDeadline = null;
+    }
+
+    /**
+     * Mở lại job sau khi clear freelancer timeout
+     */
+    public void reopenJob() {
+        if (this.status == EJobStatus.IN_PROGRESS) {
+            this.status = EJobStatus.OPEN;
+            this.workSubmissionDeadline = null;
+            this.workReviewDeadline = null;
+        }
+    }
+
+    public boolean isWorkSubmissionOverdue() {
+        return this.workSubmissionDeadline != null 
+            && LocalDateTime.now().isAfter(this.workSubmissionDeadline);
+    }
+
+    public boolean isWorkReviewOverdue() {
+        return this.workReviewDeadline != null 
+            && LocalDateTime.now().isAfter(this.workReviewDeadline);
     }
 }

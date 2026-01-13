@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -195,9 +196,14 @@ public class JobApplicationService {
         application.accept();
         jobApplicationRepository.save(application);
 
-        // Chuyển job sang IN_PROGRESS
+        // Chuyển job sang IN_PROGRESS và set deadline nộp sản phẩm
         Job job = application.getJob();
         job.setStatus(EJobStatus.IN_PROGRESS);
+        
+        // Set work submission deadline dựa vào duration của job
+        java.time.LocalDateTime submissionDeadline = calculateSubmissionDeadline(job.getDuration());
+        job.setWorkSubmissionDeadline(submissionDeadline);
+        
         jobRepository.save(job);
 
         // Từ chối tất cả đơn pending khác của job này
@@ -298,5 +304,20 @@ public class JobApplicationService {
                 .createdAt(application.getCreatedAt())
                 .updatedAt(application.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Tính deadline nộp sản phẩm dựa vào duration của job
+     * - SHORT_TERM: 7 ngày
+     * - MEDIUM_TERM: 14 ngày  
+     * - LONG_TERM: 30 ngày
+     */
+    private LocalDateTime calculateSubmissionDeadline(EJobDuration duration) {
+        LocalDateTime now = LocalDateTime.now();
+        return switch (duration) {
+            case SHORT_TERM -> now.plusDays(7);
+            case MEDIUM_TERM -> now.plusDays(14);
+            case LONG_TERM -> now.plusDays(30);
+        };
     }
 }

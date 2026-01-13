@@ -36,6 +36,8 @@ export interface Job {
   expectedStartDate?: string;
   status: JobStatus;
   rejectionReason?: string;  // Lý do từ chối (nếu REJECTED)
+  workSubmissionDeadline?: string;  // Hạn nộp sản phẩm
+  workReviewDeadline?: string;      // Hạn review sản phẩm
   viewCount: number;
   applicationCount: number;
   employer: JobEmployer;
@@ -141,7 +143,11 @@ export type JobHistoryAction =
   | "WITHDRAWAL_REQUESTED"
   | "WITHDRAWAL_APPROVED"
   | "WITHDRAWAL_REJECTED"
-  | "WITHDRAWAL_CANCELLED";
+  | "WITHDRAWAL_CANCELLED"
+  | "FREELANCER_TIMEOUT"
+  | "EMPLOYER_TIMEOUT"
+  | "JOB_REOPENED"
+  | "AUTO_APPROVED";
 
 export interface JobHistoryUser {
   id: number;
@@ -185,4 +191,8 @@ export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string
   WITHDRAWAL_APPROVED: { label: "Chấp nhận yêu cầu", icon: "check_circle", color: "text-green-600" },
   WITHDRAWAL_REJECTED: { label: "Từ chối yêu cầu", icon: "cancel", color: "text-red-600" },
   WITHDRAWAL_CANCELLED: { label: "Hủy yêu cầu", icon: "undo", color: "text-gray-600" },
+  FREELANCER_TIMEOUT: { label: "Freelancer quá hạn", icon: "timer_off", color: "text-red-600" },
+  EMPLOYER_TIMEOUT: { label: "Employer quá hạn", icon: "schedule", color: "text-orange-600" },
+  JOB_REOPENED: { label: "Mở lại công việc", icon: "refresh", color: "text-blue-600" },
+  AUTO_APPROVED: { label: "Tự động duyệt", icon: "auto_awesome", color: "text-purple-600" },
 };

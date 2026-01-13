@@ -267,4 +267,70 @@ public class NotificationService {
                 .build();
         notificationRepository.save(notification);
     }
+
+    // ==================== TIMEOUT NOTIFICATIONS  ====================
+
+    /**
+     * Thông báo cho freelancer khi bị clear do quá hạn nộp sản phẩm
+     */
+    @Transactional
+    public void notifyWorkSubmissionTimeout(User freelancer, Job job) {
+        Notification notification = Notification.builder()
+                .user(freelancer)
+                .type(ENotificationType.WORK_SUBMISSION_TIMEOUT)
+                .title("Quá hạn nộp sản phẩm")
+                .message("Bạn đã không nộp sản phẩm đúng hạn cho công việc \"" + job.getTitle() + "\". Bạn đã bị loại khỏi công việc này và điểm không uy tín +1.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho employer khi freelancer bị clear do timeout
+     */
+    @Transactional
+    public void notifyFreelancerCleared(User employer, Job job, User freelancer) {
+        Notification notification = Notification.builder()
+                .user(employer)
+                .type(ENotificationType.JOB_REOPENED)
+                .title("Công việc được mở lại")
+                .message("Freelancer " + freelancer.getFullName() + " đã không nộp sản phẩm đúng hạn cho công việc \"" + job.getTitle() + "\". Công việc đã được mở lại để tuyển freelancer mới.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho employer khi hệ thống tự động duyệt do quá hạn review
+     */
+    @Transactional
+    public void notifyWorkReviewTimeout(User employer, Job job) {
+        Notification notification = Notification.builder()
+                .user(employer)
+                .type(ENotificationType.WORK_REVIEW_TIMEOUT)
+                .title("Quá hạn duyệt sản phẩm")
+                .message("Bạn đã không duyệt sản phẩm đúng hạn cho công việc \"" + job.getTitle() + "\". Hệ thống đã tự động duyệt và thanh toán cho freelancer.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho freelancer khi employer quá hạn review → auto approve
+     */
+    @Transactional
+    public void notifyAutoApproved(User freelancer, Job job, String amount) {
+        Notification notification = Notification.builder()
+                .user(freelancer)
+                .type(ENotificationType.WORK_APPROVED)
+                .title("Sản phẩm được tự động duyệt")
+                .message("Employer đã không duyệt sản phẩm đúng hạn. Hệ thống đã tự động duyệt và bạn đã nhận được " + amount + " VND cho công việc \"" + job.getTitle() + "\".")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
 }
