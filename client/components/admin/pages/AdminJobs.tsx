@@ -9,10 +9,20 @@ import { Pagination } from "@/components/ui/pagination";
 import AdminLoading from "../shared/AdminLoading";
 import AdminPageHeader from "../shared/AdminPageHeader";
 import AdminEmptyState from "../shared/AdminEmptyState";
+import JobHistoryTimeline from "@/components/jobs/shared/JobHistoryTimeline";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const STATUS_OPTIONS: { value: JobStatus | "PENDING_APPROVAL"; label: string }[] = [
   { value: "PENDING_APPROVAL", label: "Chờ duyệt" },
   { value: "OPEN", label: "Đã duyệt" },
+  { value: "IN_PROGRESS", label: "Đang thực hiện" },
+  { value: "COMPLETED", label: "Hoàn thành" },
   { value: "REJECTED", label: "Bị từ chối" },
 ];
 
@@ -27,6 +37,8 @@ export default function AdminJobs() {
   const [rejectingJobId, setRejectingJobId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [processingJobId, setProcessingJobId] = useState<number | null>(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyJobId, setHistoryJobId] = useState<number | null>(null);
 
   const fetchJobs = async (pageNum: number, status: JobStatus) => {
     setIsLoading(true);
@@ -106,6 +118,13 @@ export default function AdminJobs() {
       setProcessingJobId(null);
     }
   };
+
+  const handleHistoryClick = (jobId: number) => {
+    setHistoryJobId(jobId);
+    setHistoryDialogOpen(true);
+  };
+
+  const showHistoryButton = statusFilter === "IN_PROGRESS" || statusFilter === "COMPLETED";
 
   if (isLoading && jobs.length === 0) {
     return <AdminLoading />;
@@ -227,6 +246,18 @@ export default function AdminJobs() {
                     )}
                   </div>
                 )}
+
+                {/* History button for IN_PROGRESS/COMPLETED */}
+                {showHistoryButton && (
+                  <div className="pt-2 border-t flex justify-end">
+                    <button
+                      onClick={() => handleHistoryClick(job.id)}
+                      className="text-blue-600 hover:text-blue-700 hover:underline text-sm"
+                    >
+                      Xem lịch sử
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -245,6 +276,9 @@ export default function AdminJobs() {
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ngày tạo</th>
                     {statusFilter === "PENDING_APPROVAL" && (
                       <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+                    )}
+                    {showHistoryButton && (
+                      <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Lịch sử</th>
                     )}
                   </tr>
                 </thead>
@@ -286,6 +320,16 @@ export default function AdminJobs() {
                                 Từ chối
                               </button>
                             </div>
+                          </td>
+                        )}
+                        {showHistoryButton && (
+                          <td className="px-3 py-2 text-center">
+                            <button
+                              onClick={() => handleHistoryClick(job.id)}
+                              className="text-blue-600 hover:text-blue-700 hover:underline text-sm"
+                            >
+                              Xem
+                            </button>
                           </td>
                         )}
                       </tr>
@@ -347,6 +391,21 @@ export default function AdminJobs() {
           </div>
         </>
       )}
+
+      {/* History Dialog */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Lịch sử hoạt động</DialogTitle>
+            <DialogDescription>
+              Xem các hoạt động liên quan đến công việc này
+            </DialogDescription>
+          </DialogHeader>
+          {historyJobId && (
+            <JobHistoryTimeline jobId={historyJobId} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

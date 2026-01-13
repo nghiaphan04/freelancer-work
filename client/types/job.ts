@@ -114,3 +114,65 @@ export const WORK_TYPE_CONFIG = {
   PART_TIME: { label: "Bán thời gian", description: "Dưới 30 giờ/tuần" },
   FULL_TIME: { label: "Toàn thời gian", description: "Trên 30 giờ/tuần" },
 } as const;
+
+// Job History
+export type JobHistoryAction =
+  | "JOB_CREATED"
+  | "JOB_UPDATED"
+  | "JOB_SUBMITTED"
+  | "JOB_OPENED"
+  | "JOB_CLOSED"
+  | "APPLICATION_ACCEPTED"
+  | "APPLICATION_REJECTED"
+  | "WORK_APPROVED"
+  | "WORK_REJECTED"
+  | "PAYMENT_RELEASED"
+  | "APPLICATION_SUBMITTED"
+  | "APPLICATION_WITHDRAWN"
+  | "WORK_STARTED"
+  | "WORK_SUBMITTED"
+  | "WORK_REVISED"
+  | "JOB_APPROVED"
+  | "JOB_REJECTED"
+  | "JOB_COMPLETED"
+  | "JOB_CANCELLED";
+
+export interface JobHistoryUser {
+  id: number;
+  fullName: string;
+  avatarUrl?: string;
+  role: "ADMIN" | "EMPLOYER" | "FREELANCER" | "USER";
+}
+
+export interface JobHistory {
+  id: number;
+  jobId: number;
+  action: JobHistoryAction;
+  actionLabel: string;
+  description?: string;
+  metadata?: string;
+  user: JobHistoryUser;
+  createdAt: string;
+}
+
+export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string; icon: string; color: string }> = {
+  JOB_CREATED: { label: "Tạo công việc", icon: "add_circle", color: "text-blue-600" },
+  JOB_UPDATED: { label: "Cập nhật", icon: "edit", color: "text-gray-600" },
+  JOB_SUBMITTED: { label: "Gửi duyệt", icon: "send", color: "text-orange-600" },
+  JOB_OPENED: { label: "Mở tuyển", icon: "visibility", color: "text-green-600" },
+  JOB_CLOSED: { label: "Đóng tuyển", icon: "visibility_off", color: "text-gray-600" },
+  APPLICATION_ACCEPTED: { label: "Duyệt ứng viên", icon: "check_circle", color: "text-green-600" },
+  APPLICATION_REJECTED: { label: "Từ chối ứng viên", icon: "cancel", color: "text-red-600" },
+  WORK_APPROVED: { label: "Duyệt công việc", icon: "task_alt", color: "text-green-600" },
+  WORK_REJECTED: { label: "Yêu cầu chỉnh sửa", icon: "undo", color: "text-orange-600" },
+  PAYMENT_RELEASED: { label: "Thanh toán", icon: "payments", color: "text-emerald-600" },
+  APPLICATION_SUBMITTED: { label: "Nộp đơn", icon: "description", color: "text-blue-600" },
+  APPLICATION_WITHDRAWN: { label: "Rút đơn", icon: "remove_circle", color: "text-gray-600" },
+  WORK_STARTED: { label: "Bắt đầu làm", icon: "play_circle", color: "text-blue-600" },
+  WORK_SUBMITTED: { label: "Nộp sản phẩm", icon: "upload_file", color: "text-purple-600" },
+  WORK_REVISED: { label: "Nộp lại", icon: "refresh", color: "text-orange-600" },
+  JOB_APPROVED: { label: "Admin duyệt", icon: "verified", color: "text-green-600" },
+  JOB_REJECTED: { label: "Admin từ chối", icon: "block", color: "text-red-600" },
+  JOB_COMPLETED: { label: "Hoàn thành", icon: "done_all", color: "text-emerald-600" },
+  JOB_CANCELLED: { label: "Đã hủy", icon: "cancel", color: "text-red-600" },
+};

@@ -11,9 +11,17 @@ import JobsLoading from "../shared/JobsLoading";
 import JobsEmptyState from "../shared/JobsEmptyState";
 import JobsSearchBar from "../shared/JobsSearchBar";
 import JobsPageHeader from "../shared/JobsPageHeader";
+import JobHistoryTimeline from "../shared/JobHistoryTimeline";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 const APPLICATION_STATUS_CONFIG: Record<ApplicationStatus, { label: string; color: string }> = {
@@ -36,6 +44,8 @@ export default function AcceptedJobsList() {
 
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [savedJobsLoading, setSavedJobsLoading] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyJobId, setHistoryJobId] = useState<number | null>(null);
 
   const hasAccess = user?.roles?.includes("ROLE_FREELANCER");
   const isAppliedTab = filter === "applied";
@@ -121,6 +131,11 @@ export default function AcceptedJobsList() {
       return `${(amount / 1000000).toFixed(1)}M`;
     }
     return amount.toLocaleString("vi-VN");
+  };
+
+  const handleHistoryClick = (jobId: number) => {
+    setHistoryJobId(jobId);
+    setHistoryDialogOpen(true);
   };
 
   if (!isHydrated) {
@@ -518,6 +533,17 @@ export default function AcceptedJobsList() {
                             <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                           </Button>
                         </Link>
+                        {(job.status === "IN_PROGRESS" || job.status === "COMPLETED") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => handleHistoryClick(job.id)}
+                          >
+                            <Icon name="history" size={16} />
+                            <span className="sm:hidden lg:inline ml-1">Lịch sử</span>
+                          </Button>
+                        )}
                         {job.status === "IN_PROGRESS" && (
                           <Button size="sm" className="bg-[#00b14f] hover:bg-[#009643]">
                             <Icon name="upload" size={16} />
@@ -533,6 +559,21 @@ export default function AcceptedJobsList() {
           )}
         </>
       )}
+
+      {/* History Dialog */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Lịch sử hoạt động</DialogTitle>
+            <DialogDescription>
+              Xem các hoạt động liên quan đến công việc này
+            </DialogDescription>
+          </DialogHeader>
+          {historyJobId && (
+            <JobHistoryTimeline jobId={historyJobId} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { JOB_STATUS_CONFIG, JobStatus, Job } from "@/types/job";
 import JobsLoading from "../shared/JobsLoading";
 import JobsEmptyState from "../shared/JobsEmptyState";
 import JobsPageHeader from "../shared/JobsPageHeader";
+import JobHistoryTimeline from "../shared/JobHistoryTimeline";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,8 @@ export default function PostedJobsList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyJobId, setHistoryJobId] = useState<number | null>(null);
 
   const hasAccess = user?.roles?.includes("ROLE_EMPLOYER");
 
@@ -75,6 +78,11 @@ export default function PostedJobsList() {
   const handleDeleteClick = (job: Job) => {
     setJobToDelete(job);
     setDeleteDialogOpen(true);
+  };
+
+  const handleHistoryClick = (jobId: number) => {
+    setHistoryJobId(jobId);
+    setHistoryDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -224,6 +232,17 @@ export default function PostedJobsList() {
                         <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                       </Button>
                     </Link>
+                    {(job.status === "IN_PROGRESS" || job.status === "COMPLETED") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none text-blue-600 border-blue-200 hover:bg-blue-50"
+                        onClick={() => handleHistoryClick(job.id)}
+                      >
+                        <Icon name="history" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Lịch sử</span>
+                      </Button>
+                    )}
                     {job.status === "DRAFT" && job.applicationCount === 0 && (
                       <Link href={`/jobs/${job.id}/edit`} className="flex-1 sm:flex-none">
                         <Button 
@@ -335,6 +354,21 @@ export default function PostedJobsList() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Lịch sử hoạt động</DialogTitle>
+            <DialogDescription>
+              Xem các hoạt động liên quan đến công việc này
+            </DialogDescription>
+          </DialogHeader>
+          {historyJobId && (
+            <JobHistoryTimeline jobId={historyJobId} />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -1,5 +1,5 @@
 import { User } from "@/types/user";
-import { Job, Page, CreateJobRequest, UpdateJobRequest, JobStatus } from "@/types/job";
+import { Job, Page, CreateJobRequest, UpdateJobRequest, JobStatus, JobHistory } from "@/types/job";
 import { BalanceDeposit, DepositStatus, BalanceStatistics } from "@/types/balance";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -137,6 +137,17 @@ export const api = {
 
   rejectApplication: (jobId: number, applicationId: number) =>
     request<JobApplication>(`/api/jobs/${jobId}/applications/${applicationId}/reject`, { method: "PATCH" }),
+
+  // Job History
+  getJobHistory: (jobId: number) =>
+    request<JobHistory[]>(`/api/jobs/${jobId}/history`),
+
+  getJobHistoryPaged: (jobId: number, params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<JobHistory>>(`/api/jobs/${jobId}/history/paged${query.toString() ? `?${query}` : ""}`);
+  },
 
   // Balance - Nạp số dư
   createDeposit: (amount: number) =>
