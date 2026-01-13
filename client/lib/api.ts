@@ -233,6 +233,9 @@ export const api = {
   adminUpdateUserStatus: (id: number, enabled: boolean) =>
     request<User>(`/api/users/${id}/status`, { method: "PUT", body: JSON.stringify({ enabled }) }),
 
+  adminGrantCredits: (id: number, amount: number) =>
+    request<User>(`/api/users/${id}/credits`, { method: "POST", body: JSON.stringify({ amount }) }),
+
   // Admin - Balance (Nạp tiền)
   adminGetBalanceStatistics: () =>
     request<BalanceStatistics>("/api/admin/balance/statistics"),

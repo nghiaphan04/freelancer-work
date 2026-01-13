@@ -11,10 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Order(2)
@@ -37,33 +35,29 @@ public class AdminSeeder implements CommandLineRunner {
     private String adminFullName;
     
     @Override
-    @Transactional
     public void run(String... args) {
         logger.info("Starting Admin Seeder...");
         
-        try {
-            if (userRepository.existsByEmail(adminEmail)) {
-                logger.info("Admin user already exists: {}", adminEmail);
-                return;
-            }
-            
-            Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                    .orElseThrow(() -> new RuntimeException("Admin role not found. Please run RoleSeeder first."));
-            
-            User admin = User.builder()
-                    .email(adminEmail)
-                    .password(passwordEncoder.encode(adminPassword))
-                    .fullName(adminFullName)
-                    .emailVerified(true)
-                    .enabled(true)
-                    .build();
-            
-            admin.assignRole(adminRole);
-            
-            userRepository.saveAndFlush(admin);
-            logger.info("Admin user created successfully: {}", adminEmail);
-        } catch (DataIntegrityViolationException e) {
+        if (userRepository.existsByEmail(adminEmail)) {
+            logger.info("Admin user already exists: {}", adminEmail);
+            return;
         }
+        
+        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                .orElseThrow(() -> new RuntimeException("Admin role not found. Please run RoleSeeder first."));
+        
+        User admin = User.builder()
+                .email(adminEmail)
+                .password(passwordEncoder.encode(adminPassword))
+                .fullName(adminFullName)
+                .emailVerified(true)
+                .enabled(true)
+                .build();
+        
+        admin.assignRole(adminRole);
+        
+        userRepository.save(admin);
+        logger.info("Admin user created successfully: {}", adminEmail);
         
         logger.info("Admin Seeder completed.");
     }
