@@ -12,7 +12,7 @@ import AppDownload from "@/components/landing/sections/AppDownload";
 import HotlineSupport from "@/components/landing/sections/HotlineSupport";
 import Partners from "@/components/landing/sections/Partners";
 import AboutSection from "@/components/landing/sections/AboutSection";
-import PopularKeywords from "@/components/landing/sections/PopularKeywords";
+// import PopularKeywords from "@/components/landing/sections/PopularKeywords";
 
 export default function Home() {
   const router = useRouter();
@@ -52,7 +52,7 @@ export default function Home() {
         <AboutSection />
       
         <HotlineSupport />
-        <PopularKeywords />
+        {/* <PopularKeywords /> */}
       </main>
 
       <Footer />

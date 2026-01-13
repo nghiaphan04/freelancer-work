@@ -54,6 +54,19 @@ export default function EditJobForm() {
         const response = await api.getJobById(jobId);
         if (response.status === "SUCCESS" && response.data) {
           const jobData = response.data;
+
+          if (jobData.status !== "DRAFT") {
+            toast.error("Chỉ có thể chỉnh sửa công việc ở trạng thái Bản nháp");
+            router.push("/my-posted-jobs");
+            return;
+          }
+
+          if (jobData.applicationCount > 0) {
+            toast.error("Không thể chỉnh sửa công việc đã có người ứng tuyển");
+            router.push("/my-posted-jobs");
+            return;
+          }
+
           setJob(jobData);
           setFormData({
             title: jobData.title,
@@ -87,7 +100,7 @@ export default function EditJobForm() {
     if (jobId) {
       fetchJob();
     }
-  }, [jobId]);
+  }, [jobId, router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>

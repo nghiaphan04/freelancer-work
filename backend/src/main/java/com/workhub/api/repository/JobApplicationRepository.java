@@ -30,4 +30,6 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     List<JobApplication> findByJobIdOrderByCreatedAtDesc(Long jobId);
 
     List<JobApplication> findByJobIdAndStatusAndIdNot(Long jobId, EApplicationStatus status, Long excludeId);
+
+    boolean existsByJobIdAndStatus(Long jobId, EApplicationStatus status);
 }

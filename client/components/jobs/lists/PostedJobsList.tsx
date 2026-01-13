@@ -224,28 +224,28 @@ export default function PostedJobsList() {
                         <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                       </Button>
                     </Link>
-                    {(job.status === "DRAFT" || job.status === "OPEN") && (
-                      <>
-                        <Link href={`/jobs/${job.id}/edit`} className="flex-1 sm:flex-none">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full text-[#00b14f] border-[#00b14f] hover:bg-[#00b14f]/5"
-                          >
-                            <Icon name="edit" size={16} />
-                            <span className="sm:hidden lg:inline ml-1">Sửa</span>
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 sm:flex-none text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => handleDeleteClick(job)}
+                    {job.status === "DRAFT" && job.applicationCount === 0 && (
+                      <Link href={`/jobs/${job.id}/edit`} className="flex-1 sm:flex-none">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full text-[#00b14f] border-[#00b14f] hover:bg-[#00b14f]/5"
                         >
-                          <Icon name="delete" size={16} />
-                          <span className="sm:hidden lg:inline ml-1">Xóa</span>
+                          <Icon name="edit" size={16} />
+                          <span className="sm:hidden lg:inline ml-1">Sửa</span>
                         </Button>
-                      </>
+                      </Link>
+                    )}
+                    {(job.status === "DRAFT" || job.status === "OPEN") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => handleDeleteClick(job)}
+                      >
+                        <Icon name="delete" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Xóa</span>
+                      </Button>
                     )}
                   </div>
                 </div>

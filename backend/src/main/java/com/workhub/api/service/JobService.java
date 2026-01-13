@@ -145,6 +145,19 @@ public class JobService {
             throw new UnauthorizedAccessException("Bạn không có quyền sửa job này");
         }
 
+        if (job.getStatus() != EJobStatus.DRAFT) {
+            throw new IllegalStateException("Chỉ có thể chỉnh sửa job ở trạng thái Bản nháp. Vui lòng chuyển về Bản nháp trước khi chỉnh sửa.");
+        }
+
+        if (job.getApplicationCount() > 0) {
+            throw new IllegalStateException("Không thể chỉnh sửa job đã có người ứng tuyển");
+        }
+
+        boolean hasAcceptedApplication = jobApplicationRepository.existsByJobIdAndStatus(jobId, EApplicationStatus.ACCEPTED);
+        if (hasAcceptedApplication) {
+            throw new IllegalStateException("Không thể chỉnh sửa job đã có người làm tham gia");
+        }
+
         job.update(
                 req.getTitle(),
                 req.getDescription(),
