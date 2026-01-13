@@ -255,6 +255,56 @@ export const api = {
 
   adminCountPendingJobs: () =>
     request<number>("/api/jobs/admin/count/pending"),
+
+  // Notifications
+  getNotifications: () =>
+    request<Notification[]>("/api/notifications"),
+
+  getNotificationsPaged: (params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Notification>>(`/api/notifications/paged${query.toString() ? `?${query}` : ""}`);
+  },
+
+  getUnreadNotificationCount: () =>
+    request<number>("/api/notifications/unread-count"),
+
+  markNotificationAsRead: (id: number) =>
+    request<void>(`/api/notifications/${id}/read`, { method: "PATCH" }),
+
+  markAllNotificationsAsRead: () =>
+    request<void>("/api/notifications/read-all", { method: "PATCH" }),
+};
+
+// Notification types
+export type NotificationType =
+  | "APPLICATION_ACCEPTED"
+  | "APPLICATION_REJECTED"
+  | "NEW_APPLICATION"
+  | "JOB_APPROVED"
+  | "JOB_REJECTED"
+  | "SYSTEM";
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  typeLabel: string;
+  title: string;
+  message?: string;
+  referenceId?: number;
+  referenceType?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; color: string }> = {
+  APPLICATION_ACCEPTED: { icon: "check_circle", color: "text-green-600" },
+  APPLICATION_REJECTED: { icon: "cancel", color: "text-red-600" },
+  NEW_APPLICATION: { icon: "person_add", color: "text-blue-600" },
+  JOB_APPROVED: { icon: "verified", color: "text-green-600" },
+  JOB_REJECTED: { icon: "block", color: "text-red-600" },
+  SYSTEM: { icon: "info", color: "text-gray-600" },
 };
 
 // Credit types

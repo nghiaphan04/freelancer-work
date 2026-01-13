@@ -23,6 +23,7 @@ import {
   careerMenuArticles,
   navItems,
 } from "@/constant/layout";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function Header() {
   const pathname = usePathname();
@@ -330,7 +331,12 @@ export default function Header() {
               {!isHydrated ? (
                 <div className="w-[140px] h-8 bg-gray-100 rounded animate-pulse" />
               ) : isAuthenticated && user ? (
-                <DropdownMenu>
+                <>
+                  {/* Notification Bell */}
+                  <NotificationDropdown />
+
+                  {/* User Menu */}
+                  <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors outline-none">
                       <Avatar className="h-8 w-8">
@@ -375,6 +381,7 @@ export default function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </>
               ) : (
                 <>
                   <Link
@@ -393,13 +400,18 @@ export default function Header() {
               )}
             </div>
 
-            {/* Mobile: Hamburger only */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="flex md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <Icon name={mobileMenuOpen ? "close" : "menu"} size={24} className="text-gray-700" />
-            </button>
+            {/* Mobile: Notification + Hamburger */}
+            <div className="flex md:hidden items-center gap-1">
+              {isAuthenticated && user && (
+                <NotificationDropdown />
+              )}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2"
+              >
+                <Icon name={mobileMenuOpen ? "close" : "menu"} size={24} className="text-gray-700 hover:text-[#00b14f] transition-colors" />
+              </button>
+            </div>
           </div>
 
         </div>
@@ -516,6 +528,18 @@ export default function Header() {
                   >
                     <Icon name="person" size={20} className={isActive("/profile") ? "text-[#00b14f]" : "text-gray-400"} />
                     <span>Hồ sơ của tôi</span>
+                  </Link>
+                  <Link
+                    href="/notifications"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                      isActive("/notifications") 
+                        ? "bg-[#00b14f]/5 text-[#00b14f]" 
+                        : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                    }`}
+                  >
+                    <Icon name="notifications" size={20} className={isActive("/notifications") ? "text-[#00b14f]" : "text-gray-400"} />
+                    <span>Thông báo</span>
                   </Link>
                   <Link
                     href="/wallet"

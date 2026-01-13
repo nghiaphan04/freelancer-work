@@ -47,7 +47,6 @@ export default function AdminJobs() {
     try {
       let response;
       if (status === "history") {
-        // Lấy job IN_PROGRESS cho tab history
         response = await api.adminGetJobsByStatus("IN_PROGRESS", { page: pageNum, size: 50 });
       } else if (status === "PENDING_APPROVAL") {
         response = await api.adminGetPendingJobs({ page: pageNum, size: 10 });

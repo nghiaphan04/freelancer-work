@@ -32,6 +32,7 @@ public class JobService {
     private final JobApplicationRepository jobApplicationRepository;
     private final UserService userService;
     private final JobHistoryService jobHistoryService;
+    private final NotificationService notificationService;
 
     private static final BigDecimal FEE_PERCENT = new BigDecimal("5.00");
 
@@ -307,6 +308,9 @@ public class JobService {
         job.approve();
         Job updatedJob = jobRepository.save(job);
 
+        // Gửi thông báo cho employer
+        notificationService.notifyJobApproved(job.getEmployer(), job);
+
         return ApiResponse.success("Đã duyệt job thành công", buildJobResponse(updatedJob));
     }
 
@@ -332,7 +336,10 @@ public class JobService {
         job.reject(reason);
         Job updatedJob = jobRepository.save(job);
 
-        String message = escrowAmount != null 
+        // Gửi thông báo cho employer
+        notificationService.notifyJobRejected(employer, job, reason);
+
+        String message = escrowAmount != null
                 ? "Đã từ chối job và hoàn " + escrowAmount.toPlainString() + " VND cho employer"
                 : "Đã từ chối job";
 
@@ -405,6 +412,9 @@ public class JobService {
         // Ghi lịch sử - Freelancer ứng tuyển
         jobHistoryService.logHistory(job, user, EJobHistoryAction.APPLICATION_SUBMITTED,
                 "Đã nộp đơn ứng tuyển");
+
+        // Gửi thông báo cho employer
+        notificationService.notifyNewApplication(job.getEmployer(), job, user);
 
         return ApiResponse.success("Ứng tuyển thành công (còn " + user.getCredits() + " credit)", buildApplicationResponse(saved));
     }
@@ -526,6 +536,14 @@ public class JobService {
         jobHistoryService.logHistory(job, employer, EJobHistoryAction.APPLICATION_ACCEPTED,
                 "Đã duyệt ứng viên " + freelancer.getFullName());
 
+        // Gửi thông báo cho freelancer được chấp nhận
+        notificationService.notifyApplicationAccepted(freelancer, job);
+
+        // Gửi thông báo cho các freelancer bị từ chối
+        for (JobApplication other : otherPendingApplications) {
+            notificationService.notifyApplicationRejected(other.getFreelancer(), job);
+        }
+
         int rejectedCount = otherPendingApplications.size();
         String message = rejectedCount > 0 
                 ? "Đã duyệt đơn ứng tuyển và từ chối " + rejectedCount + " đơn khác"
@@ -559,6 +577,9 @@ public class JobService {
         User freelancer = application.getFreelancer();
         jobHistoryService.logHistory(job, employer, EJobHistoryAction.APPLICATION_REJECTED,
                 "Đã từ chối ứng viên " + freelancer.getFullName());
+
+        // Gửi thông báo cho freelancer
+        notificationService.notifyApplicationRejected(freelancer, job);
 
         return ApiResponse.success("Đã từ chối đơn ứng tuyển", buildApplicationResponse(application));
     }
