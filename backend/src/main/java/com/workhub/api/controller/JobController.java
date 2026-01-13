@@ -13,8 +13,11 @@ import com.workhub.api.dto.response.JobResponse;
 import com.workhub.api.entity.EApplicationStatus;
 import com.workhub.api.entity.EJobStatus;
 import com.workhub.api.security.UserDetailsImpl;
+import com.workhub.api.service.JobAdminService;
+import com.workhub.api.service.JobApplicationService;
 import com.workhub.api.service.JobHistoryService;
 import com.workhub.api.service.JobService;
+import com.workhub.api.service.JobWorkService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,7 +35,12 @@ import java.util.List;
 public class JobController {
 
     private final JobService jobService;
+    private final JobAdminService jobAdminService;
+    private final JobApplicationService jobApplicationService;
+    private final JobWorkService jobWorkService;
     private final JobHistoryService jobHistoryService;
+
+    // ===== JOB CRUD (JobService) =====
 
     /**
      * Tạo job mới (chỉ EMPLOYER, trừ balance ngay)
@@ -156,6 +164,8 @@ public class JobController {
         return ResponseEntity.ok(jobService.deleteJob(id, userDetails.getId()));
     }
 
+    // ===== JOB APPLICATION (JobApplicationService) =====
+
     /**
      * Ứng tuyển vào job (chỉ FREELANCER)
      */
@@ -166,7 +176,7 @@ public class JobController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody(required = false) ApplyJobRequest req) {
 
-        ApiResponse<JobApplicationResponse> response = jobService.applyJob(id, userDetails.getId(), req);
+        ApiResponse<JobApplicationResponse> response = jobApplicationService.applyJob(id, userDetails.getId(), req);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -181,7 +191,7 @@ public class JobController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        return ResponseEntity.ok(jobService.getMyApplications(userDetails.getId(), status, page, size));
+        return ResponseEntity.ok(jobApplicationService.getMyApplications(userDetails.getId(), status, page, size));
     }
 
     /**
@@ -193,7 +203,7 @@ public class JobController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return ResponseEntity.ok(jobService.getMyApplicationForJob(id, userDetails.getId()));
+        return ResponseEntity.ok(jobApplicationService.getMyApplicationForJob(id, userDetails.getId()));
     }
 
     /**
@@ -205,7 +215,7 @@ public class JobController {
             @PathVariable Long applicationId,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return ResponseEntity.ok(jobService.withdrawApplication(applicationId, userDetails.getId()));
+        return ResponseEntity.ok(jobApplicationService.withdrawApplication(applicationId, userDetails.getId()));
     }
 
     /**
@@ -217,7 +227,7 @@ public class JobController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return ResponseEntity.ok(jobService.getJobApplications(id, userDetails.getId()));
+        return ResponseEntity.ok(jobApplicationService.getJobApplications(id, userDetails.getId()));
     }
 
     /**
@@ -229,7 +239,7 @@ public class JobController {
             @PathVariable Long applicationId,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return ResponseEntity.ok(jobService.acceptApplication(applicationId, userDetails.getId()));
+        return ResponseEntity.ok(jobApplicationService.acceptApplication(applicationId, userDetails.getId()));
     }
 
     /**
@@ -241,9 +251,10 @@ public class JobController {
             @PathVariable Long applicationId,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return ResponseEntity.ok(jobService.rejectApplication(applicationId, userDetails.getId()));
+        return ResponseEntity.ok(jobApplicationService.rejectApplication(applicationId, userDetails.getId()));
     }
 
+    // ===== ADMIN APPROVAL (JobAdminService) =====
 
     /**
      * [ADMIN] Lấy danh sách jobs chờ duyệt
@@ -254,7 +265,7 @@ public class JobController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        return ResponseEntity.ok(jobService.getPendingJobs(page, size));
+        return ResponseEntity.ok(jobAdminService.getPendingJobs(page, size));
     }
 
     /**
@@ -267,7 +278,7 @@ public class JobController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        return ResponseEntity.ok(jobService.getJobsByStatus(status, page, size));
+        return ResponseEntity.ok(jobAdminService.getJobsByStatus(status, page, size));
     }
 
     /**
@@ -277,7 +288,7 @@ public class JobController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<JobResponse>> approveJob(@PathVariable Long id) {
 
-        return ResponseEntity.ok(jobService.approveJob(id));
+        return ResponseEntity.ok(jobAdminService.approveJob(id));
     }
 
     /**
@@ -289,7 +300,7 @@ public class JobController {
             @PathVariable Long id,
             @Valid @RequestBody RejectJobRequest request) {
 
-        return ResponseEntity.ok(jobService.rejectJob(id, request.getReason()));
+        return ResponseEntity.ok(jobAdminService.rejectJob(id, request.getReason()));
     }
 
     /**
@@ -299,8 +310,10 @@ public class JobController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Long>> countPendingJobs() {
 
-        return ResponseEntity.ok(jobService.countPendingJobs());
+        return ResponseEntity.ok(jobAdminService.countPendingJobs());
     }
+
+    // ===== JOB HISTORY (JobHistoryService) =====
 
     /**
      * Lấy lịch sử hoạt động của job
@@ -333,7 +346,7 @@ public class JobController {
         return ResponseEntity.ok(jobHistoryService.getJobHistoryPaged(id, page, size));
     }
 
-    // ===== WORK SUBMISSION ENDPOINTS =====
+    // ===== WORK SUBMISSION (JobWorkService) =====
 
     /**
      * Freelancer nộp sản phẩm
@@ -346,7 +359,7 @@ public class JobController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody SubmitWorkRequest request) {
 
-        return ResponseEntity.ok(jobService.submitWork(id, userDetails.getId(), request.getUrl(), request.getNote()));
+        return ResponseEntity.ok(jobWorkService.submitWork(id, userDetails.getId(), request.getUrl(), request.getNote()));
     }
 
     /**
@@ -359,7 +372,7 @@ public class JobController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return ResponseEntity.ok(jobService.approveWork(id, userDetails.getId()));
+        return ResponseEntity.ok(jobWorkService.approveWork(id, userDetails.getId()));
     }
 
     /**
@@ -373,7 +386,7 @@ public class JobController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody RevisionRequest request) {
 
-        return ResponseEntity.ok(jobService.requestRevision(id, userDetails.getId(), request.getNote()));
+        return ResponseEntity.ok(jobWorkService.requestRevision(id, userDetails.getId(), request.getNote()));
     }
 
     /**
@@ -386,6 +399,6 @@ public class JobController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
-        return ResponseEntity.ok(jobService.getWorkSubmission(id, userDetails.getId()));
+        return ResponseEntity.ok(jobWorkService.getWorkSubmission(id, userDetails.getId()));
     }
 }
