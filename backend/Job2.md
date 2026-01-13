@@ -451,21 +451,6 @@ Response: 200 OK
 
 ---
 
-## 11. POSTMAN TEST (CRUD)
-
-### 1. LOGIN (lấy token trước)
-```
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-    "email": "test@test.com",
-    "password": "123456"
-}
-```
-→ Copy `accessToken` từ response
-
----
 
 ### 2. CREATE - Lưu công việc
 ```

@@ -2,7 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import JobApplicationsTable from "@/components/jobs/JobApplicationsTable";
+import JobApplicationsTable from "@/components/jobs/tables/JobApplicationsTable";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import PostJobForm from "@/components/jobs/PostJobForm";
+import PostJobForm from "@/components/jobs/forms/PostJobForm";
 import { useAuth } from "@/context/AuthContext";
 
 export default function CreateJobPage() {

@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import BannerSlider from "@/components/layout/BannerSlider";
 import Products from "@/components/landing/Products";
 import HotlineSupport from "@/components/landing/HotlineSupport";
-import JobsList from "@/components/jobs/JobsList";
+import JobsList from "@/components/jobs/lists/JobsList";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function JobsListFallback() {

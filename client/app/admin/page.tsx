@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import AdminLayout from "@/components/admin/AdminLayout";
+import AdminLayout from "@/components/admin/layout/AdminLayout";
 
 export default function AdminPage() {
   const router = useRouter();

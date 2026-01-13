@@ -7,10 +7,10 @@ import { api, JobApplication } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Job } from "@/types/job";
 import Icon from "@/components/ui/Icon";
-import JobDetailHeader from "./detail/JobDetailHeader";
-import JobDetailContent from "./detail/JobDetailContent";
-import JobDetailSidebar from "./detail/JobDetailSidebar";
-import JobApplyDialog from "./detail/JobApplyDialog";
+import JobDetailHeader from "./JobDetailHeader";
+import JobDetailContent from "./JobDetailContent";
+import JobDetailSidebar from "./JobDetailSidebar";
+import JobApplyDialog from "./JobApplyDialog";
 
 const DEFAULT_COVER_LETTER = "Chào anh/chị,\n\nTôi rất quan tâm đến vị trí này và tin rằng kỹ năng cùng kinh nghiệm của tôi sẽ phù hợp với yêu cầu công việc.\n\nRất mong được hợp tác cùng anh/chị.\n\nTrân trọng.";
 

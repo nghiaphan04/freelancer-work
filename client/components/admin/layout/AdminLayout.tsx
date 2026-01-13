@@ -8,9 +8,9 @@ import { api } from "@/lib/api";
 import { clearAuthData } from "@/constant/auth";
 import Icon from "@/components/ui/Icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import AdminDashboard from "./AdminDashboard";
-import AdminUsers from "./AdminUsers";
-import AdminPayments from "./AdminPayments";
+import AdminDashboard from "../pages/AdminDashboard";
+import AdminUsers from "../pages/AdminUsers";
+import AdminPayments from "../pages/AdminPayments";
 
 type TabType = "dashboard" | "users" | "payments";
 

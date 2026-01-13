@@ -2,7 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import JobDetail from "@/components/jobs/JobDetail";
+import JobDetail from "@/components/jobs/detail/JobDetail";
 
 export default function JobDetailPage() {
   return (

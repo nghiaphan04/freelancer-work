@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import RegisterForm from "@/components/auth/RegisterForm";
-import AuthLayout from "@/components/auth/AuthLayout";
+import RegisterForm from "@/components/auth/forms/RegisterForm";
+import AuthLayout from "@/components/auth/layout/AuthLayout";
 
 export default function RegisterPage() {
   return (

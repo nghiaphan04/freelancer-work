@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
 import { useAuth, useAuthLoading } from "@/context/AuthContext";
-import SocialLoginButtons from "./SocialLoginButtons";
+import SocialLoginButtons from "../forms/SocialLoginButtons";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
