@@ -93,8 +93,8 @@ export default function PostJobForm() {
       });
 
       if (response.status === "SUCCESS" && response.data) {
-        toast.success("Tạo công việc thành công! Vui lòng thanh toán để đăng tin.");
-        router.push(`/jobs/${response.data.id}/payment`);
+        toast.success(response.message || "Tạo công việc thành công!");
+        router.push(`/my-posted-jobs`);
       } else {
         toast.error(response.message || "Không thể tạo công việc");
       }

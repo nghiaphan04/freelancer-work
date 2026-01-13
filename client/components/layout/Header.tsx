@@ -356,6 +356,12 @@ export default function Header() {
                         Hồ sơ của tôi
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild className={isActive("/wallet") ? "bg-[#00b14f]/5 text-[#00b14f]" : ""}>
+                      <Link href="/wallet">
+                        <Icon name="account_balance_wallet" size={20} />
+                        Ví của tôi
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild className={isActive("/settings") ? "bg-[#00b14f]/5 text-[#00b14f]" : ""}>
                       <Link href="/settings">
                         <Icon name="settings" size={20} />
@@ -510,6 +516,18 @@ export default function Header() {
                   >
                     <Icon name="person" size={20} className={isActive("/profile") ? "text-[#00b14f]" : "text-gray-400"} />
                     <span>Hồ sơ của tôi</span>
+                  </Link>
+                  <Link
+                    href="/wallet"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                      isActive("/wallet") 
+                        ? "bg-[#00b14f]/5 text-[#00b14f]" 
+                        : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                    }`}
+                  >
+                    <Icon name="account_balance_wallet" size={20} className={isActive("/wallet") ? "text-[#00b14f]" : "text-gray-400"} />
+                    <span>Ví của tôi</span>
                   </Link>
                   {user.roles?.includes("ROLE_FREELANCER") && (
                     <Link

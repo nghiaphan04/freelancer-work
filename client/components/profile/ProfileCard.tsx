@@ -118,9 +118,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
                 )}
                 {user.company && (
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                      <Icon name="business" size={16} className="text-gray-500" />
-                    </div>
+                    <Icon name="business" size={20} className="text-gray-500" />
                     <span className="text-sm text-gray-700">{user.company}</span>
                   </div>
                 )}

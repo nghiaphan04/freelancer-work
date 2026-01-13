@@ -16,6 +16,11 @@ export interface User {
   emailVerified?: boolean;
   enabled?: boolean;
   roles?: string[];
+  credits?: number;
+  balance?: number;
+  hasBankInfo?: boolean;
+  bankAccountNumber?: string;
+  bankName?: string;
 }
 
 export type UserRole = "ROLE_ADMIN" | "ROLE_EMPLOYER" | "ROLE_FREELANCER";

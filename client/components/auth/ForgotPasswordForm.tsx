@@ -111,9 +111,7 @@ export default function ForgotPasswordForm() {
     return (
       <div className="w-full">
         <div className="mb-4 text-center">
-          <div className="w-16 h-16 bg-[#00b14f]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Icon name="check_circle" size={32} className="text-[#00b14f]" />
-          </div>
+          <Icon name="check_circle" size={48} className="text-[#00b14f] mx-auto mb-3" />
           <h1 className="text-lg sm:text-xl font-bold text-[#00b14f] mb-1">Đặt lại mật khẩu thành công</h1>
           <p className="text-gray-500 text-sm">Mật khẩu của bạn đã được cập nhật.</p>
         </div>
@@ -175,9 +173,7 @@ export default function ForgotPasswordForm() {
     return (
       <div className="w-full">
         <div className="mb-4 text-center">
-          <div className="w-16 h-16 bg-[#00b14f]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Icon name="mark_email_read" size={32} className="text-[#00b14f]" />
-          </div>
+          <Icon name="mark_email_read" size={48} className="text-[#00b14f] mx-auto mb-3" />
           <h1 className="text-lg sm:text-xl font-bold text-[#00b14f] mb-1">Xác thực email</h1>
           <p className="text-gray-500 text-sm">Chúng tôi đã gửi mã OTP đến email <strong>{email}</strong></p>
         </div>

@@ -179,6 +179,18 @@ public class JobController {
     }
 
     /**
+     * Kiểm tra đơn ứng tuyển của tôi cho 1 job (FREELANCER)
+     */
+    @GetMapping("/{id}/my-application")
+    @PreAuthorize("hasRole('FREELANCER')")
+    public ResponseEntity<ApiResponse<JobApplicationResponse>> getMyApplicationForJob(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        return ResponseEntity.ok(jobService.getMyApplicationForJob(id, userDetails.getId()));
+    }
+
+    /**
      * Rút đơn ứng tuyển (FREELANCER)
      */
     @DeleteMapping("/applications/{applicationId}")

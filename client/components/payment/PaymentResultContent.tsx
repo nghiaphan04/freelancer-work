@@ -12,21 +12,24 @@ type Status = "loading" | "success" | "cancelled";
 export default function PaymentResultContent() {
   const searchParams = useSearchParams();
   const appTransId = searchParams.get("apptransid");
-  const jobId = searchParams.get("jobId");
+  const type = searchParams.get("type"); // "balance" for balance deposit
   
   const [status, setStatus] = useState<Status>("loading");
+  const [amount, setAmount] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!appTransId || !jobId) {
+    if (!appTransId) {
       setStatus("cancelled");
       return;
     }
 
     const check = async () => {
       try {
-        const res = await api.queryPaymentStatus(appTransId);
+        // Check balance deposit status
+        const res = await api.queryDepositStatus(appTransId);
         if (res.data?.status === "PAID") {
           setStatus("success");
+          setAmount(res.data.amount);
         } else {
           setStatus("cancelled");
         }
@@ -36,7 +39,15 @@ export default function PaymentResultContent() {
     };
 
     check();
-  }, [appTransId, jobId]);
+  }, [appTransId, type]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
+  };
 
   if (status === "loading") {
     return (
@@ -53,12 +64,12 @@ export default function PaymentResultContent() {
         <Icon name="warning" size={56} className="text-amber-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Thanh toán bị hủy</h1>
         <p className="text-gray-500 mb-6">
-          Công việc vẫn ở trạng thái nháp và chưa được hiển thị công khai.
+          Giao dịch nạp tiền chưa hoàn thành hoặc đã hết hạn.
         </p>
         <div className="flex flex-col gap-3">
-          <Link href="/my-posted-jobs" className="block">
+          <Link href="/wallet" className="block">
             <Button className="w-full bg-[#00b14f] hover:bg-[#009a44]">
-              Quản lý công việc
+              Quay lại Ví
             </Button>
           </Link>
           <Link href="/" className="block">
@@ -74,19 +85,22 @@ export default function PaymentResultContent() {
   return (
     <div className="bg-white rounded-lg shadow p-8 max-w-md w-full mx-4 text-center">
       <Icon name="check_circle" size={56} className="text-[#00b14f] mx-auto mb-4" />
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Thanh toán thành công!</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Nạp tiền thành công!</h1>
+      {amount && (
+        <p className="text-3xl font-bold text-[#00b14f] mb-4">{formatCurrency(amount)}</p>
+      )}
       <p className="text-gray-500 mb-6">
-        Công việc đã được đăng và hiển thị công khai.
+        Số dư đã được cộng vào ví của bạn.
       </p>
       <div className="flex flex-col gap-3">
-        <Link href="/my-posted-jobs" className="block">
+        <Link href="/wallet" className="block">
           <Button className="w-full bg-[#00b14f] hover:bg-[#009a44]">
-            Quản lý công việc
+            Xem ví của tôi
           </Button>
         </Link>
-        <Link href="/" className="block">
+        <Link href="/jobs" className="block">
           <Button variant="outline" className="w-full">
-            Về trang chủ
+            Tìm việc
           </Button>
         </Link>
       </div>

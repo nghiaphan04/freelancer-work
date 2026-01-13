@@ -1,6 +1,6 @@
 import { User } from "@/types/user";
 import { Job, Page, CreateJobRequest, UpdateJobRequest, JobStatus } from "@/types/job";
-import { Payment, PaymentStatus, PaymentStatistics } from "@/types/payment";
+import { BalanceDeposit, DepositStatus, BalanceStatistics } from "@/types/balance";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -115,26 +115,58 @@ export const api = {
   deleteJob: (id: number) =>
     request<void>(`/api/jobs/${id}`, { method: "DELETE" }),
 
-  // Payments
-  // Tạo thanh toán cho job
-  createPayment: (jobId: number) =>
-    request<Payment>(`/api/payments/jobs/${jobId}`, { method: "POST" }),
+  // Job Applications
+  applyJob: (jobId: number, data: { coverLetter?: string }) =>
+    request<JobApplication>(`/api/jobs/${jobId}/apply`, { method: "POST", body: JSON.stringify(data) }),
 
-  // Query trạng thái thanh toán
-  queryPaymentStatus: (appTransId: string) =>
-    request<Payment>(`/api/payments/query/${appTransId}`),
+  getMyApplicationForJob: (jobId: number) =>
+    request<JobApplication | null>(`/api/jobs/${jobId}/my-application`),
 
-  // Lấy payment của job
-  getPaymentByJobId: (jobId: number) =>
-    request<Payment>(`/api/payments/jobs/${jobId}`),
+  getMyApplications: (params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<JobApplication>>(`/api/jobs/my-applications${query.toString() ? `?${query}` : ""}`);
+  },
 
-  // Lấy lịch sử thanh toán của tôi
-  getMyPayments: (params?: { status?: PaymentStatus; page?: number; size?: number }) => {
+  getJobApplications: (jobId: number) =>
+    request<JobApplication[]>(`/api/jobs/${jobId}/applications`),
+
+  acceptApplication: (jobId: number, applicationId: number) =>
+    request<JobApplication>(`/api/jobs/${jobId}/applications/${applicationId}/accept`, { method: "PATCH" }),
+
+  rejectApplication: (jobId: number, applicationId: number) =>
+    request<JobApplication>(`/api/jobs/${jobId}/applications/${applicationId}/reject`, { method: "PATCH" }),
+
+  // Balance - Nạp số dư
+  createDeposit: (amount: number) =>
+    request<BalanceDeposit>("/api/balance/deposit", { method: "POST", body: JSON.stringify({ amount }) }),
+
+  // Query trạng thái nạp tiền
+  queryDepositStatus: (appTransId: string) =>
+    request<BalanceDeposit>(`/api/balance/deposit/${appTransId}/status`),
+
+  // Lấy lịch sử nạp tiền của tôi
+  getMyDeposits: (params?: { status?: DepositStatus; page?: number; size?: number }) => {
     const query = new URLSearchParams();
     if (params?.status) query.append("status", params.status);
     if (params?.page !== undefined) query.append("page", params.page.toString());
     if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<Payment>>(`/api/payments/my-payments${query.toString() ? `?${query}` : ""}`);
+    return request<Page<BalanceDeposit>>(`/api/balance/my-deposits${query.toString() ? `?${query}` : ""}`);
+  },
+
+  // Credits - Mua credit bằng số dư
+  getCreditPackages: () => request<CreditPackage[]>("/api/credits/packages"),
+
+  purchaseCredits: (creditPackage: string) =>
+    request<CreditPurchase>("/api/credits/purchase", { method: "POST", body: JSON.stringify({ creditPackage }) }),
+
+  getMyCreditPurchases: (params?: { status?: string; page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<CreditPurchase>>(`/api/credits/my-purchases${query.toString() ? `?${query}` : ""}`);
   },
 
   // ADMIN 
@@ -154,24 +186,63 @@ export const api = {
   adminUpdateUserStatus: (id: number, enabled: boolean) =>
     request<User>(`/api/users/${id}/status`, { method: "PUT", body: JSON.stringify({ enabled }) }),
 
-  // Admin - Payments
-  adminGetPaymentStatistics: () =>
-    request<PaymentStatistics>("/api/admin/payments/statistics"),
+  // Admin - Balance (Nạp tiền)
+  adminGetBalanceStatistics: () =>
+    request<BalanceStatistics>("/api/admin/balance/statistics"),
 
-  adminGetAllPayments: (params?: { status?: PaymentStatus; page?: number; size?: number }) => {
+  adminGetAllDeposits: (params?: { status?: DepositStatus; page?: number; size?: number }) => {
     const query = new URLSearchParams();
     if (params?.status) query.append("status", params.status);
     if (params?.page !== undefined) query.append("page", params.page.toString());
     if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<Payment>>(`/api/admin/payments${query.toString() ? `?${query}` : ""}`);
+    return request<Page<BalanceDeposit>>(`/api/admin/balance${query.toString() ? `?${query}` : ""}`);
   },
-
-  adminSearchPayments: (params: { keyword: string; page?: number; size?: number }) => {
-    const query = new URLSearchParams({ keyword: params.keyword });
-    if (params.page !== undefined) query.append("page", params.page.toString());
-    if (params.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<Payment>>(`/api/admin/payments/search?${query}`);
-  },
-
-  adminGetRecentPayments: () => request<Payment[]>("/api/admin/payments/recent"),
 };
+
+// Credit types
+export interface CreditPackage {
+  packageId: string;
+  credits: number;
+  price: number;
+  pricePerCredit: number;
+  originalPrice: number;
+  discountPercent: number;
+  description: string;
+}
+
+export interface CreditPurchase {
+  id: number;
+  appTransId: string;
+  userId: number;
+  userFullName?: string;
+  creditPackage: string;
+  creditsAmount: number;
+  totalAmount: number;
+  currency: string;
+  description?: string;
+  status: string;
+  creditsGranted: boolean;
+  paidAt?: string;
+  createdAt: string;
+}
+
+// Job Application types
+export type ApplicationStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
+
+export interface JobApplication {
+  id: number;
+  jobId: number;
+  jobTitle: string;
+  freelancer: {
+    id: number;
+    fullName: string;
+    avatarUrl?: string;
+    phoneNumber?: string;
+    bio?: string;
+    skills?: string[];
+  };
+  coverLetter?: string;
+  status: ApplicationStatus;
+  createdAt: string;
+  updatedAt: string;
+}

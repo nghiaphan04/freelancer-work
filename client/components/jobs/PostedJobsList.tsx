@@ -35,8 +35,6 @@ export default function PostedJobsList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [loadingDeleteId, setLoadingDeleteId] = useState<number | null>(null);
-  const [paymentInfo, setPaymentInfo] = useState<{ hasPaidPayment: boolean } | null>(null);
 
   const hasAccess = user?.roles?.includes("ROLE_EMPLOYER");
 
@@ -71,23 +69,8 @@ export default function PostedJobsList() {
     return new Date(dateStr).toLocaleDateString("vi-VN");
   };
 
-  const handleDeleteClick = async (job: Job) => {
-    setLoadingDeleteId(job.id);
+  const handleDeleteClick = (job: Job) => {
     setJobToDelete(job);
-    setPaymentInfo(null);
-    
-    try {
-      const paymentRes = await api.getPaymentByJobId(job.id);
-      if (paymentRes.status === "SUCCESS" && paymentRes.data?.status === "PAID") {
-        setPaymentInfo({ hasPaidPayment: true });
-      } else {
-        setPaymentInfo({ hasPaidPayment: false });
-      }
-    } catch {
-      setPaymentInfo({ hasPaidPayment: false });
-    }
-    
-    setLoadingDeleteId(null);
     setDeleteDialogOpen(true);
   };
 
@@ -240,41 +223,19 @@ export default function PostedJobsList() {
                   </div>
 
                   <div className="flex flex-row sm:flex-col gap-2">
-                    {job.status === "DRAFT" && (
-                      <Link 
-                        href={`/jobs/${job.id}/payment`} 
-                        className={`flex-1 sm:flex-none ${loadingDeleteId === job.id ? "pointer-events-none" : ""}`}
-                      >
-                        <Button 
-                          size="sm" 
-                          className="w-full bg-[#00b14f] hover:bg-[#009643] text-white"
-                          disabled={loadingDeleteId === job.id}
-                        >
-                          <Icon name="payment" size={16} />
-                          <span className="ml-1">Thanh toán</span>
-                        </Button>
-                      </Link>
-                    )}
-                    <Link 
-                      href={`/jobs/${job.id}`} 
-                      className={`flex-1 sm:flex-none ${loadingDeleteId === job.id ? "pointer-events-none" : ""}`}
-                    >
-                      <Button variant="outline" size="sm" className="w-full" disabled={loadingDeleteId === job.id}>
+                    <Link href={`/jobs/${job.id}`} className="flex-1 sm:flex-none">
+                      <Button variant="outline" size="sm" className="w-full">
                         <Icon name="visibility" size={16} />
                         <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                       </Button>
                     </Link>
                     {(job.status === "DRAFT" || job.status === "OPEN") && (
                       <>
-                        <Link 
-                          href={`/jobs/${job.id}/edit`} 
-                          className={`flex-1 sm:flex-none ${loadingDeleteId === job.id ? "pointer-events-none" : ""}`}
-                        >
+                        <Link href={`/jobs/${job.id}/edit`} className="flex-1 sm:flex-none">
                           <Button 
                             variant="outline" 
                             size="sm" 
                             className="w-full text-[#00b14f] border-[#00b14f] hover:bg-[#00b14f]/5"
-                            disabled={loadingDeleteId === job.id}
                           >
                             <Icon name="edit" size={16} />
                             <span className="sm:hidden lg:inline ml-1">Sửa</span>
@@ -285,13 +246,8 @@ export default function PostedJobsList() {
                           size="sm"
                           className="flex-1 sm:flex-none text-red-600 border-red-200 hover:bg-red-50"
                           onClick={() => handleDeleteClick(job)}
-                          disabled={loadingDeleteId === job.id}
                         >
-                          {loadingDeleteId === job.id ? (
-                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Icon name="delete" size={16} />
-                          )}
+                          <Icon name="delete" size={16} />
                           <span className="sm:hidden lg:inline ml-1">Xóa</span>
                         </Button>
                       </>
@@ -347,31 +303,14 @@ export default function PostedJobsList() {
           {jobToDelete && (
             <div className="py-4">
               <p className="font-medium text-gray-900 mb-2">#{jobToDelete.id} - {jobToDelete.title}</p>
-              
-              {paymentInfo === null ? (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  Đang kiểm tra thông tin thanh toán...
-                </div>
-              ) : paymentInfo.hasPaidPayment ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <Icon name="info" size={20} className="text-blue-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-blue-800">Sẽ hoàn tiền escrow</p>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Công việc này đã được thanh toán. Khi xóa, tiền escrow sẽ được hoàn lại vào tài khoản ZaloPay của bạn.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-sm text-gray-600">
-                    Công việc chưa được thanh toán, không có khoản hoàn tiền.
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Icon name="info" size={20} className="text-blue-600 mt-0.5" />
+                  <p className="text-sm text-blue-700">
+                    Khi xóa, tiền sẽ được hoàn lại vào số dư tài khoản của bạn.
                   </p>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
@@ -385,7 +324,7 @@ export default function PostedJobsList() {
             </Button>
             <Button
               onClick={handleDeleteConfirm}
-              disabled={isDeleting || paymentInfo === null}
+              disabled={isDeleting}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               {isDeleting ? (

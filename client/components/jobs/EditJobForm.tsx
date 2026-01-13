@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, notFound } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -166,22 +166,7 @@ export default function EditJobForm() {
   }
 
   if (error || !job) {
-    return (
-      <div className="max-w-md mx-auto px-4">
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="error" size={32} className="text-red-500" />
-          </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Lỗi</h1>
-          <p className="text-gray-600 mb-6">{error || "Không tìm thấy công việc"}</p>
-          <Link href="/my-posted-jobs">
-            <Button variant="outline" className="w-full">
-              Quay lại
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
+    notFound();
   }
 
   return (

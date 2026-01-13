@@ -299,6 +299,20 @@ public class JobService {
     }
 
     /**
+     * Kiểm tra đơn ứng tuyển của tôi cho 1 job
+     */
+    public ApiResponse<JobApplicationResponse> getMyApplicationForJob(Long jobId, Long userId) {
+        JobApplication application = jobApplicationRepository.findByJobIdAndFreelancerId(jobId, userId)
+                .orElse(null);
+
+        if (application == null || application.isWithdrawn()) {
+            return ApiResponse.success("Chưa ứng tuyển", null);
+        }
+
+        return ApiResponse.success("Đã ứng tuyển", buildApplicationResponse(application));
+    }
+
+    /**
      * Rút đơn ứng tuyển
      */
     @Transactional
