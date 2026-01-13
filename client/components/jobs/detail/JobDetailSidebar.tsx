@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Job, JOB_DURATION_CONFIG } from "@/types/job";
 import { JobApplication } from "@/lib/api";
 import Icon from "@/components/ui/Icon";
@@ -21,7 +22,6 @@ interface JobDetailSidebarProps {
   myApplication: JobApplication | null;
   onApply: () => void;
   onToggleStatus: () => void;
-  onViewApplications: () => void;
   formatDate: (dateString: string) => string;
 }
 
@@ -33,7 +33,6 @@ export default function JobDetailSidebar({
   myApplication,
   onApply,
   onToggleStatus,
-  onViewApplications,
   formatDate,
 }: JobDetailSidebarProps) {
   return (
@@ -138,14 +137,12 @@ export default function JobDetailSidebar({
       {isOwner && (
         <div className="bg-white rounded-lg shadow p-4 space-y-3">
           {/* View Applications Button */}
-          <Button
-            variant="outline"
-            onClick={onViewApplications}
-            className="w-full"
-          >
-            <Icon name="group" size={20} />
-            Xem ứng viên ({job.applicationCount})
-          </Button>
+          <Link href={`/jobs/${job.id}/applications`}>
+            <Button variant="outline" className="w-full">
+              <Icon name="group" size={20} />
+              Xem ứng viên ({job.applicationCount})
+            </Button>
+          </Link>
 
           {/* Toggle Status */}
           {(job.status === "DRAFT" || job.status === "OPEN") && (
