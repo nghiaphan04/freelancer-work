@@ -9,6 +9,10 @@ import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
 import Products from "@/components/landing/Products";
 import AppDownload from "@/components/landing/AppDownload";
+import HotlineSupport from "@/components/landing/HotlineSupport";
+import Partners from "@/components/landing/Partners";
+import AboutSection from "@/components/landing/AboutSection";
+import PopularKeywords from "@/components/landing/PopularKeywords";
 
 export default function Home() {
   const router = useRouter();
@@ -40,9 +44,15 @@ export default function Home() {
 
       <main className="flex-1">
         <Hero />
+        <Partners />
         <Products />
+       
         <AppDownload />
         <Features />
+        <AboutSection />
+      
+        <HotlineSupport />
+        <PopularKeywords />
       </main>
 
       <Footer />

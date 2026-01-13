@@ -33,6 +33,12 @@ export interface ProductCategory {
   iconType: string;
 }
 
+export interface Partner {
+  id: number;
+  name: string;
+  logo: string;
+}
+
 export const jobCategories: JobCategory[] = [
   { 
     id: 1, 
@@ -220,4 +226,68 @@ export const productCategories: ProductCategory[] = [
   { id: 8, name: "Pháp lý", jobs: 343, iconType: "legal" },
   { id: 9, name: "Nhân sự & Đào tạo", jobs: 1456, iconType: "hr" },
   { id: 10, name: "Kỹ thuật & Kiến trúc", jobs: 2134, iconType: "engineering" },
+];
+
+export const partners: Partner[] = [
+  { id: 1, name: "Partner 1", logo: "/1-sao.png" },
+  { id: 2, name: "Partner 2", logo: "/2-sao.png" },
+  { id: 3, name: "Partner 3", logo: "/3-sao.png" },
+  { id: 4, name: "WorkHub", logo: "/logo.svg" },
+  { id: 5, name: "Partner 5", logo: "/1-sao.png" },
+  { id: 6, name: "Partner 6", logo: "/2-sao.png" },
+  { id: 7, name: "Partner 7", logo: "/3-sao.png" },
+  { id: 8, name: "Partner 8", logo: "/logo.svg" },
+];
+
+export const popularKeywords: string[] = [
+  "cv là gì",
+  "Mẫu CV",
+  "mẫu cv tiếng việt",
+  "Sơ yếu lý lịch",
+  "CV tham khảo",
+  "tổng hợp CV tham khảo cho lập trình viên",
+  "giấy tờ thủ tục hồ sơ xin việc",
+  "Email xin việc bằng tiếng anh",
+  "Mẫu đơn xin việc",
+  "mẫu đơn xin nghỉ việc",
+  "Cách viết đơn xin nghỉ phép",
+  "Cách viết CV xin việc",
+  "cách viết CV Ngành Kinh doanh/Bán hàng",
+  "cách viết CV Ngành Kế Toán/Kiểm Toán",
+  "cách viết CV Ngành Nhân Sự",
+  "cách viết CV xin Học bổng",
+  "cách viết CV Tiếng Anh",
+  "cách viết CV Tiếng Nhật",
+  "cách viết CV Tiếng Trung",
+  "cách viết CV Tiếng Hàn",
+  "cẩm nang năm nhất cho sinh viên",
+  "Mẫu đơn xin thực tập",
+  "Hướng dẫn sửa lỗi gõ tiếng Việt",
+  "Ngành du lịch làm việc gì",
+  "Cẩm nang xin việc ngành nhân sự",
+  "Xin việc ngành công nghệ thông tin",
+  "Cẩm nang xin việc ngành marketing",
+  "Cẩm nang xin việc ngành kế toán kiểm toán",
+  "Cẩm nang xin việc ngành công nghệ thực phẩm",
+  "Cẩm nang xin việc ngành tài chính ngân hàng",
+  "Cẩm nang xin việc ngành luật",
+  "Cẩm nang xin việc ngành xây dựng - địa ốc",
+  "Trắc nghiệm tính cách MBTI",
+  "Việc làm online tại nhà",
+  "Tìm việc làm tại TP. HCM",
+  "Cách viết cover letter xin việc",
+  "CV xin việc bằng tiếng Anh",
+  "CV cho sinh viên chưa tốt nghiệp",
+  "Việc làm hành chính nhân sự",
+  "Thư xin việc bằng tiếng Anh",
+  "Ngành logistic là gì",
+  "Việc làm Hải Phòng",
+  "Việc làm Bình Định",
+  "Tuyển dụng Content Marketing",
+  "Tuyển lập trình viên PHP",
+  "Tuyển lập trình viên Java",
+  "Tuyển lập trình viên .Net",
+  "Tuyển dụng nhân viên kinh doanh",
+  "Tuyển dụng nhân viên marketing",
+  "Tìm việc kế toán",
 ];

@@ -23,18 +23,12 @@ export default function JobsList() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
   const currentPage = parseInt(searchParams.get("page") || "0");
-  const keyword = searchParams.get("keyword") || "";
 
-  const fetchJobs = useCallback(async (pageNum: number = 0, search: string = "") => {
+  const fetchJobs = useCallback(async (pageNum: number = 0) => {
     setIsLoading(true);
     setError(null);
     try {
-      let response;
-      if (search.trim()) {
-        response = await api.searchJobs({ keyword: search, page: pageNum, size: JOBS_PER_PAGE });
-      } else {
-        response = await api.getOpenJobs({ page: pageNum, size: JOBS_PER_PAGE, sortBy: "createdAt", sortDir: "desc" });
-      }
+      const response = await api.getOpenJobs({ page: pageNum, size: JOBS_PER_PAGE, sortBy: "createdAt", sortDir: "desc" });
       
       if (response.status === "SUCCESS" && response.data) {
         setJobs(response.data.content);
@@ -50,19 +44,15 @@ export default function JobsList() {
   }, []);
 
   useEffect(() => {
-    setSearchKeyword(keyword);
-    fetchJobs(currentPage, keyword);
-  }, [currentPage, keyword, fetchJobs]);
+    fetchJobs(currentPage);
+  }, [currentPage, fetchJobs]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchKeyword.trim()) {
-      params.set("keyword", searchKeyword.trim());
-    }
-    params.set("page", "0");
-    router.push(`/jobs?${params.toString()}`);
-  };
+  // Filter jobs by search keyword (client-side)
+  const filteredJobs = jobs.filter((job) =>
+    searchKeyword.trim() === "" ||
+    job.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+    job.skills?.some((skill) => skill.toLowerCase().includes(searchKeyword.toLowerCase()))
+  );
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -156,27 +146,18 @@ export default function JobsList() {
   return (
     <div className="max-w-7xl mx-auto px-4">
       {/* Search Bar */}
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="Tìm kiếm việc làm theo tên, kỹ năng..."
-              className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#00b14f] focus:ring-2 focus:ring-[#00b14f]/20 transition-all bg-white"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-6 py-3 bg-[#00b14f] hover:bg-[#009643] text-white font-medium rounded-xl flex items-center gap-2 transition-colors"
-          >
-            <Icon name="search" size={20} />
-            <span className="hidden sm:inline">Tìm kiếm</span>
-          </button>
+      <div className="mb-6">
+        <div className="relative">
+          <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="Tìm kiếm việc làm theo tên, kỹ năng..."
+            className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#00b14f] focus:ring-2 focus:ring-[#00b14f]/20 transition-all bg-white"
+          />
         </div>
-      </form>
+      </div>
 
       {/* Main Content with Sidebar */}
       <div className="flex gap-6">
@@ -190,17 +171,17 @@ export default function JobsList() {
         {/* Jobs Content */}
         <div className="flex-1 min-w-0">
           {/* Results Info */}
-          {!isLoading && page && (
+          {!isLoading && (
             <div className="flex items-center justify-between mb-4">
               <p className="text-gray-600">
-                {keyword ? (
+                {searchKeyword ? (
                   <>
-                    Tìm thấy <span className="font-semibold text-[#00b14f]">{page.totalElements}</span> việc làm 
-                    {keyword && <> cho từ khóa &quot;<span className="font-medium">{keyword}</span>&quot;</>}
+                    Tìm thấy <span className="font-semibold text-[#00b14f]">{filteredJobs.length}</span> việc làm 
+                    cho &quot;<span className="font-medium">{searchKeyword}</span>&quot;
                   </>
                 ) : (
                   <>
-                    <span className="font-semibold text-[#00b14f]">{page.totalElements}</span> việc làm đang tuyển
+                    <span className="font-semibold text-[#00b14f]">{page?.totalElements || 0}</span> việc làm đang tuyển
                   </>
                 )}
               </p>
@@ -231,24 +212,24 @@ export default function JobsList() {
               <Icon name="error_outline" size={48} className="text-red-400 mx-auto mb-4" />
               <p className="text-gray-600 mb-4">{error}</p>
               <button
-                onClick={() => fetchJobs(currentPage, keyword)}
+                onClick={() => fetchJobs(currentPage)}
                 className="px-4 py-2 bg-[#00b14f] text-white rounded-lg hover:bg-[#009643] transition-colors"
               >
                 Thử lại
               </button>
             </div>
-          ) : jobs.length === 0 ? (
+          ) : filteredJobs.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
               <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-700 mb-2">Không tìm thấy việc làm</h3>
               <p className="text-gray-500">
-                {keyword ? "Thử tìm kiếm với từ khóa khác" : "Hiện chưa có việc làm nào đang tuyển"}
+                {searchKeyword ? "Thử tìm kiếm với từ khóa khác" : "Hiện chưa có việc làm nào đang tuyển"}
               </p>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {jobs.map((job) => (
+                {filteredJobs.map((job) => (
                   <JobCardWithPreview
                     key={job.id}
                     job={job}
@@ -258,8 +239,8 @@ export default function JobsList() {
                 ))}
               </div>
 
-              {/* Pagination */}
-              {renderPagination()}
+              {/* Pagination - only show when not filtering */}
+              {!searchKeyword && renderPagination()}
             </>
           )}
         </div>

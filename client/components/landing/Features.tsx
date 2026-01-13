@@ -38,7 +38,7 @@ export default function Features() {
             <line x1="0" y1="8" x2="120" y2="8" stroke="#00b14f" strokeWidth="2" strokeDasharray="8 4" />
           </svg>
           
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white italic">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white ">
             Con số ấn tượng
           </h2>
           
@@ -48,13 +48,13 @@ export default function Features() {
         </div>
 
         {/* Description */}
-        <p className="text-center text-gray-300 text-sm sm:text-base max-w-5xl mx-auto mb-4 leading-relaxed">
+        <p className="text-justify text-gray-300 text-sm sm:text-base max-w-5xl mx-auto mb-4 leading-relaxed">
           Freelancer là nền tảng kết nối việc làm hàng đầu Việt Nam. Với năng lực lõi là công nghệ, đặc biệt là trí tuệ nhân tạo (AI), 
           sứ mệnh của Freelancer đặt ra cho mình là thay đổi thị trường tuyển dụng - nhân sự ngày một hiệu quả hơn. Chúng tôi không ngừng đổi mới 
           và phát triển để mang đến trải nghiệm tốt nhất cho cả ứng viên và nhà tuyển dụng trên khắp cả nước.
         </p>
 
-        <p className="text-center text-gray-300 text-sm sm:text-base max-w-5xl mx-auto mb-12 leading-relaxed">
+        <p className="text-justify text-gray-300 text-sm sm:text-base max-w-5xl mx-auto mb-12 leading-relaxed">
           Sở hữu hơn 9 triệu người dùng và 200.000+ doanh nghiệp lớn tin dùng, Freelancer khao khát kiến tạo một cầu nối có giá trị vững bền 
           để những nhân tố đủ tâm xứng tầm chạm được nhau: đúng người, đúng thời, đúng hướng. Từ những freelancer tài năng đến các doanh nghiệp 
           đang tìm kiếm nhân sự chất lượng, Freelancer là nơi kết nối và tạo ra những cơ hội nghề nghiệp đột phá.
