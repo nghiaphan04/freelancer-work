@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { BalanceDeposit, DepositStatus, DEPOSIT_STATUS_CONFIG } from "@/types/balance";
 import { Page } from "@/types/job";
-import Icon from "@/components/ui/Icon";
-import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 
 const STATUS_OPTIONS: { value: DepositStatus | ""; label: string }[] = [
   { value: "", label: "Tất cả" },
@@ -100,72 +99,93 @@ export default function AdminPayments() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          {deposits.length === 0 ? (
-            <div className="p-6 text-center text-gray-500 text-sm">Không có giao dịch nào</div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mã GD</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Người nạp</th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Số tiền</th>
-                  <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ngày tạo</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thanh toán</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {deposits.map((deposit) => (
-                  <tr key={deposit.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 font-mono text-gray-900">{deposit.appTransId}</td>
-                    <td className="px-3 py-2">
-                      <p className="font-medium text-gray-900">{deposit.userFullName || `User #${deposit.userId}`}</p>
-                      <p className="text-xs text-gray-500">#{deposit.userId}</p>
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium text-gray-900">{formatCurrency(deposit.amount)}</td>
-                    <td className="px-3 py-2 text-center">
-                      <span className={`text-xs px-2 py-1 rounded-full ${DEPOSIT_STATUS_CONFIG[deposit.status]?.color || ""}`}>
-                        {DEPOSIT_STATUS_CONFIG[deposit.status]?.label || deposit.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-gray-500">{formatDate(deposit.createdAt)}</td>
-                    <td className="px-3 py-2 text-gray-500">{formatDate(deposit.paidAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      {/* Content */}
+      {deposits.length === 0 ? (
+        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500 text-sm">
+          Không có giao dịch nào
         </div>
+      ) : (
+        <>
+          {/* Mobile: Card View */}
+          <div className="md:hidden space-y-3">
+            {deposits.map((deposit) => (
+              <div key={deposit.id} className="bg-white rounded-lg shadow p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{deposit.userFullName || `User #${deposit.userId}`}</p>
+                    <p className="text-xs text-gray-500 font-mono truncate">{deposit.appTransId}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${DEPOSIT_STATUS_CONFIG[deposit.status]?.color || ""}`}>
+                    {DEPOSIT_STATUS_CONFIG[deposit.status]?.label || deposit.status}
+                  </span>
+                </div>
 
-        {totalPages > 1 && (
-          <div className="px-3 py-2 border-t flex items-center justify-between">
-            <p className="text-xs text-gray-500">Trang {page + 1}/{totalPages}</p>
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setPage(Math.max(0, page - 1))}
-                disabled={page === 0 || isLoading}
-              >
-                Trước
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                disabled={page >= totalPages - 1 || isLoading}
-              >
-                Sau
-              </Button>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-semibold text-[#00b14f]">{formatCurrency(deposit.amount)}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 pt-2 border-t">
+                  <div>
+                    <p className="text-gray-400">Ngày tạo</p>
+                    <p>{formatDate(deposit.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Thanh toán</p>
+                    <p>{formatDate(deposit.paidAt)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Table View */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mã GD</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Người nạp</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Số tiền</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ngày tạo</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thanh toán</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {deposits.map((deposit) => (
+                    <tr key={deposit.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 font-mono text-gray-900">{deposit.appTransId}</td>
+                      <td className="px-3 py-2">
+                        <p className="font-medium text-gray-900">{deposit.userFullName || `User #${deposit.userId}`}</p>
+                        <p className="text-xs text-gray-500">#{deposit.userId}</p>
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium text-gray-900">{formatCurrency(deposit.amount)}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`text-xs px-2 py-1 rounded-full ${DEPOSIT_STATUS_CONFIG[deposit.status]?.color || ""}`}>
+                          {DEPOSIT_STATUS_CONFIG[deposit.status]?.label || deposit.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-gray-500">{formatDate(deposit.createdAt)}</td>
+                      <td className="px-3 py-2 text-gray-500">{formatDate(deposit.paidAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Pagination */}
+          <div className="bg-white rounded-lg shadow md:rounded-none md:shadow-none">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              disabled={isLoading}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -67,7 +67,7 @@ export default function AdminDashboard() {
       <h2 className="text-xl font-bold text-gray-900">Tổng quan nạp tiền</h2>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center gap-2 text-gray-500 mb-1">
             <Icon name="account_balance_wallet" size={18} />
@@ -147,36 +147,56 @@ export default function AdminDashboard() {
         <div className="p-4 border-b">
           <h3 className="font-semibold text-gray-900 text-sm">Nạp tiền gần đây</h3>
         </div>
-        <div className="overflow-x-auto">
-          {recentDeposits.length === 0 ? (
-            <div className="p-6 text-center text-gray-500 text-sm">Chưa có giao dịch nào</div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mã GD</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Người nạp</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Số tiền</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thời gian</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {recentDeposits.map((deposit) => (
-                  <tr key={deposit.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 font-mono text-gray-900">{deposit.appTransId}</td>
-                    <td className="px-4 py-2 text-gray-700">{deposit.userFullName || `User #${deposit.userId}`}</td>
-                    <td className="px-4 py-2 text-right font-medium text-gray-900">
-                      {formatCurrency(deposit.amount)}
-                    </td>
-                    <td className="px-4 py-2 text-gray-500">
-                      {formatDate(deposit.paidAt)}
-                    </td>
+
+        {recentDeposits.length === 0 ? (
+          <div className="p-6 text-center text-gray-500 text-sm">Chưa có giao dịch nào</div>
+        ) : (
+          <>
+            {/* Mobile: Card View */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {recentDeposits.map((deposit) => (
+                <div key={deposit.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium text-gray-900 truncate flex-1">{deposit.userFullName || `User #${deposit.userId}`}</p>
+                    <p className="font-semibold text-[#00b14f] whitespace-nowrap">{formatCurrency(deposit.amount)}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                    <p className="font-mono truncate flex-1">{deposit.appTransId}</p>
+                    <p className="whitespace-nowrap">{formatDate(deposit.paidAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mã GD</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Người nạp</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Số tiền</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Thời gian</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {recentDeposits.map((deposit) => (
+                    <tr key={deposit.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 font-mono text-gray-900">{deposit.appTransId}</td>
+                      <td className="px-4 py-2 text-gray-700">{deposit.userFullName || `User #${deposit.userId}`}</td>
+                      <td className="px-4 py-2 text-right font-medium text-gray-900">
+                        {formatCurrency(deposit.amount)}
+                      </td>
+                      <td className="px-4 py-2 text-gray-500">
+                        {formatDate(deposit.paidAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

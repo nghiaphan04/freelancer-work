@@ -220,6 +220,30 @@ export const api = {
     if (params?.size !== undefined) query.append("size", params.size.toString());
     return request<Page<BalanceDeposit>>(`/api/admin/balance${query.toString() ? `?${query}` : ""}`);
   },
+
+  // Admin - Job Approval (Kiểm duyệt job)
+  adminGetPendingJobs: (params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Job>>(`/api/jobs/admin/pending${query.toString() ? `?${query}` : ""}`);
+  },
+
+  adminGetJobsByStatus: (status: JobStatus, params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Job>>(`/api/jobs/admin/status/${status}${query.toString() ? `?${query}` : ""}`);
+  },
+
+  adminApproveJob: (jobId: number) =>
+    request<Job>(`/api/jobs/admin/${jobId}/approve`, { method: "PUT" }),
+
+  adminRejectJob: (jobId: number, reason: string) =>
+    request<Job>(`/api/jobs/admin/${jobId}/reject`, { method: "PUT", body: JSON.stringify({ reason }) }),
+
+  adminCountPendingJobs: () =>
+    request<number>("/api/jobs/admin/count/pending"),
 };
 
 // Credit types

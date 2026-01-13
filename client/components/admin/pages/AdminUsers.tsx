@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { User, getRoleLabel } from "@/types/user";
 import { Page } from "@/types/job";
 import Icon from "@/components/ui/Icon";
-import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function AdminUsers() {
@@ -79,7 +79,57 @@ export default function AdminUsers() {
         <span className="text-xs text-gray-500">Tổng: {totalElements}</span>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Mobile: Card View */}
+      <div className="md:hidden space-y-3">
+        {users.map((user) => (
+          <div key={user.id} className="bg-white rounded-lg shadow p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10">
+                <AvatarImage src={user.avatarUrl} alt={user.fullName} />
+                <AvatarFallback className="bg-gray-200 text-gray-600">
+                  {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 truncate">{user.fullName}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              </div>
+              <span className="text-xs text-gray-400">#{user.id}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {user.roles?.map((role) => (
+                <span key={role} className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
+                  {getRoleLabel(role)}
+                </span>
+              ))}
+              <span className={`px-2 py-0.5 rounded text-xs ${user.enabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                {user.enabled ? "Hoạt động" : "Vô hiệu"}
+              </span>
+              {user.emailVerified && (
+                <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                  Đã xác thực
+                </span>
+              )}
+            </div>
+
+            <div className="pt-2 border-t flex justify-end">
+              <button
+                onClick={() => handleToggleStatus(user.id, user.enabled || false)}
+                disabled={togglingId === user.id || user.roles?.includes("ROLE_ADMIN")}
+                className={`text-sm hover:underline disabled:opacity-50 ${
+                  user.enabled ? "text-red-600 hover:text-red-700" : "text-green-600 hover:text-green-700"
+                }`}
+              >
+                {togglingId === user.id ? "..." : user.enabled ? "Vô hiệu hóa" : "Kích hoạt"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: Table View */}
+      <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
@@ -127,41 +177,31 @@ export default function AdminUsers() {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
+                    <button
                       onClick={() => handleToggleStatus(user.id, user.enabled || false)}
                       disabled={togglingId === user.id || user.roles?.includes("ROLE_ADMIN")}
-                      className="text-xs h-7"
+                      className={`text-sm hover:underline disabled:opacity-50 disabled:no-underline ${
+                        user.enabled ? "text-red-600 hover:text-red-700" : "text-green-600 hover:text-green-700"
+                      }`}
                     >
-                      {togglingId === user.id ? (
-                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      ) : user.enabled ? (
-                        "Vô hiệu"
-                      ) : (
-                        "Kích hoạt"
-                      )}
-                    </Button>
+                      {togglingId === user.id ? "..." : user.enabled ? "Vô hiệu" : "Kích hoạt"}
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
 
-        {totalPages > 1 && (
-          <div className="px-3 py-2 border-t flex items-center justify-between">
-            <p className="text-xs text-gray-500">Trang {page + 1}/{totalPages}</p>
-            <div className="flex gap-1">
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0 || isLoading}>
-                Trước
-              </Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1 || isLoading}>
-                Sau
-              </Button>
-            </div>
-          </div>
-        )}
+      {/* Pagination */}
+      <div className="bg-white rounded-lg shadow md:rounded-none md:shadow-none">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          disabled={isLoading}
+        />
       </div>
     </div>
   );

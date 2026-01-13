@@ -11,11 +11,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AdminDashboard from "../pages/AdminDashboard";
 import AdminUsers from "../pages/AdminUsers";
 import AdminPayments from "../pages/AdminPayments";
+import AdminJobs from "../pages/AdminJobs";
 
-type TabType = "dashboard" | "users" | "payments";
+type TabType = "dashboard" | "jobs" | "users" | "payments";
 
 const TABS = [
   { id: "dashboard" as TabType, label: "Tổng quan", icon: "dashboard" },
+  { id: "jobs" as TabType, label: "Duyệt công việc", icon: "work" },
   { id: "users" as TabType, label: "Người dùng", icon: "group" },
   { id: "payments" as TabType, label: "Thanh toán", icon: "payments" },
 ];
@@ -116,7 +118,7 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="h-screen bg-gray-50 flex flex-col md:flex-row overflow-hidden">
       {/* Mobile Header */}
       <div className="md:hidden h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-40">
         <div className="flex items-center gap-2">
@@ -147,8 +149,9 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 overflow-auto">
+      <main className="flex-1 p-4 overflow-y-auto">
         {activeTab === "dashboard" && <AdminDashboard />}
+        {activeTab === "jobs" && <AdminJobs />}
         {activeTab === "users" && <AdminUsers />}
         {activeTab === "payments" && <AdminPayments />}
       </main>

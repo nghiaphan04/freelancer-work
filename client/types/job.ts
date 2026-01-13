@@ -1,5 +1,5 @@
 // Enums matching backend
-export type JobStatus = "DRAFT" | "OPEN" | "IN_PROGRESS" | "COMPLETED" | "CLOSED" | "CANCELLED";
+export type JobStatus = "DRAFT" | "PENDING_APPROVAL" | "OPEN" | "REJECTED" | "IN_PROGRESS" | "COMPLETED" | "CLOSED" | "CANCELLED";
 export type JobComplexity = "ENTRY" | "INTERMEDIATE" | "EXPERT";
 export type JobDuration = "SHORT_TERM" | "MEDIUM_TERM" | "LONG_TERM";
 export type WorkType = "PART_TIME" | "FULL_TIME";
@@ -28,10 +28,12 @@ export interface Job {
   duration: JobDuration;
   workType: WorkType;
   budget?: number;
+  escrowAmount?: number;  // Số tiền đã giữ (budget + fee)
   currency: string;
   applicationDeadline?: string;
   expectedStartDate?: string;
   status: JobStatus;
+  rejectionReason?: string;  // Lý do từ chối (nếu REJECTED)
   viewCount: number;
   applicationCount: number;
   employer: JobEmployer;
@@ -87,7 +89,9 @@ export interface Page<T> {
 // UI Config
 export const JOB_STATUS_CONFIG = {
   DRAFT: { label: "Bản nháp", color: "bg-gray-100 text-gray-700" },
+  PENDING_APPROVAL: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-700" },
   OPEN: { label: "Đang tuyển", color: "bg-green-100 text-green-700" },
+  REJECTED: { label: "Đã từ chối", color: "bg-red-100 text-red-700" },
   IN_PROGRESS: { label: "Đang thực hiện", color: "bg-blue-100 text-blue-700" },
   COMPLETED: { label: "Hoàn thành", color: "bg-emerald-100 text-emerald-700" },
   CLOSED: { label: "Đã đóng", color: "bg-gray-100 text-gray-600" },
