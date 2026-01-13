@@ -275,6 +275,82 @@ export const api = {
 
   markAllNotificationsAsRead: () =>
     request<void>("/api/notifications/read-all", { method: "PATCH" }),
+
+  // Withdrawal Requests
+  createFreelancerWithdrawal: (jobId: number, reason: string) =>
+    request<WithdrawalRequest>(`/api/jobs/${jobId}/withdrawal/freelancer`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+
+  createEmployerCancellation: (jobId: number, reason: string) =>
+    request<WithdrawalRequest>(`/api/jobs/${jobId}/withdrawal/employer`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+
+  approveWithdrawalRequest: (jobId: number, requestId: number, message?: string) =>
+    request<WithdrawalRequest>(`/api/jobs/${jobId}/withdrawal/${requestId}/approve`, {
+      method: "PUT",
+      body: JSON.stringify({ message }),
+    }),
+
+  rejectWithdrawalRequest: (jobId: number, requestId: number, message?: string) =>
+    request<WithdrawalRequest>(`/api/jobs/${jobId}/withdrawal/${requestId}/reject`, {
+      method: "PUT",
+      body: JSON.stringify({ message }),
+    }),
+
+  cancelWithdrawalRequest: (jobId: number, requestId: number) =>
+    request<void>(`/api/jobs/${jobId}/withdrawal/${requestId}`, { method: "DELETE" }),
+
+  getPendingWithdrawalRequest: (jobId: number) =>
+    request<WithdrawalRequest | null>(`/api/jobs/${jobId}/withdrawal/pending`),
+
+  getWithdrawalRequestHistory: (jobId: number) =>
+    request<WithdrawalRequest[]>(`/api/jobs/${jobId}/withdrawal/history`),
+};
+
+// Withdrawal Request types
+export type WithdrawalRequestType = "FREELANCER_WITHDRAW" | "EMPLOYER_CANCEL";
+export type WithdrawalRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+
+export interface WithdrawalRequest {
+  id: number;
+  jobId: number;
+  jobTitle: string;
+  type: WithdrawalRequestType;
+  typeLabel: string;
+  status: WithdrawalRequestStatus;
+  statusLabel: string;
+  reason: string;
+  penaltyFee: number;
+  penaltyPercent: number;
+  responseMessage?: string;
+  requester: {
+    id: number;
+    fullName: string;
+    avatarUrl?: string;
+  };
+  responder?: {
+    id: number;
+    fullName: string;
+    avatarUrl?: string;
+  };
+  respondedAt?: string;
+  createdAt: string;
+}
+
+export const WITHDRAWAL_REQUEST_TYPE_CONFIG: Record<WithdrawalRequestType, { label: string; icon: string }> = {
+  FREELANCER_WITHDRAW: { label: "Freelancer xin rút", icon: "exit_to_app" },
+  EMPLOYER_CANCEL: { label: "Bên thuê xin hủy", icon: "cancel" },
+};
+
+export const WITHDRAWAL_REQUEST_STATUS_CONFIG: Record<WithdrawalRequestStatus, { label: string; color: string }> = {
+  PENDING: { label: "Đang chờ xác nhận", color: "bg-yellow-100 text-yellow-700" },
+  APPROVED: { label: "Đã chấp nhận", color: "bg-green-100 text-green-700" },
+  REJECTED: { label: "Đã từ chối", color: "bg-red-100 text-red-700" },
+  CANCELLED: { label: "Đã hủy yêu cầu", color: "bg-gray-100 text-gray-700" },
 };
 
 // Notification types
@@ -284,6 +360,10 @@ export type NotificationType =
   | "NEW_APPLICATION"
   | "JOB_APPROVED"
   | "JOB_REJECTED"
+  | "WITHDRAWAL_REQUESTED"
+  | "WITHDRAWAL_APPROVED"
+  | "WITHDRAWAL_REJECTED"
+  | "JOB_CANCELLED"
   | "SYSTEM";
 
 export interface Notification {
@@ -304,6 +384,10 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; 
   NEW_APPLICATION: { icon: "person_add", color: "text-blue-600" },
   JOB_APPROVED: { icon: "verified", color: "text-green-600" },
   JOB_REJECTED: { icon: "block", color: "text-red-600" },
+  WITHDRAWAL_REQUESTED: { icon: "exit_to_app", color: "text-orange-600" },
+  WITHDRAWAL_APPROVED: { icon: "check_circle", color: "text-green-600" },
+  WITHDRAWAL_REJECTED: { icon: "cancel", color: "text-red-600" },
+  JOB_CANCELLED: { icon: "cancel", color: "text-red-600" },
   SYSTEM: { icon: "info", color: "text-gray-600" },
 };
 

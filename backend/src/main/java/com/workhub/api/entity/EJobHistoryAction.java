@@ -24,5 +24,11 @@ public enum EJobHistoryAction {
     JOB_APPROVED,          // Admin duyệt job
     JOB_REJECTED,          // Admin từ chối job
     JOB_COMPLETED,         // Job hoàn thành
-    JOB_CANCELLED          // Job bị hủy
+    JOB_CANCELLED,         // Job bị hủy
+
+    // Withdrawal actions
+    WITHDRAWAL_REQUESTED,  // Tạo yêu cầu rút/hủy
+    WITHDRAWAL_APPROVED,   // Chấp nhận yêu cầu rút/hủy
+    WITHDRAWAL_REJECTED,   // Từ chối yêu cầu rút/hủy
+    WITHDRAWAL_CANCELLED   // Hủy yêu cầu của mình
 }

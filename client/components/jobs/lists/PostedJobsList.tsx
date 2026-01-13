@@ -309,7 +309,7 @@ export default function PostedJobsList() {
                         </Button>
                       </Link>
                     )}
-                    {(job.status === "DRAFT" || job.status === "OPEN") && (
+                    {(job.status === "DRAFT" || job.status === "PENDING_APPROVAL" || job.status === "REJECTED") && job.applicationCount === 0 && (
                       <Button
                         variant="outline"
                         size="sm"

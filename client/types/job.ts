@@ -135,7 +135,11 @@ export type JobHistoryAction =
   | "JOB_APPROVED"
   | "JOB_REJECTED"
   | "JOB_COMPLETED"
-  | "JOB_CANCELLED";
+  | "JOB_CANCELLED"
+  | "WITHDRAWAL_REQUESTED"
+  | "WITHDRAWAL_APPROVED"
+  | "WITHDRAWAL_REJECTED"
+  | "WITHDRAWAL_CANCELLED";
 
 export interface JobHistoryUser {
   id: number;
@@ -175,4 +179,8 @@ export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string
   JOB_REJECTED: { label: "Admin từ chối", icon: "block", color: "text-red-600" },
   JOB_COMPLETED: { label: "Hoàn thành", icon: "done_all", color: "text-emerald-600" },
   JOB_CANCELLED: { label: "Đã hủy", icon: "cancel", color: "text-red-600" },
+  WITHDRAWAL_REQUESTED: { label: "Yêu cầu rút/hủy", icon: "exit_to_app", color: "text-orange-600" },
+  WITHDRAWAL_APPROVED: { label: "Chấp nhận yêu cầu", icon: "check_circle", color: "text-green-600" },
+  WITHDRAWAL_REJECTED: { label: "Từ chối yêu cầu", icon: "cancel", color: "text-red-600" },
+  WITHDRAWAL_CANCELLED: { label: "Hủy yêu cầu", icon: "undo", color: "text-gray-600" },
 };

@@ -41,6 +41,10 @@ public class NotificationResponse {
             case NEW_APPLICATION -> "Có ứng viên mới";
             case JOB_APPROVED -> "Công việc được duyệt";
             case JOB_REJECTED -> "Công việc bị từ chối";
+            case WITHDRAWAL_REQUESTED -> "Có yêu cầu rút/hủy";
+            case WITHDRAWAL_APPROVED -> "Yêu cầu được chấp nhận";
+            case WITHDRAWAL_REJECTED -> "Yêu cầu bị từ chối";
+            case JOB_CANCELLED -> "Công việc đã bị hủy";
             case SYSTEM -> "Thông báo hệ thống";
         };
     }

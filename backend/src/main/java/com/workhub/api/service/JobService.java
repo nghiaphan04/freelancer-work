@@ -235,6 +235,30 @@ public class JobService {
             throw new UnauthorizedAccessException("Bạn không có quyền xóa job này");
         }
 
+        EJobStatus status = job.getStatus();
+        boolean canDelete = status == EJobStatus.DRAFT 
+                || status == EJobStatus.PENDING_APPROVAL 
+                || status == EJobStatus.REJECTED;
+        
+        if (!canDelete) {
+            throw new IllegalStateException("Chỉ có thể xóa job ở trạng thái Bản nháp, Chờ duyệt hoặc Bị từ chối");
+        }
+
+        if (job.getApplicationCount() > 0) {
+            throw new IllegalStateException("Không thể xóa job đã có người ứng tuyển");
+        }
+
+        // Hoàn tiền escrow cho employer nếu có
+        // DRAFT và PENDING_APPROVAL vẫn giữ escrow, cần hoàn lại
+        // REJECTED đã được hoàn trong rejectJob rồi
+        if ((status == EJobStatus.DRAFT || status == EJobStatus.PENDING_APPROVAL) 
+                && job.getEscrowAmount() != null 
+                && job.getEscrowAmount().compareTo(BigDecimal.ZERO) > 0) {
+            User employer = job.getEmployer();
+            employer.addBalance(job.getEscrowAmount());
+            userService.save(employer);
+        }
+
         jobRepository.delete(job);
         
         return ApiResponse.success("Xóa job thành công");

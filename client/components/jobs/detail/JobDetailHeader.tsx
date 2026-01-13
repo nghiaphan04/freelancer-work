@@ -39,7 +39,7 @@ export default function JobDetailHeader({ job, isOwner, formatCurrency, formatRe
             </span>
           </div>
         </div>
-        {isOwner && (
+        {isOwner && job.status === "DRAFT" && job.applicationCount === 0 && (
           <Link href={`/jobs/${job.id}/edit`}>
             <Button variant="outline" size="sm">
               <Icon name="edit" size={16} />

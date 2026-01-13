@@ -48,6 +48,10 @@ public class JobHistoryResponse {
             case JOB_REJECTED -> "Admin từ chối";
             case JOB_COMPLETED -> "Hoàn thành";
             case JOB_CANCELLED -> "Đã hủy";
+            case WITHDRAWAL_REQUESTED -> "Yêu cầu rút/hủy";
+            case WITHDRAWAL_APPROVED -> "Chấp nhận yêu cầu";
+            case WITHDRAWAL_REJECTED -> "Từ chối yêu cầu";
+            case WITHDRAWAL_CANCELLED -> "Hủy yêu cầu";
         };
     }
 }

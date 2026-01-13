@@ -118,4 +118,71 @@ public class NotificationService {
                 .build();
         notificationRepository.save(notification);
     }
+
+    // ==================== WITHDRAWAL NOTIFICATIONS ====================
+
+    /**
+     * Thông báo cho đối phương khi có yêu cầu rút/hủy mới
+     */
+    @Transactional
+    public void notifyWithdrawalRequested(User recipient, Job job, User requester, boolean isFreelancerRequest) {
+        String requestType = isFreelancerRequest ? "rút khỏi" : "hủy";
+        Notification notification = Notification.builder()
+                .user(recipient)
+                .type(ENotificationType.WITHDRAWAL_REQUESTED)
+                .title("Có yêu cầu " + requestType + " công việc")
+                .message(requester.getFullName() + " đã gửi yêu cầu " + requestType + " công việc \"" + job.getTitle() + "\"")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho người tạo yêu cầu khi bị từ chối
+     */
+    @Transactional
+    public void notifyWithdrawalRejected(User requester, Job job, User responder) {
+        Notification notification = Notification.builder()
+                .user(requester)
+                .type(ENotificationType.WITHDRAWAL_REJECTED)
+                .title("Yêu cầu bị từ chối")
+                .message(responder.getFullName() + " đã từ chối yêu cầu của bạn cho công việc \"" + job.getTitle() + "\". Tiền phạt đã được hoàn lại.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho người tạo yêu cầu khi được chấp nhận
+     */
+    @Transactional
+    public void notifyWithdrawalApproved(User requester, Job job, User responder) {
+        Notification notification = Notification.builder()
+                .user(requester)
+                .type(ENotificationType.WITHDRAWAL_APPROVED)
+                .title("Yêu cầu được chấp nhận")
+                .message(responder.getFullName() + " đã chấp nhận yêu cầu của bạn. Công việc \"" + job.getTitle() + "\" đã được hủy.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho employer khi job bị hủy (nhận lại tiền escrow)
+     */
+    @Transactional
+    public void notifyJobCancelled(User employer, Job job) {
+        Notification notification = Notification.builder()
+                .user(employer)
+                .type(ENotificationType.JOB_CANCELLED)
+                .title("Công việc đã bị hủy")
+                .message("Công việc \"" + job.getTitle() + "\" đã bị hủy. Tiền escrow đã được hoàn lại vào số dư của bạn.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
 }

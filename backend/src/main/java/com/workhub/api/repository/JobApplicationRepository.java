@@ -34,4 +34,6 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     boolean existsByJobIdAndStatus(Long jobId, EApplicationStatus status);
 
     boolean existsByJobIdAndFreelancerIdAndStatus(Long jobId, Long freelancerId, EApplicationStatus status);
+
+    Optional<JobApplication> findFirstByJobIdAndStatus(Long jobId, EApplicationStatus status);
 }
