@@ -22,7 +22,7 @@ Coming soon...
 
 - **Frontend**: Next.js, React, Tailwind CSS
 - **Smart Contract**: move
-- **Backend**: Node.js
+- **Backend**: Java spring boot 3.5.5
 - **Blockchain**: aptos
 
 ## Tác giả

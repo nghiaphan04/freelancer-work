@@ -18,12 +18,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const STATUS_OPTIONS: { value: JobStatus | "PENDING_APPROVAL"; label: string }[] = [
+const STATUS_OPTIONS: { value: JobStatus | "PENDING_APPROVAL" | "history"; label: string }[] = [
   { value: "PENDING_APPROVAL", label: "Chờ duyệt" },
   { value: "OPEN", label: "Đã duyệt" },
   { value: "IN_PROGRESS", label: "Đang thực hiện" },
   { value: "COMPLETED", label: "Hoàn thành" },
   { value: "REJECTED", label: "Bị từ chối" },
+  { value: "history", label: "Lịch sử" },
 ];
 
 export default function AdminJobs() {
@@ -32,7 +33,8 @@ export default function AdminJobs() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<JobStatus>("PENDING_APPROVAL");
+  const [statusFilter, setStatusFilter] = useState<JobStatus | "history">("PENDING_APPROVAL");
+  const isHistoryTab = statusFilter === "history";
   const [pendingCount, setPendingCount] = useState(0);
   const [rejectingJobId, setRejectingJobId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -40,12 +42,18 @@ export default function AdminJobs() {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyJobId, setHistoryJobId] = useState<number | null>(null);
 
-  const fetchJobs = async (pageNum: number, status: JobStatus) => {
+  const fetchJobs = async (pageNum: number, status: JobStatus | "history") => {
     setIsLoading(true);
     try {
-      const response = status === "PENDING_APPROVAL"
-        ? await api.adminGetPendingJobs({ page: pageNum, size: 10 })
-        : await api.adminGetJobsByStatus(status, { page: pageNum, size: 10 });
+      let response;
+      if (status === "history") {
+        // Lấy job IN_PROGRESS cho tab history
+        response = await api.adminGetJobsByStatus("IN_PROGRESS", { page: pageNum, size: 50 });
+      } else if (status === "PENDING_APPROVAL") {
+        response = await api.adminGetPendingJobs({ page: pageNum, size: 10 });
+      } else {
+        response = await api.adminGetJobsByStatus(status, { page: pageNum, size: 10 });
+      }
 
       if (response.status === "SUCCESS" && response.data) {
         const pageData = response.data as Page<Job>;
@@ -144,8 +152,9 @@ export default function AdminJobs() {
           <select
             value={statusFilter}
             onChange={(e) => {
-              setStatusFilter(e.target.value as JobStatus);
+              setStatusFilter(e.target.value as JobStatus | "history");
               setPage(0);
+              setHistoryJobId(null);
             }}
             className="h-8 px-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#00b14f]"
           >
@@ -157,7 +166,47 @@ export default function AdminJobs() {
       </div>
 
       {/* Content */}
-      {jobs.length === 0 ? (
+      {isHistoryTab ? (
+        /* History Tab Content */
+        <div className="space-y-3">
+          {jobs.filter(j => j.status === "IN_PROGRESS" || j.status === "COMPLETED").length === 0 ? (
+            <AdminEmptyState message="Chưa có công việc nào có lịch sử hoạt động" />
+          ) : (
+            jobs.filter(j => j.status === "IN_PROGRESS" || j.status === "COMPLETED").map((job) => (
+              <div key={job.id} className="bg-white rounded-lg shadow overflow-hidden">
+                <button
+                  onClick={() => setHistoryJobId(historyJobId === job.id ? null : job.id)}
+                  className="w-full p-4 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-xs text-gray-400">#{job.id}</span>
+                        <span className="font-semibold text-gray-900 truncate">{job.title}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${JOB_STATUS_CONFIG[job.status]?.color}`}>
+                          {JOB_STATUS_CONFIG[job.status]?.label}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 truncate">
+                        {job.employer?.fullName} • {formatCurrency(job.budget)}
+                      </p>
+                    </div>
+                    <span className={`text-gray-400 transition-transform ${historyJobId === job.id ? "rotate-180" : ""}`}>
+                      ▼
+                    </span>
+                  </div>
+                </button>
+
+                {historyJobId === job.id && (
+                  <div className="border-t bg-gray-50 p-4">
+                    <JobHistoryTimeline jobId={job.id} />
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      ) : jobs.length === 0 ? (
         <AdminEmptyState message="Không có công việc nào" />
       ) : (
         <>

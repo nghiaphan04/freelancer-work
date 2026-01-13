@@ -23,19 +23,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const FILTER_TABS: { key: JobStatus | "all"; label: string }[] = [
+const FILTER_TABS: { key: JobStatus | "all" | "history"; label: string }[] = [
   { key: "all", label: "Tất cả" },
   { key: "DRAFT", label: "Bản nháp" },
   { key: "OPEN", label: "Đang tuyển" },
   { key: "IN_PROGRESS", label: "Đang thực hiện" },
   { key: "COMPLETED", label: "Hoàn thành" },
+  { key: "history", label: "Lịch sử" },
 ];
 
 export default function PostedJobsList() {
   const router = useRouter();
   const { user, isAuthenticated, isHydrated } = useAuth();
   const { jobs, page, isLoading, error, fetchJobs } = usePostedJobs();
-  const [filter, setFilter] = useState<JobStatus | "all">("all");
+  const [filter, setFilter] = useState<JobStatus | "all" | "history">("all");
+  const isHistoryTab = filter === "history";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -58,7 +60,14 @@ export default function PostedJobsList() {
 
   useEffect(() => {
     if (isHydrated && isAuthenticated && hasAccess) {
-      fetchJobs(filter === "all" ? {} : { status: filter });
+      if (filter === "history") {
+        // Tab lịch sử: lấy job IN_PROGRESS và COMPLETED
+        fetchJobs({ status: "IN_PROGRESS" as JobStatus });
+      } else if (filter === "all") {
+        fetchJobs({});
+      } else {
+        fetchJobs({ status: filter as JobStatus });
+      }
     }
   }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs]);
 
@@ -95,7 +104,7 @@ export default function PostedJobsList() {
         toast.success(response.message || "Xóa công việc thành công");
         setDeleteDialogOpen(false);
         setJobToDelete(null);
-        fetchJobs(filter === "all" ? {} : { status: filter });
+        fetchJobs(filter === "all" || filter === "history" ? {} : { status: filter as JobStatus });
       } else {
         toast.error(response.message || "Không thể xóa công việc");
       }
@@ -162,8 +171,53 @@ export default function PostedJobsList() {
       {/* Loading State */}
       {isLoading ? (
         <JobsLoading />
+      ) : isHistoryTab ? (
+        /* History Tab Content */
+        <div className="space-y-3">
+          {jobs.filter(j => j.status === "IN_PROGRESS" || j.status === "COMPLETED").length === 0 ? (
+            <JobsEmptyState 
+              icon="history" 
+              message="Chưa có công việc nào có lịch sử hoạt động"
+            />
+          ) : (
+            jobs.filter(j => j.status === "IN_PROGRESS" || j.status === "COMPLETED").map((job) => (
+              <div key={job.id} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Job Header - Clickable */}
+                <button
+                  onClick={() => setHistoryJobId(historyJobId === job.id ? null : job.id)}
+                  className="w-full p-4 sm:p-5 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-xs text-gray-400">#{job.id}</span>
+                        <span className="font-semibold text-gray-900 truncate">{job.title}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${JOB_STATUS_CONFIG[job.status]?.color}`}>
+                          {JOB_STATUS_CONFIG[job.status]?.label}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">{formatBudget(job.budget, job.currency)}</p>
+                    </div>
+                    <Icon 
+                      name={historyJobId === job.id ? "expand_less" : "expand_more"} 
+                      size={24} 
+                      className="text-gray-400 shrink-0"
+                    />
+                  </div>
+                </button>
+
+                {/* Expanded History */}
+                {historyJobId === job.id && (
+                  <div className="border-t bg-gray-50 p-4 sm:p-5">
+                    <JobHistoryTimeline jobId={job.id} />
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       ) : (
-        /* Job List */
+        /* Normal Job List */
         <div className="space-y-3">
           {jobs.length === 0 ? (
             <JobsEmptyState message="Không có công việc nào" />
@@ -274,14 +328,17 @@ export default function PostedJobsList() {
         </div>
       )}
 
-      {/* Pagination */}
-      {page && page.totalPages > 1 && (
+      {/* Pagination - not shown for history tab */}
+      {!isHistoryTab && page && page.totalPages > 1 && (
         <div className="mt-6 flex justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
             disabled={page.first}
-            onClick={() => fetchJobs({ status: filter === "all" ? undefined : filter, page: page.number - 1 })}
+            onClick={() => fetchJobs({ 
+              status: filter === "all" ? undefined : filter as JobStatus, 
+              page: page.number - 1 
+            })}
           >
             Trước
           </Button>
@@ -292,7 +349,10 @@ export default function PostedJobsList() {
             variant="outline"
             size="sm"
             disabled={page.last}
-            onClick={() => fetchJobs({ status: filter === "all" ? undefined : filter, page: page.number + 1 })}
+            onClick={() => fetchJobs({ 
+              status: filter === "all" ? undefined : filter as JobStatus, 
+              page: page.number + 1 
+            })}
           >
             Sau
           </Button>

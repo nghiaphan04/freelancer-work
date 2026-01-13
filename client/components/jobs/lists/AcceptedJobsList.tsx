@@ -50,6 +50,7 @@ export default function AcceptedJobsList() {
   const hasAccess = user?.roles?.includes("ROLE_FREELANCER");
   const isAppliedTab = filter === "applied";
   const isSavedTab = filter === "saved";
+  const isHistoryTab = filter === "history";
 
   const filteredApplications = applications.filter((app) =>
     searchKeyword.trim() === "" || app.jobTitle.toLowerCase().includes(searchKeyword.toLowerCase())
@@ -77,12 +78,15 @@ export default function AcceptedJobsList() {
         fetchApplications();
       } else if (isSavedTab) {
         fetchSavedJobs();
+      } else if (isHistoryTab) {
+        // Tab lịch sử: lấy job IN_PROGRESS và COMPLETED
+        fetchJobs("IN_PROGRESS");
       } else {
         fetchJobs(filter);
         fetchStats();
       }
     }
-  }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs, fetchStats, isAppliedTab, isSavedTab]);
+  }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs, fetchStats, isAppliedTab, isSavedTab, isHistoryTab]);
 
   const fetchApplications = async () => {
     setApplicationsLoading(true);
@@ -178,6 +182,7 @@ export default function AcceptedJobsList() {
             { key: "COMPLETED", label: "Hoàn thành" },
             { key: "applied", label: "Đã ứng tuyển" },
             { key: "saved", label: "Đã lưu" },
+            { key: "history", label: "Lịch sử" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -328,6 +333,55 @@ export default function AcceptedJobsList() {
             </div>
           )}
         </>
+      ) : isHistoryTab ? (
+        /* History Tab Content */
+        <div className="space-y-3">
+          {isLoading ? (
+            <JobsLoading />
+          ) : jobs.filter(j => j.status === "IN_PROGRESS" || j.status === "COMPLETED").length === 0 ? (
+            <JobsEmptyState 
+              icon="history" 
+              message="Chưa có công việc nào có lịch sử hoạt động"
+            />
+          ) : (
+            jobs.filter(j => j.status === "IN_PROGRESS" || j.status === "COMPLETED").map((job) => (
+              <div key={job.id} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Job Header - Clickable */}
+                <button
+                  onClick={() => setHistoryJobId(historyJobId === job.id ? null : job.id)}
+                  className="w-full p-4 sm:p-5 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-xs text-gray-400">#{job.id}</span>
+                        <span className="font-semibold text-gray-900 truncate">{job.title}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${JOB_STATUS_CONFIG[job.status]?.color}`}>
+                          {JOB_STATUS_CONFIG[job.status]?.label}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {job.employer?.fullName} • {job.budget?.toLocaleString("vi-VN")} {job.currency}
+                      </p>
+                    </div>
+                    <Icon 
+                      name={historyJobId === job.id ? "expand_less" : "expand_more"} 
+                      size={24} 
+                      className="text-gray-400 shrink-0"
+                    />
+                  </div>
+                </button>
+
+                {/* Expanded History */}
+                {historyJobId === job.id && (
+                  <div className="border-t bg-gray-50 p-4 sm:p-5">
+                    <JobHistoryTimeline jobId={job.id} />
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       ) : isAppliedTab ? (
         <>
           {/* Search Bar */}
