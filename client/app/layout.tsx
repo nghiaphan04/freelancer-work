@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lexend } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import FloatingSupport from "@/components/layout/FloatingSupport";
 import "./globals.css";
 
 const lexend = Lexend({
@@ -38,6 +39,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           {children}
+          <FloatingSupport />
         </AuthProvider>
         <Toaster position="bottom-right" richColors />
       </body>
