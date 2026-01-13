@@ -150,11 +150,13 @@ export default function JobDetailSidebar({
               <p className="text-sm text-gray-600">
                 {job.status === "DRAFT"
                   ? "Công việc đang ẩn. Chuyển sang công khai để nhận ứng viên."
-                  : "Công việc đang công khai. Chuyển sang nháp để tạm ẩn."}
+                  : job.applicationCount > 0
+                    ? "Không thể chuyển về nháp khi đã có người ứng tuyển."
+                    : "Công việc đang công khai. Chuyển sang nháp để tạm ẩn."}
               </p>
               <Button
                 onClick={onToggleStatus}
-                disabled={isToggling}
+                disabled={isToggling || (job.status === "OPEN" && job.applicationCount > 0)}
                 className={`w-full ${
                   job.status === "DRAFT"
                     ? "bg-[#00b14f] hover:bg-[#009643]"
