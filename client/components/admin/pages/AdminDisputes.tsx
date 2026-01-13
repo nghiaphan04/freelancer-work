@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { api, Dispute, DISPUTE_STATUS_CONFIG, Page } from "@/lib/api";
+import { api, Dispute, DISPUTE_STATUS_CONFIG } from "@/lib/api";
+import { Page } from "@/types/job";
 import { formatDateTime, formatCurrency } from "@/lib/format";
 import { Pagination } from "@/components/ui/pagination";
 import AdminLoading from "../shared/AdminLoading";
