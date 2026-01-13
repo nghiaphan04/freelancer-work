@@ -133,7 +133,7 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
               e.preventDefault();
               onFavorite?.(job.id);
             }}
-            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors self-start"
+            className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full hover:bg-transparent transition-colors self-start focus:outline-none focus:ring-0 outline-none ring-0 border-0"
           >
             <Icon 
               name={isFavorite ? "favorite" : "favorite_border"} 

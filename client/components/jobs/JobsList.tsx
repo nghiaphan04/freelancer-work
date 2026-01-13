@@ -4,16 +4,19 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Job, Page } from "@/types/job";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import JobCardWithPreview from "./JobCardWithPreview";
 import JobCategoriesSidebar from "./JobCategoriesSidebar";
 import Icon from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const JOBS_PER_PAGE = 9;
 
 export default function JobsList() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isAuthenticated } = useAuth();
   
   const [jobs, setJobs] = useState<Job[]>([]);
   const [page, setPage] = useState<Page<Job> | null>(null);
@@ -23,6 +26,17 @@ export default function JobsList() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
   const currentPage = parseInt(searchParams.get("page") || "0");
+
+  const fetchSavedJobIds = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const response = await api.getSavedJobIds();
+      if (response.status === "SUCCESS" && response.data) {
+        setFavorites(new Set(response.data));
+      }
+    } catch {
+    }
+  }, [isAuthenticated]);
 
   const fetchJobs = useCallback(async (pageNum: number = 0) => {
     setIsLoading(true);
@@ -45,7 +59,8 @@ export default function JobsList() {
 
   useEffect(() => {
     fetchJobs(currentPage);
-  }, [currentPage, fetchJobs]);
+    fetchSavedJobIds();
+  }, [currentPage, fetchJobs, fetchSavedJobIds]);
 
   // Filter jobs by search keyword (client-side)
   const filteredJobs = jobs.filter((job) =>
@@ -61,16 +76,53 @@ export default function JobsList() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleFavorite = (jobId: number) => {
+  const handleFavorite = async (jobId: number) => {
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để lưu công việc");
+      router.push("/login");
+      return;
+    }
+
+    const isSaved = favorites.has(jobId);
+    
     setFavorites(prev => {
       const newFavorites = new Set(prev);
-      if (newFavorites.has(jobId)) {
+      if (isSaved) {
         newFavorites.delete(jobId);
       } else {
         newFavorites.add(jobId);
       }
       return newFavorites;
     });
+
+    try {
+      const response = await api.toggleSaveJob(jobId);
+      if (response.status === "SUCCESS") {
+        toast.success(isSaved ? "Đã bỏ lưu công việc" : "Đã lưu công việc");
+      } else {
+        setFavorites(prev => {
+          const newFavorites = new Set(prev);
+          if (isSaved) {
+            newFavorites.add(jobId);
+          } else {
+            newFavorites.delete(jobId);
+          }
+          return newFavorites;
+        });
+        toast.error(response.message || "Có lỗi xảy ra");
+      }
+    } catch {
+      setFavorites(prev => {
+        const newFavorites = new Set(prev);
+        if (isSaved) {
+          newFavorites.add(jobId);
+        } else {
+          newFavorites.delete(jobId);
+        }
+        return newFavorites;
+      });
+      toast.error("Có lỗi xảy ra khi lưu công việc");
+    }
   };
 
   const renderPagination = () => {

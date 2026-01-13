@@ -169,6 +169,29 @@ export const api = {
     return request<Page<CreditPurchase>>(`/api/credits/my-purchases${query.toString() ? `?${query}` : ""}`);
   },
 
+  // Saved Jobs (Công việc đã lưu)
+  saveJob: (jobId: number) =>
+    request<SavedJob>(`/api/saved-jobs/${jobId}`, { method: "POST" }),
+
+  unsaveJob: (jobId: number) =>
+    request<void>(`/api/saved-jobs/${jobId}`, { method: "DELETE" }),
+
+  toggleSaveJob: (jobId: number) =>
+    request<SavedJob | null>(`/api/saved-jobs/${jobId}/toggle`, { method: "POST" }),
+
+  getSavedJobs: (params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<SavedJob>>(`/api/saved-jobs${query.toString() ? `?${query}` : ""}`);
+  },
+
+  getSavedJobIds: () =>
+    request<number[]>("/api/saved-jobs/ids"),
+
+  isJobSaved: (jobId: number) =>
+    request<boolean>(`/api/saved-jobs/${jobId}/check`),
+
   // ADMIN 
 
   // Admin - Users
@@ -245,4 +268,23 @@ export interface JobApplication {
   status: ApplicationStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+// Saved Job types
+export interface SavedJob {
+  id: number;
+  jobId: number;
+  jobTitle: string;
+  jobDescription: string;
+  jobBudget: number;
+  jobStatus: string;
+  jobSkills: string[];
+  employer: {
+    id: number;
+    fullName: string;
+    company?: string;
+    location?: string;
+    avatarUrl?: string;
+  };
+  savedAt: string;
 }

@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAcceptedJobs } from "@/hooks/useAcceptedJobs";
 import { JOB_STATUS_CONFIG } from "@/types/job";
-import { api, JobApplication, ApplicationStatus } from "@/lib/api";
+import { api, JobApplication, ApplicationStatus, SavedJob } from "@/lib/api";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const APPLICATION_STATUS_CONFIG: Record<ApplicationStatus, { label: string; color: string }> = {
   PENDING: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-700" },
@@ -29,12 +30,19 @@ export default function AcceptedJobsList() {
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
 
+  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
+  const [savedJobsLoading, setSavedJobsLoading] = useState(false);
+
   const hasAccess = user?.roles?.includes("ROLE_FREELANCER");
   const isAppliedTab = filter === "applied";
+  const isSavedTab = filter === "saved";
 
-  // Filter applications by search keyword
   const filteredApplications = applications.filter((app) =>
     searchKeyword.trim() === "" || app.jobTitle.toLowerCase().includes(searchKeyword.toLowerCase())
+  );
+
+  const filteredSavedJobs = savedJobs.filter((job) =>
+    searchKeyword.trim() === "" || job.jobTitle.toLowerCase().includes(searchKeyword.toLowerCase())
   );
 
   useEffect(() => {
@@ -53,12 +61,14 @@ export default function AcceptedJobsList() {
     if (isHydrated && isAuthenticated && hasAccess) {
       if (isAppliedTab) {
         fetchApplications();
+      } else if (isSavedTab) {
+        fetchSavedJobs();
       } else {
         fetchJobs(filter);
         fetchStats();
       }
     }
-  }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs, fetchStats]);
+  }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs, fetchStats, isAppliedTab, isSavedTab]);
 
   const fetchApplications = async () => {
     setApplicationsLoading(true);
@@ -71,6 +81,34 @@ export default function AcceptedJobsList() {
       console.error("Error fetching applications:", err);
     } finally {
       setApplicationsLoading(false);
+    }
+  };
+
+  const fetchSavedJobs = useCallback(async () => {
+    setSavedJobsLoading(true);
+    try {
+      const res = await api.getSavedJobs({ size: 100 });
+      if (res.status === "SUCCESS" && res.data) {
+        setSavedJobs(res.data.content);
+      }
+    } catch (err) {
+      console.error("Error fetching saved jobs:", err);
+    } finally {
+      setSavedJobsLoading(false);
+    }
+  }, []);
+
+  const handleUnsaveJob = async (jobId: number) => {
+    try {
+      const res = await api.unsaveJob(jobId);
+      if (res.status === "SUCCESS") {
+        setSavedJobs((prev) => prev.filter((job) => job.jobId !== jobId));
+        toast.success("Đã bỏ lưu công việc");
+      } else {
+        toast.error(res.message || "Có lỗi xảy ra");
+      }
+    } catch {
+      toast.error("Có lỗi xảy ra khi bỏ lưu công việc");
     }
   };
 
@@ -121,6 +159,7 @@ export default function AcceptedJobsList() {
             { key: "PENDING_REVIEW", label: "Chờ nghiệm thu" },
             { key: "COMPLETED", label: "Hoàn thành" },
             { key: "applied", label: "Đã ứng tuyển" },
+            { key: "saved", label: "Đã lưu" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -137,7 +176,149 @@ export default function AcceptedJobsList() {
         </div>
       </div>
 
-      {isAppliedTab ? (
+      {isSavedTab ? (
+        <>
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="relative">
+              <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="Tìm kiếm trong công việc đã lưu..."
+                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#00b14f] focus:ring-2 focus:ring-[#00b14f]/20 transition-all bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Results Info */}
+          {!savedJobsLoading && (
+            <p className="text-gray-600 mb-4">
+              {searchKeyword ? (
+                <>
+                  Tìm thấy <span className="font-semibold text-[#00b14f]">{filteredSavedJobs.length}</span> kết quả
+                  cho &quot;<span className="font-medium">{searchKeyword}</span>&quot;
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-[#00b14f]">{savedJobs.length}</span> công việc đã lưu
+                </>
+              )}
+            </p>
+          )}
+
+          {/* Loading State */}
+          {savedJobsLoading ? (
+            <div className="bg-white rounded-lg shadow p-8 flex justify-center">
+              <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            /* Saved Jobs List */
+            <div className="space-y-4">
+              {filteredSavedJobs.length === 0 ? (
+                <div className="bg-white rounded-lg shadow p-8 text-center">
+                  <Icon name="bookmark_border" size={48} className="text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">
+                    {searchKeyword ? "Không tìm thấy kết quả" : "Chưa lưu công việc nào"}
+                  </p>
+                  <Link href="/jobs">
+                    <Button className="mt-4 bg-[#00b14f] hover:bg-[#009643]">
+                      <Icon name="search" size={16} />
+                      Tìm việc ngay
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                filteredSavedJobs.map((savedJob) => (
+                  <div key={savedJob.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                      {/* Employer Avatar */}
+                      <Avatar className="w-12 h-12 shrink-0 hidden sm:flex">
+                        <AvatarImage src={savedJob.employer.avatarUrl} alt={savedJob.employer.fullName} />
+                        <AvatarFallback className="bg-[#00b14f] text-white">
+                          {savedJob.employer.fullName.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <Link href={`/jobs/${savedJob.jobId}`}>
+                            <h3 className="text-lg font-semibold text-gray-900 hover:text-[#00b14f] cursor-pointer">
+                              {savedJob.jobTitle}
+                            </h3>
+                          </Link>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
+                            savedJob.jobStatus === "OPEN" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                          }`}>
+                            {savedJob.jobStatus === "OPEN" ? "Đang tuyển" : savedJob.jobStatus}
+                          </span>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-2">
+                          {savedJob.employer.company || savedJob.employer.fullName}
+                        </p>
+
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
+                          <span className="flex items-center gap-1 text-[#00b14f] font-medium">
+                            <Icon name="payments" size={16} />
+                            {savedJob.jobBudget ? `${savedJob.jobBudget.toLocaleString("vi-VN")} VND` : "Thương lượng"}
+                          </span>
+                          {savedJob.employer.location && (
+                            <span className="flex items-center gap-1">
+                              <Icon name="location_on" size={16} />
+                              {savedJob.employer.location}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Icon name="schedule" size={16} />
+                            Lưu: {new Date(savedJob.savedAt).toLocaleDateString("vi-VN")}
+                          </span>
+                        </div>
+
+                        {/* Skills */}
+                        {savedJob.jobSkills && savedJob.jobSkills.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {savedJob.jobSkills.slice(0, 4).map((skill, idx) => (
+                              <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                                {skill}
+                              </span>
+                            ))}
+                            {savedJob.jobSkills.length > 4 && (
+                              <span className="px-2 py-0.5 text-gray-500 text-xs">
+                                +{savedJob.jobSkills.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-row sm:flex-col gap-2 shrink-0">
+                        <Link href={`/jobs/${savedJob.jobId}`}>
+                          <Button variant="outline" size="sm" className="w-full">
+                            <Icon name="visibility" size={16} />
+                            <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => handleUnsaveJob(savedJob.jobId)}
+                        >
+                          <Icon name="bookmark_remove" size={16} />
+                          <span className="sm:hidden lg:inline ml-1">Bỏ lưu</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </>
+      ) : isAppliedTab ? (
         <>
           {/* Search Bar */}
           <div className="mb-4">
