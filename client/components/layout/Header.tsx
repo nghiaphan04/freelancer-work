@@ -332,6 +332,18 @@ export default function Header() {
                 <div className="w-[140px] h-8 bg-gray-100 rounded animate-pulse" />
               ) : isAuthenticated && user ? (
                 <>
+                  {/* Messenger */}
+                  <Link
+                    href="/messages"
+                    className="relative p-2"
+                  >
+                    <Icon 
+                      name="forum" 
+                      size={22} 
+                      className={`hover:text-[#00b14f] transition-colors ${isActivePrefix("/messages") ? "text-[#00b14f]" : "text-gray-600"}`}
+                    />
+                  </Link>
+
                   {/* Notification Bell */}
                   <NotificationDropdown />
 
@@ -400,10 +412,22 @@ export default function Header() {
               )}
             </div>
 
-            {/* Mobile: Notification + Hamburger */}
+            {/* Mobile: Messenger + Notification + Hamburger */}
             <div className="flex md:hidden items-center gap-1">
               {isAuthenticated && user && (
-                <NotificationDropdown />
+                <>
+                  <Link
+                    href="/messages"
+                    className="relative p-2"
+                  >
+                    <Icon 
+                      name="forum" 
+                      size={22} 
+                      className={isActivePrefix("/messages") ? "text-[#00b14f]" : "text-gray-600"} 
+                    />
+                  </Link>
+                  <NotificationDropdown />
+                </>
               )}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -528,6 +552,18 @@ export default function Header() {
                   >
                     <Icon name="person" size={20} className={isActive("/profile") ? "text-[#00b14f]" : "text-gray-400"} />
                     <span>Hồ sơ của tôi</span>
+                  </Link>
+                  <Link
+                    href="/messages"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
+                      isActivePrefix("/messages") 
+                        ? "bg-[#00b14f]/5 text-[#00b14f]" 
+                        : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
+                    }`}
+                  >
+                    <Icon name="chat" size={20} className={isActivePrefix("/messages") ? "text-[#00b14f]" : "text-gray-400"} />
+                    <span>Tin nhắn</span>
                   </Link>
                   <Link
                     href="/notifications"

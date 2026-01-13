@@ -11,6 +11,7 @@ const HIDDEN_PATHS = [
   "/register",
   "/forgot-password",
   "/admin",
+  "/messages"
 ];
 
 type ChatType = "feedback" | "support" | null;
