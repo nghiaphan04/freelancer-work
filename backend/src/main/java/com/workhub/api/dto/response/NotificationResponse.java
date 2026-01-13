@@ -45,6 +45,11 @@ public class NotificationResponse {
             case WITHDRAWAL_APPROVED -> "Yêu cầu được chấp nhận";
             case WITHDRAWAL_REJECTED -> "Yêu cầu bị từ chối";
             case JOB_CANCELLED -> "Công việc đã bị hủy";
+            case WORK_SUBMITTED -> "Có sản phẩm mới nộp";
+            case WORK_APPROVED -> "Sản phẩm được duyệt";
+            case WORK_REVISION_REQUESTED -> "Yêu cầu chỉnh sửa";
+            case PAYMENT_RELEASED -> "Đã nhận thanh toán";
+            case JOB_COMPLETED -> "Công việc hoàn thành";
             case SYSTEM -> "Thông báo hệ thống";
         };
     }

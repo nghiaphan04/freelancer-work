@@ -54,5 +54,7 @@ public class JobResponse {
         private String company;
         private String location;
         private Boolean isVerified;
+        private Integer trustScore;      // Điểm uy tín (UT)
+        private Integer untrustScore;    // Điểm không uy tín (KUT)
     }
 }

@@ -149,6 +149,19 @@ export const api = {
     return request<Page<JobHistory>>(`/api/jobs/${jobId}/history/paged${query.toString() ? `?${query}` : ""}`);
   },
 
+  // Work Submission
+  submitWork: (jobId: number, data: { url: string; note?: string }) =>
+    request<JobApplication>(`/api/jobs/${jobId}/work/submit`, { method: "POST", body: JSON.stringify(data) }),
+
+  approveWork: (jobId: number) =>
+    request<JobApplication>(`/api/jobs/${jobId}/work/approve`, { method: "PUT" }),
+
+  requestRevision: (jobId: number, note: string) =>
+    request<JobApplication>(`/api/jobs/${jobId}/work/revision`, { method: "PUT", body: JSON.stringify({ note }) }),
+
+  getWorkSubmission: (jobId: number) =>
+    request<JobApplication | null>(`/api/jobs/${jobId}/work`),
+
   // Balance - Nạp số dư
   createDeposit: (amount: number) =>
     request<BalanceDeposit>("/api/balance/deposit", { method: "POST", body: JSON.stringify({ amount }) }),
@@ -364,6 +377,11 @@ export type NotificationType =
   | "WITHDRAWAL_APPROVED"
   | "WITHDRAWAL_REJECTED"
   | "JOB_CANCELLED"
+  | "WORK_SUBMITTED"
+  | "WORK_APPROVED"
+  | "WORK_REVISION_REQUESTED"
+  | "PAYMENT_RELEASED"
+  | "JOB_COMPLETED"
   | "SYSTEM";
 
 export interface Notification {
@@ -388,6 +406,11 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; 
   WITHDRAWAL_APPROVED: { icon: "check_circle", color: "text-green-600" },
   WITHDRAWAL_REJECTED: { icon: "cancel", color: "text-red-600" },
   JOB_CANCELLED: { icon: "cancel", color: "text-red-600" },
+  WORK_SUBMITTED: { icon: "upload_file", color: "text-purple-600" },
+  WORK_APPROVED: { icon: "task_alt", color: "text-green-600" },
+  WORK_REVISION_REQUESTED: { icon: "edit_note", color: "text-yellow-600" },
+  PAYMENT_RELEASED: { icon: "payments", color: "text-emerald-600" },
+  JOB_COMPLETED: { icon: "done_all", color: "text-green-600" },
   SYSTEM: { icon: "info", color: "text-gray-600" },
 };
 
@@ -420,6 +443,15 @@ export interface CreditPurchase {
 
 // Job Application types
 export type ApplicationStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
+export type WorkStatus = "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "REVISION_REQUESTED" | "APPROVED";
+
+export const WORK_STATUS_CONFIG: Record<WorkStatus, { label: string; color: string }> = {
+  NOT_STARTED: { label: "Chưa bắt đầu", color: "text-gray-500" },
+  IN_PROGRESS: { label: "Đang làm", color: "text-blue-600" },
+  SUBMITTED: { label: "Đã nộp", color: "text-orange-600" },
+  REVISION_REQUESTED: { label: "Yêu cầu chỉnh sửa", color: "text-yellow-600" },
+  APPROVED: { label: "Đã duyệt", color: "text-green-600" },
+};
 
 export interface JobApplication {
   id: number;
@@ -432,9 +464,18 @@ export interface JobApplication {
     phoneNumber?: string;
     bio?: string;
     skills?: string[];
+    trustScore?: number;      // Điểm uy tín (UT)
+    untrustScore?: number;    // Điểm không uy tín (KUT)
   };
   coverLetter?: string;
   status: ApplicationStatus;
+  // Work submission fields
+  workStatus?: WorkStatus;
+  workStatusLabel?: string;
+  workSubmissionUrl?: string;
+  workSubmissionNote?: string;
+  workSubmittedAt?: string;
+  workRevisionNote?: string;
   createdAt: string;
   updatedAt: string;
 }

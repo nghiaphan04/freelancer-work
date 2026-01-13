@@ -16,6 +16,13 @@ public enum ENotificationType {
     WITHDRAWAL_REJECTED,       // Yêu cầu rút/hủy bị từ chối
     JOB_CANCELLED,            // Công việc đã bị hủy
     
+    // Work submission notifications
+    WORK_SUBMITTED,           // Freelancer nộp sản phẩm
+    WORK_APPROVED,            // Employer duyệt sản phẩm
+    WORK_REVISION_REQUESTED,  // Employer yêu cầu chỉnh sửa
+    PAYMENT_RELEASED,         // Thanh toán đã được chuyển
+    JOB_COMPLETED,            // Công việc hoàn thành
+    
     // General
     SYSTEM                    // Thông báo hệ thống
 }

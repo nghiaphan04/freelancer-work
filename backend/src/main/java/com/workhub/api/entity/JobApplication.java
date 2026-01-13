@@ -38,6 +38,24 @@ public class JobApplication {
     @Builder.Default
     private EApplicationStatus status = EApplicationStatus.PENDING;
 
+    // Work submission fields
+    @Enumerated(EnumType.STRING)
+    @Column(name = "work_status", length = 20)
+    @Builder.Default
+    private EWorkStatus workStatus = EWorkStatus.NOT_STARTED;
+
+    @Column(name = "work_submission_url", length = 500)
+    private String workSubmissionUrl;
+
+    @Column(name = "work_submission_note", columnDefinition = "TEXT")
+    private String workSubmissionNote;
+
+    @Column(name = "work_submitted_at")
+    private LocalDateTime workSubmittedAt;
+
+    @Column(name = "work_revision_note", columnDefinition = "TEXT")
+    private String workRevisionNote;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -78,5 +96,48 @@ public class JobApplication {
     public boolean isJobOwnedBy(Long userId) {
         return this.job != null && this.job.getEmployer() != null 
                 && this.job.getEmployer().getId().equals(userId);
+    }
+
+    // Work submission methods
+    public void startWork() {
+        if (this.status == EApplicationStatus.ACCEPTED && this.workStatus == EWorkStatus.NOT_STARTED) {
+            this.workStatus = EWorkStatus.IN_PROGRESS;
+        }
+    }
+
+    public void submitWork(String url, String note) {
+        this.workSubmissionUrl = url;
+        this.workSubmissionNote = note;
+        this.workSubmittedAt = LocalDateTime.now();
+        this.workStatus = EWorkStatus.SUBMITTED;
+        this.workRevisionNote = null;
+    }
+
+    public void approveWork() {
+        this.workStatus = EWorkStatus.APPROVED;
+    }
+
+    public void requestRevision(String note) {
+        this.workStatus = EWorkStatus.REVISION_REQUESTED;
+        this.workRevisionNote = note;
+    }
+
+    public boolean isAccepted() {
+        return this.status == EApplicationStatus.ACCEPTED;
+    }
+
+    public boolean isWorkSubmitted() {
+        return this.workStatus == EWorkStatus.SUBMITTED;
+    }
+
+    public boolean isWorkApproved() {
+        return this.workStatus == EWorkStatus.APPROVED;
+    }
+
+    public boolean canSubmitWork() {
+        return this.status == EApplicationStatus.ACCEPTED 
+                && (this.workStatus == EWorkStatus.IN_PROGRESS 
+                    || this.workStatus == EWorkStatus.NOT_STARTED
+                    || this.workStatus == EWorkStatus.REVISION_REQUESTED);
     }
 }

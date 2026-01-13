@@ -185,4 +185,86 @@ public class NotificationService {
                 .build();
         notificationRepository.save(notification);
     }
+
+    // ==================== WORK SUBMISSION NOTIFICATIONS ====================
+
+    /**
+     * Thông báo cho employer khi freelancer nộp sản phẩm
+     */
+    @Transactional
+    public void notifyWorkSubmitted(User employer, Job job, User freelancer) {
+        Notification notification = Notification.builder()
+                .user(employer)
+                .type(ENotificationType.WORK_SUBMITTED)
+                .title("Có sản phẩm mới nộp")
+                .message(freelancer.getFullName() + " đã nộp sản phẩm cho công việc \"" + job.getTitle() + "\". Vui lòng kiểm tra và duyệt.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho freelancer khi employer duyệt sản phẩm
+     */
+    @Transactional
+    public void notifyWorkApproved(User freelancer, Job job) {
+        Notification notification = Notification.builder()
+                .user(freelancer)
+                .type(ENotificationType.WORK_APPROVED)
+                .title("Sản phẩm được duyệt")
+                .message("Sản phẩm của bạn cho công việc \"" + job.getTitle() + "\" đã được duyệt. Thanh toán đang được xử lý.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho freelancer khi employer yêu cầu chỉnh sửa
+     */
+    @Transactional
+    public void notifyWorkRevisionRequested(User freelancer, Job job, String note) {
+        Notification notification = Notification.builder()
+                .user(freelancer)
+                .type(ENotificationType.WORK_REVISION_REQUESTED)
+                .title("Yêu cầu chỉnh sửa")
+                .message("Employer yêu cầu chỉnh sửa sản phẩm cho công việc \"" + job.getTitle() + "\". Ghi chú: " + note)
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho freelancer khi nhận được thanh toán
+     */
+    @Transactional
+    public void notifyPaymentReleased(User freelancer, Job job, String amount) {
+        Notification notification = Notification.builder()
+                .user(freelancer)
+                .type(ENotificationType.PAYMENT_RELEASED)
+                .title("Đã nhận thanh toán")
+                .message("Bạn đã nhận được " + amount + " VND cho công việc \"" + job.getTitle() + "\".")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho cả 2 bên khi job hoàn thành
+     */
+    @Transactional
+    public void notifyJobCompleted(User user, Job job) {
+        Notification notification = Notification.builder()
+                .user(user)
+                .type(ENotificationType.JOB_COMPLETED)
+                .title("Công việc hoàn thành")
+                .message("Công việc \"" + job.getTitle() + "\" đã hoàn thành thành công. Điểm uy tín của bạn đã được +1.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
 }

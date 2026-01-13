@@ -3,6 +3,8 @@ package com.workhub.api.controller;
 import com.workhub.api.dto.request.ApplyJobRequest;
 import com.workhub.api.dto.request.CreateJobRequest;
 import com.workhub.api.dto.request.RejectJobRequest;
+import com.workhub.api.dto.request.RevisionRequest;
+import com.workhub.api.dto.request.SubmitWorkRequest;
 import com.workhub.api.dto.request.UpdateJobRequest;
 import com.workhub.api.dto.response.ApiResponse;
 import com.workhub.api.dto.response.JobApplicationResponse;
@@ -329,5 +331,61 @@ public class JobController {
 
         jobService.validateHistoryAccess(id, userDetails.getId());
         return ResponseEntity.ok(jobHistoryService.getJobHistoryPaged(id, page, size));
+    }
+
+    // ===== WORK SUBMISSION ENDPOINTS =====
+
+    /**
+     * Freelancer nộp sản phẩm
+     * POST /api/jobs/{id}/work/submit
+     */
+    @PostMapping("/{id}/work/submit")
+    @PreAuthorize("hasRole('FREELANCER')")
+    public ResponseEntity<ApiResponse<JobApplicationResponse>> submitWork(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Valid @RequestBody SubmitWorkRequest request) {
+
+        return ResponseEntity.ok(jobService.submitWork(id, userDetails.getId(), request.getUrl(), request.getNote()));
+    }
+
+    /**
+     * Employer duyệt sản phẩm → Thanh toán + Cộng điểm uy tín
+     * PUT /api/jobs/{id}/work/approve
+     */
+    @PutMapping("/{id}/work/approve")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<JobApplicationResponse>> approveWork(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        return ResponseEntity.ok(jobService.approveWork(id, userDetails.getId()));
+    }
+
+    /**
+     * Employer yêu cầu chỉnh sửa
+     * PUT /api/jobs/{id}/work/revision
+     */
+    @PutMapping("/{id}/work/revision")
+    @PreAuthorize("hasRole('EMPLOYER')")
+    public ResponseEntity<ApiResponse<JobApplicationResponse>> requestRevision(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Valid @RequestBody RevisionRequest request) {
+
+        return ResponseEntity.ok(jobService.requestRevision(id, userDetails.getId(), request.getNote()));
+    }
+
+    /**
+     * Lấy thông tin work submission của job
+     * GET /api/jobs/{id}/work
+     */
+    @GetMapping("/{id}/work")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<JobApplicationResponse>> getWorkSubmission(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        return ResponseEntity.ok(jobService.getWorkSubmission(id, userDetails.getId()));
     }
 }
