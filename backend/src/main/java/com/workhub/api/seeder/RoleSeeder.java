@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 
@@ -22,19 +24,25 @@ public class RoleSeeder implements CommandLineRunner {
     private final RoleRepository roleRepository;
     
     @Override
+    @Transactional
     public void run(String... args) {
         logger.info("Starting Role Seeder...");
         
-        Arrays.stream(ERole.values()).forEach(eRole -> {
+        Arrays.stream(ERole.values()).forEach(this::createRoleIfNotExists);
+        
+        logger.info("Role Seeder completed.");
+    }
+    
+    private void createRoleIfNotExists(ERole eRole) {
+        try {
             if (!roleRepository.existsByName(eRole)) {
                 Role role = new Role(eRole);
-                roleRepository.save(role);
+                roleRepository.saveAndFlush(role);
                 logger.info("Created role: {}", eRole.name());
             } else {
                 logger.info("Role already exists: {}", eRole.name());
             }
-        });
-        
-        logger.info("Role Seeder completed.");
+        } catch (DataIntegrityViolationException e) {
+        }
     }
 }
