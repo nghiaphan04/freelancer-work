@@ -100,6 +100,14 @@ public class User {
 
     @Column(name = "bank_name", length = 100)
     private String bankName;
+
+    @Column(name = "trust_score", nullable = false)
+    @Builder.Default
+    private Integer trustScore = 0;
+
+    @Column(name = "untrust_score", nullable = false)
+    @Builder.Default
+    private Integer untrustScore = 0;
     
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -233,5 +241,13 @@ public class User {
     public boolean hasBankInfo() {
         return this.bankAccountNumber != null && !this.bankAccountNumber.isBlank()
                 && this.bankName != null && !this.bankName.isBlank();
+    }
+
+    public void addTrustScore(int amount) {
+        this.trustScore += amount;
+    }
+
+    public void addUntrustScore(int amount) {
+        this.untrustScore += amount;
     }
 }

@@ -21,6 +21,8 @@ export interface User {
   hasBankInfo?: boolean;
   bankAccountNumber?: string;
   bankName?: string;
+  trustScore?: number;
+  untrustScore?: number;
 }
 
 export type UserRole = "ROLE_ADMIN" | "ROLE_EMPLOYER" | "ROLE_FREELANCER";
