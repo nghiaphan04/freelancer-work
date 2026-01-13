@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { formatDate } from "@/lib/format";
 import { User, getRoleLabel } from "@/types/user";
 import { Page } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Pagination } from "@/components/ui/pagination";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AdminLoading from "../shared/AdminLoading";
+import AdminPageHeader from "../shared/AdminPageHeader";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
@@ -55,29 +58,13 @@ export default function AdminUsers() {
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
   if (isLoading && users.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <AdminLoading />;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Quản lý người dùng</h2>
-        <span className="text-xs text-gray-500">Tổng: {totalElements}</span>
-      </div>
+      <AdminPageHeader title="Quản lý người dùng" totalElements={totalElements} />
 
       {/* Mobile: Card View */}
       <div className="md:hidden space-y-3">

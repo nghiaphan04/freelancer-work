@@ -5,8 +5,8 @@ import Image from "next/image";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import BannerSlider from "@/components/layout/BannerSlider";
-import Products from "@/components/landing/Products";
-import HotlineSupport from "@/components/landing/HotlineSupport";
+import Products from "@/components/landing/sections/Products";
+import HotlineSupport from "@/components/landing/sections/HotlineSupport";
 import JobsList from "@/components/jobs/lists/JobsList";
 import { Skeleton } from "@/components/ui/skeleton";
 

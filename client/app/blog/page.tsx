@@ -2,8 +2,8 @@
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import BlogHero from "@/components/blog/BlogHero";
-import BlogGrid from "@/components/blog/BlogGrid";
+import BlogHero from "@/components/blog/sections/BlogHero";
+import BlogGrid from "@/components/blog/sections/BlogGrid";
 
 export default function BlogPage() {
   return (

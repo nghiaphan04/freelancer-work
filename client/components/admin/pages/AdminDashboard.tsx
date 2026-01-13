@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { BalanceStatistics } from "@/types/balance";
-import { BalanceDeposit } from "@/types/balance";
+import { formatCurrency, formatDateTime } from "@/lib/format";
+import { BalanceStatistics, BalanceDeposit } from "@/types/balance";
 import Icon from "@/components/ui/Icon";
+import AdminLoading from "../shared/AdminLoading";
+import AdminPageHeader from "../shared/AdminPageHeader";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<BalanceStatistics | null>(null);
@@ -35,36 +37,13 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <AdminLoading />;
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-900">Tổng quan nạp tiền</h2>
+      <AdminPageHeader title="Tổng quan nạp tiền" />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -162,7 +141,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
                     <p className="font-mono truncate flex-1">{deposit.appTransId}</p>
-                    <p className="whitespace-nowrap">{formatDate(deposit.paidAt)}</p>
+                    <p className="whitespace-nowrap">{formatDateTime(deposit.paidAt)}</p>
                   </div>
                 </div>
               ))}
@@ -188,7 +167,7 @@ export default function AdminDashboard() {
                         {formatCurrency(deposit.amount)}
                       </td>
                       <td className="px-4 py-2 text-gray-500">
-                        {formatDate(deposit.paidAt)}
+                        {formatDateTime(deposit.paidAt)}
                       </td>
                     </tr>
                   ))}

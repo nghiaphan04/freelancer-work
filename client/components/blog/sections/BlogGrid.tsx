@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
 import { blogArticles } from "@/constant/blog";
-import TextCard from "./TextCard";
-import KnowledgeCard from "./KnowledgeCard";
+import TextCard from "../cards/TextCard";
+import KnowledgeCard from "../cards/KnowledgeCard";
 import BlogBanner from "./BlogBanner";
 
 export default function BlogGrid() {
@@ -97,8 +97,6 @@ export default function BlogGrid() {
               <TextCard key={article.id} article={article} showImage />
             ))}
           </div>
-          
-
         </div>
       )}
 

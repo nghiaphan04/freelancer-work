@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import { Job, JobStatus, JOB_STATUS_CONFIG, Page } from "@/types/job";
 import { Pagination } from "@/components/ui/pagination";
-import { toast } from "sonner";
+import AdminLoading from "../shared/AdminLoading";
+import AdminPageHeader from "../shared/AdminPageHeader";
+import AdminEmptyState from "../shared/AdminEmptyState";
 
 const STATUS_OPTIONS: { value: JobStatus | "PENDING_APPROVAL"; label: string }[] = [
   { value: "PENDING_APPROVAL", label: "Chờ duyệt" },
@@ -103,47 +107,17 @@ export default function AdminJobs() {
     }
   };
 
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return "-";
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (isLoading && jobs.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <AdminLoading />;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Kiểm duyệt công việc</h2>
-        <div className="flex items-center gap-2">
-          {pendingCount > 0 && (
-            <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-medium">
-              {pendingCount} chờ duyệt
-            </span>
-          )}
-          <span className="text-xs text-gray-500">Tổng: {totalElements}</span>
-        </div>
-      </div>
+      <AdminPageHeader 
+        title="Kiểm duyệt công việc" 
+        totalElements={totalElements}
+        badge={pendingCount > 0 ? { count: pendingCount, label: "chờ duyệt" } : undefined}
+      />
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-3">
@@ -165,9 +139,7 @@ export default function AdminJobs() {
 
       {/* Content */}
       {jobs.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500 text-sm">
-          Không có công việc nào
-        </div>
+        <AdminEmptyState message="Không có công việc nào" />
       ) : (
         <>
           {/* Mobile: Card View */}
@@ -195,7 +167,7 @@ export default function AdminJobs() {
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-500">{formatDate(job.createdAt)}</p>
+                <p className="text-xs text-gray-500">{formatDateTime(job.createdAt)}</p>
 
                 {/* Rejection reason display */}
                 {job.rejectionReason && statusFilter === "REJECTED" && (
@@ -295,7 +267,7 @@ export default function AdminJobs() {
                             {JOB_STATUS_CONFIG[job.status]?.label || job.status}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-gray-500">{formatDate(job.createdAt)}</td>
+                        <td className="px-3 py-2 text-gray-500">{formatDateTime(job.createdAt)}</td>
                         {statusFilter === "PENDING_APPROVAL" && (
                           <td className="px-3 py-2 text-center">
                             <div className="flex items-center justify-center gap-3 text-sm">

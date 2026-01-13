@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Icon from "@/components/ui/Icon";
@@ -12,6 +11,9 @@ import { api } from "@/lib/api";
 import { validateEmail, saveAuthData, AUTH_MESSAGES } from "@/constant/auth";
 import { useAuthLoading, useAuth } from "@/context/AuthContext";
 import { User } from "@/types/user";
+import AuthFormHeader from "../shared/AuthFormHeader";
+import AuthFormError from "../shared/AuthFormError";
+import AuthSubmitButton from "../shared/AuthSubmitButton";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -67,10 +69,10 @@ export default function LoginForm() {
 
   return (
     <div className="w-full">
-      <div className="mb-4 lg:mb-3">
-        <h1 className="text-lg sm:text-xl font-bold text-[#00b14f] mb-1">Chào mừng bạn đã quay trở lại</h1>
-        <p className="text-gray-500 text-sm">Cùng xây dựng một hồ sơ nổi bật và nhận được các cơ hội sự nghiệp lý tưởng</p>
-      </div>
+      <AuthFormHeader 
+        title="Chào mừng bạn đã quay trở lại" 
+        subtitle="Cùng xây dựng một hồ sơ nổi bật và nhận được các cơ hội sự nghiệp lý tưởng" 
+      />
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="space-y-1">
@@ -81,7 +83,7 @@ export default function LoginForm() {
               onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors({ ...errors, email: "" }); }}
               disabled={isLoading} className={`pl-10 h-10 text-sm border-gray-200 focus:border-[#00b14f] focus:ring-0 shadow-none ${errors.email ? "border-red-500" : ""}`} />
           </div>
-          {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+          <AuthFormError error={errors.email} />
         </div>
 
         <div className="space-y-1">
@@ -95,16 +97,14 @@ export default function LoginForm() {
               <Icon name={showPassword ? "visibility" : "visibility_off"} size={18} className="text-gray-400 hover:text-gray-600" />
             </button>
           </div>
-          {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
+          <AuthFormError error={errors.password} />
         </div>
 
         <div className="text-right">
           <Link href="/forgot-password" className={`text-sm text-[#00b14f] hover:underline ${isLoading ? "pointer-events-none opacity-50" : ""}`}>Quên mật khẩu</Link>
         </div>
 
-        <Button type="submit" disabled={isLoading} className="w-full h-10 lg:h-11 bg-[#00b14f] text-sm font-semibold">
-          {isLoading ? <div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Đang đăng nhập...</div> : "Đăng nhập"}
-        </Button>
+        <AuthSubmitButton isLoading={isLoading} loadingText="Đang đăng nhập..." text="Đăng nhập" />
       </form>
 
       <p className="text-center mt-3 text-sm text-gray-600">

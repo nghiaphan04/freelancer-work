@@ -7,6 +7,9 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import JobCardWithPreview from "../cards/JobCardWithPreview";
 import JobCategoriesSidebar from "../sidebar/JobCategoriesSidebar";
+import JobsSearchBar from "../shared/JobsSearchBar";
+import JobsEmptyState from "../shared/JobsEmptyState";
+import JobsError from "../shared/JobsError";
 import Icon from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -199,16 +202,11 @@ export default function JobsList() {
     <div className="max-w-7xl mx-auto px-4">
       {/* Search Bar */}
       <div className="mb-6">
-        <div className="relative">
-          <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            placeholder="Tìm kiếm việc làm theo tên, kỹ năng..."
-            className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#00b14f] focus:ring-2 focus:ring-[#00b14f]/20 transition-all bg-white"
-          />
-        </div>
+        <JobsSearchBar
+          value={searchKeyword}
+          onChange={setSearchKeyword}
+          placeholder="Tìm kiếm việc làm theo tên, kỹ năng..."
+        />
       </div>
 
       {/* Main Content with Sidebar */}
@@ -260,24 +258,12 @@ export default function JobsList() {
               ))}
             </div>
           ) : error ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <Icon name="error_outline" size={48} className="text-red-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">{error}</p>
-              <button
-                onClick={() => fetchJobs(currentPage)}
-                className="px-4 py-2 bg-[#00b14f] text-white rounded-lg hover:bg-[#009643] transition-colors"
-              >
-                Thử lại
-              </button>
-            </div>
+            <JobsError message={error} onRetry={() => fetchJobs(currentPage)} />
           ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Không tìm thấy việc làm</h3>
-              <p className="text-gray-500">
-                {searchKeyword ? "Thử tìm kiếm với từ khóa khác" : "Hiện chưa có việc làm nào đang tuyển"}
-              </p>
-            </div>
+            <JobsEmptyState
+              title="Không tìm thấy việc làm"
+              message={searchKeyword ? "Thử tìm kiếm với từ khóa khác" : "Hiện chưa có việc làm nào đang tuyển"}
+            />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -4,13 +4,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Icon from "@/components/ui/Icon";
 import { api } from "@/lib/api";
 import { validateEmail, validatePassword, formatOtpTime, AUTH_CONSTANTS, AUTH_MESSAGES } from "@/constant/auth";
 import { useAuthLoading } from "@/context/AuthContext";
+import AuthFormHeader from "../shared/AuthFormHeader";
+import AuthFormError from "../shared/AuthFormError";
+import AuthSubmitButton from "../shared/AuthSubmitButton";
+import AuthBackButton from "../shared/AuthBackButton";
 
 type Step = "email" | "otp" | "reset" | "success";
 
@@ -110,12 +113,19 @@ export default function ForgotPasswordForm() {
   if (step === "success") {
     return (
       <div className="w-full">
-        <div className="mb-4 text-center">
-          <Icon name="check_circle" size={48} className="text-[#00b14f] mx-auto mb-3" />
-          <h1 className="text-lg sm:text-xl font-bold text-[#00b14f] mb-1">Đặt lại mật khẩu thành công</h1>
-          <p className="text-gray-500 text-sm">Mật khẩu của bạn đã được cập nhật.</p>
-        </div>
-        <Button onClick={() => router.push("/login")} className="w-full h-10 lg:h-11 bg-[#00b14f] text-sm font-semibold">Đăng nhập ngay</Button>
+        <AuthFormHeader 
+          icon="check_circle"
+          title="Đặt lại mật khẩu thành công" 
+          subtitle="Mật khẩu của bạn đã được cập nhật."
+          centered 
+        />
+        <AuthSubmitButton 
+          type="button"
+          onClick={() => router.push("/login")} 
+          isLoading={false} 
+          loadingText="" 
+          text="Đăng nhập ngay" 
+        />
       </div>
     );
   }
@@ -123,10 +133,10 @@ export default function ForgotPasswordForm() {
   if (step === "reset") {
     return (
       <div className="w-full">
-        <div className="mb-4 lg:mb-3">
-          <h1 className="text-lg sm:text-xl font-bold text-[#00b14f] mb-1">Đặt mật khẩu mới</h1>
-          <p className="text-gray-500 text-sm">Nhập mật khẩu mới cho tài khoản của bạn</p>
-        </div>
+        <AuthFormHeader 
+          title="Đặt mật khẩu mới" 
+          subtitle="Nhập mật khẩu mới cho tài khoản của bạn" 
+        />
 
         <form onSubmit={handleResetPassword} className="space-y-3">
           <div className="space-y-1">
@@ -140,7 +150,7 @@ export default function ForgotPasswordForm() {
                 <Icon name={showPassword ? "visibility" : "visibility_off"} size={18} className="text-gray-400 hover:text-gray-600" />
               </button>
             </div>
-            {errors.newPassword && <p className="text-red-500 text-xs">{errors.newPassword}</p>}
+            <AuthFormError error={errors.newPassword} />
           </div>
 
           <div className="space-y-1">
@@ -154,17 +164,13 @@ export default function ForgotPasswordForm() {
                 <Icon name={showConfirmPassword ? "visibility" : "visibility_off"} size={18} className="text-gray-400 hover:text-gray-600" />
               </button>
             </div>
-            {errors.confirmPassword && <p className="text-red-500 text-xs">{errors.confirmPassword}</p>}
+            <AuthFormError error={errors.confirmPassword} />
           </div>
 
-          <Button type="submit" disabled={isLoading} className="w-full h-10 lg:h-11 bg-[#00b14f] text-sm font-semibold">
-            {isLoading ? <div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Đang xử lý...</div> : "Đặt lại mật khẩu"}
-          </Button>
+          <AuthSubmitButton isLoading={isLoading} loadingText="Đang xử lý..." text="Đặt lại mật khẩu" />
         </form>
 
-        <div className="flex justify-center mt-3">
-          <button type="button" onClick={() => setStep("otp")} disabled={isLoading} className="text-sm text-gray-500 hover:text-[#00b14f] disabled:opacity-50 disabled:cursor-not-allowed">← Quay lại</button>
-        </div>
+        <AuthBackButton onClick={() => setStep("otp")} text="Quay lại" disabled={isLoading} />
       </div>
     );
   }
@@ -172,11 +178,12 @@ export default function ForgotPasswordForm() {
   if (step === "otp") {
     return (
       <div className="w-full">
-        <div className="mb-4 text-center">
-          <Icon name="mark_email_read" size={48} className="text-[#00b14f] mx-auto mb-3" />
-          <h1 className="text-lg sm:text-xl font-bold text-[#00b14f] mb-1">Xác thực email</h1>
-          <p className="text-gray-500 text-sm">Chúng tôi đã gửi mã OTP đến email <strong>{email}</strong></p>
-        </div>
+        <AuthFormHeader 
+          icon="mark_email_read"
+          title="Xác thực email" 
+          subtitle={`Chúng tôi đã gửi mã OTP đến email ${email}`}
+          centered 
+        />
 
         <form onSubmit={handleVerifyOtp} className="space-y-4">
           <div className="space-y-1">
@@ -184,35 +191,36 @@ export default function ForgotPasswordForm() {
             <Input id="otp" type="text" placeholder="Nhập mã OTP 6 số" value={otpCode} maxLength={AUTH_CONSTANTS.OTP_LENGTH}
               onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, "").slice(0, AUTH_CONSTANTS.OTP_LENGTH)); if (errors.otp) setErrors({ ...errors, otp: "" }); }}
               disabled={isLoading} className={`h-12 text-center text-2xl tracking-widest font-mono border-gray-200 focus:border-[#00b14f] focus:ring-0 shadow-none ${errors.otp ? "border-red-500" : ""}`} />
-            {errors.otp && <p className="text-red-500 text-xs text-center">{errors.otp}</p>}
+            <AuthFormError error={errors.otp} centered />
           </div>
 
           <div className="text-center text-sm text-gray-500">
             {otpTimer > 0 ? <p>Mã OTP hết hạn sau <span className="text-[#00b14f] font-medium">{formatOtpTime(otpTimer)}</span></p> : <p className="text-red-500">{AUTH_MESSAGES.OTP_EXPIRED}</p>}
           </div>
 
-          <Button type="submit" disabled={isLoading || otpCode.length !== AUTH_CONSTANTS.OTP_LENGTH} className="w-full h-10 lg:h-11 bg-[#00b14f] text-sm font-semibold">
-            {isLoading ? <div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Đang xử lý...</div> : "Tiếp tục"}
-          </Button>
+          <AuthSubmitButton 
+            isLoading={isLoading} 
+            loadingText="Đang xử lý..." 
+            text="Tiếp tục" 
+            disabled={otpCode.length !== AUTH_CONSTANTS.OTP_LENGTH}
+          />
 
           <button type="button" onClick={handleResendOtp} disabled={!canResend || isLoading} className={`w-full text-sm ${canResend ? "text-[#00b14f] hover:underline" : "text-gray-400 cursor-not-allowed"}`}>
             Gửi lại mã OTP
           </button>
         </form>
 
-        <div className="flex justify-center mt-3">
-          <button type="button" onClick={() => setStep("email")} disabled={isLoading} className="text-sm text-gray-500 hover:text-[#00b14f] disabled:opacity-50 disabled:cursor-not-allowed">← Đổi email khác</button>
-        </div>
+        <AuthBackButton onClick={() => setStep("email")} text="Đổi email khác" disabled={isLoading} />
       </div>
     );
   }
 
   return (
     <div className="w-full">
-      <div className="mb-4 lg:mb-3">
-        <h1 className="text-lg sm:text-xl font-bold text-[#00b14f] mb-1">Quên mật khẩu</h1>
-        <p className="text-gray-500 text-sm">Nhập email đã đăng ký để nhận mã xác thực</p>
-      </div>
+      <AuthFormHeader 
+        title="Quên mật khẩu" 
+        subtitle="Nhập email đã đăng ký để nhận mã xác thực" 
+      />
 
       <form onSubmit={handleRequestOtp} className="space-y-3">
         <div className="space-y-1">
@@ -223,16 +231,14 @@ export default function ForgotPasswordForm() {
               onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors({ ...errors, email: "" }); }}
               disabled={isLoading} className={`pl-10 h-10 text-sm border-gray-200 focus:border-[#00b14f] focus:ring-0 shadow-none ${errors.email ? "border-red-500" : ""}`} />
           </div>
-          {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
+          <AuthFormError error={errors.email} />
         </div>
 
         <p className={`text-sm text-gray-600 ${disabledClass}`}>
           Bằng việc thực hiện đổi mật khẩu, bạn đã đồng ý với <Link href="/terms" className={`text-[#00b14f] hover:underline ${disabledClass}`}>Điều khoản dịch vụ</Link> và <Link href="/privacy" className={`text-[#00b14f] hover:underline ${disabledClass}`}>Chính sách bảo mật</Link>
         </p>
 
-        <Button type="submit" disabled={isLoading} className="w-full h-10 lg:h-11 bg-[#00b14f] text-sm font-semibold">
-          {isLoading ? <div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Đang gửi...</div> : "Gửi mã xác thực"}
-        </Button>
+        <AuthSubmitButton isLoading={isLoading} loadingText="Đang gửi..." text="Gửi mã xác thực" />
       </form>
 
       <div className="flex justify-between mt-3">

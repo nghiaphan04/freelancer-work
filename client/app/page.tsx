@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import Hero from "@/components/landing/Hero";
-import Features from "@/components/landing/Features";
-import Products from "@/components/landing/Products";
-import AppDownload from "@/components/landing/AppDownload";
-import HotlineSupport from "@/components/landing/HotlineSupport";
-import Partners from "@/components/landing/Partners";
-import AboutSection from "@/components/landing/AboutSection";
-import PopularKeywords from "@/components/landing/PopularKeywords";
+import Hero from "@/components/landing/sections/Hero";
+import Features from "@/components/landing/sections/Features";
+import Products from "@/components/landing/sections/Products";
+import AppDownload from "@/components/landing/sections/AppDownload";
+import HotlineSupport from "@/components/landing/sections/HotlineSupport";
+import Partners from "@/components/landing/sections/Partners";
+import AboutSection from "@/components/landing/sections/AboutSection";
+import PopularKeywords from "@/components/landing/sections/PopularKeywords";
 
 export default function Home() {
   const router = useRouter();

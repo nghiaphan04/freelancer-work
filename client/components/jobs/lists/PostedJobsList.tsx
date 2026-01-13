@@ -8,6 +8,9 @@ import { useAuth } from "@/context/AuthContext";
 import { usePostedJobs } from "@/hooks/usePostedJobs";
 import { api } from "@/lib/api";
 import { JOB_STATUS_CONFIG, JobStatus, Job } from "@/types/job";
+import JobsLoading from "../shared/JobsLoading";
+import JobsEmptyState from "../shared/JobsEmptyState";
+import JobsPageHeader from "../shared/JobsPageHeader";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,7 +101,7 @@ export default function PostedJobsList() {
   if (!isHydrated) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
+        <JobsLoading />
       </div>
     );
   }
@@ -110,20 +113,17 @@ export default function PostedJobsList() {
   return (
     <div className="max-w-7xl mx-auto px-4">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý công việc đã đăng</h1>
-          <p className="text-gray-500 mt-1">
-            {page ? `${page.totalElements} công việc` : "Xem và quản lý các công việc bạn đã đăng tuyển"}
-          </p>
-        </div>
+      <JobsPageHeader 
+        title="Quản lý công việc đã đăng"
+        subtitle={page ? `${page.totalElements} công việc` : "Xem và quản lý các công việc bạn đã đăng tuyển"}
+      >
         <Link href="/my-posted-jobs/create">
           <Button className="bg-[#00b14f] hover:bg-[#009643] w-full sm:w-auto">
             <Icon name="add" size={20} />
             Đăng việc mới
           </Button>
         </Link>
-      </div>
+      </JobsPageHeader>
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow mb-4">
@@ -153,17 +153,12 @@ export default function PostedJobsList() {
 
       {/* Loading State */}
       {isLoading ? (
-        <div className="bg-white rounded-lg shadow p-8 flex justify-center">
-          <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-        </div>
+        <JobsLoading />
       ) : (
         /* Job List */
         <div className="space-y-3">
           {jobs.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Không có công việc nào</p>
-            </div>
+            <JobsEmptyState message="Không có công việc nào" />
           ) : (
             jobs.map((job) => (
               <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6 hover:shadow-md transition-shadow">

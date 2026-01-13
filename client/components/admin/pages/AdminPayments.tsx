@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import { BalanceDeposit, DepositStatus, DEPOSIT_STATUS_CONFIG } from "@/types/balance";
 import { Page } from "@/types/job";
 import { Pagination } from "@/components/ui/pagination";
+import AdminLoading from "../shared/AdminLoading";
+import AdminPageHeader from "../shared/AdminPageHeader";
+import AdminEmptyState from "../shared/AdminEmptyState";
 
 const STATUS_OPTIONS: { value: DepositStatus | ""; label: string }[] = [
   { value: "", label: "Tất cả" },
@@ -47,39 +51,13 @@ export default function AdminPayments() {
     fetchDeposits(page, statusFilter || undefined);
   }, [page, statusFilter]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (isLoading && deposits.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <AdminLoading />;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Quản lý nạp tiền</h2>
-        <span className="text-xs text-gray-500">Tổng: {totalElements}</span>
-      </div>
+      <AdminPageHeader title="Quản lý nạp tiền" totalElements={totalElements} />
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-3">
@@ -101,9 +79,7 @@ export default function AdminPayments() {
 
       {/* Content */}
       {deposits.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500 text-sm">
-          Không có giao dịch nào
-        </div>
+        <AdminEmptyState message="Không có giao dịch nào" />
       ) : (
         <>
           {/* Mobile: Card View */}
@@ -127,11 +103,11 @@ export default function AdminPayments() {
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 pt-2 border-t">
                   <div>
                     <p className="text-gray-400">Ngày tạo</p>
-                    <p>{formatDate(deposit.createdAt)}</p>
+                    <p>{formatDateTime(deposit.createdAt)}</p>
                   </div>
                   <div>
                     <p className="text-gray-400">Thanh toán</p>
-                    <p>{formatDate(deposit.paidAt)}</p>
+                    <p>{formatDateTime(deposit.paidAt)}</p>
                   </div>
                 </div>
               </div>
@@ -166,8 +142,8 @@ export default function AdminPayments() {
                           {DEPOSIT_STATUS_CONFIG[deposit.status]?.label || deposit.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-gray-500">{formatDate(deposit.createdAt)}</td>
-                      <td className="px-3 py-2 text-gray-500">{formatDate(deposit.paidAt)}</td>
+                      <td className="px-3 py-2 text-gray-500">{formatDateTime(deposit.createdAt)}</td>
+                      <td className="px-3 py-2 text-gray-500">{formatDateTime(deposit.paidAt)}</td>
                     </tr>
                   ))}
                 </tbody>

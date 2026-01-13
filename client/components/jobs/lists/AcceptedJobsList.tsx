@@ -7,6 +7,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useAcceptedJobs } from "@/hooks/useAcceptedJobs";
 import { JOB_STATUS_CONFIG } from "@/types/job";
 import { api, JobApplication, ApplicationStatus, SavedJob } from "@/lib/api";
+import JobsLoading from "../shared/JobsLoading";
+import JobsEmptyState from "../shared/JobsEmptyState";
+import JobsSearchBar from "../shared/JobsSearchBar";
+import JobsPageHeader from "../shared/JobsPageHeader";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -122,7 +126,7 @@ export default function AcceptedJobsList() {
   if (!isHydrated) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
+        <JobsLoading />
       </div>
     );
   }
@@ -134,11 +138,10 @@ export default function AcceptedJobsList() {
   return (
     <div className="max-w-7xl mx-auto px-4">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý công việc đã nhận</h1>
-          <p className="text-gray-500 mt-1">Theo dõi và cập nhật tiến độ các công việc của bạn</p>
-        </div>
+      <JobsPageHeader 
+        title="Quản lý công việc đã nhận" 
+        subtitle="Theo dõi và cập nhật tiến độ các công việc của bạn"
+      >
         <Link href="/jobs">
           <Button 
             variant="outline" 
@@ -148,7 +151,7 @@ export default function AcceptedJobsList() {
             Tìm việc mới
           </Button>
         </Link>
-      </div>
+      </JobsPageHeader>
 
       {/* Filter Tabs */}
       <div className="bg-white rounded-lg shadow mb-4">
@@ -180,16 +183,11 @@ export default function AcceptedJobsList() {
         <>
           {/* Search Bar */}
           <div className="mb-4">
-            <div className="relative">
-              <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder="Tìm kiếm trong công việc đã lưu..."
-                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#00b14f] focus:ring-2 focus:ring-[#00b14f]/20 transition-all bg-white"
-              />
-            </div>
+            <JobsSearchBar
+              value={searchKeyword}
+              onChange={setSearchKeyword}
+              placeholder="Tìm kiếm trong công việc đã lưu..."
+            />
           </div>
 
           {/* Results Info */}
@@ -210,25 +208,22 @@ export default function AcceptedJobsList() {
 
           {/* Loading State */}
           {savedJobsLoading ? (
-            <div className="bg-white rounded-lg shadow p-8 flex justify-center">
-              <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-            </div>
+            <JobsLoading />
           ) : (
             /* Saved Jobs List */
             <div className="space-y-4">
               {filteredSavedJobs.length === 0 ? (
-                <div className="bg-white rounded-lg shadow p-8 text-center">
-                  <Icon name="bookmark_border" size={48} className="text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">
-                    {searchKeyword ? "Không tìm thấy kết quả" : "Chưa lưu công việc nào"}
-                  </p>
+                <JobsEmptyState
+                  icon="bookmark_border"
+                  message={searchKeyword ? "Không tìm thấy kết quả" : "Chưa lưu công việc nào"}
+                >
                   <Link href="/jobs">
                     <Button className="mt-4 bg-[#00b14f] hover:bg-[#009643]">
                       <Icon name="search" size={16} />
                       Tìm việc ngay
                     </Button>
                   </Link>
-                </div>
+                </JobsEmptyState>
               ) : (
                 filteredSavedJobs.map((savedJob) => (
                   <div key={savedJob.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
@@ -322,16 +317,11 @@ export default function AcceptedJobsList() {
         <>
           {/* Search Bar */}
           <div className="mb-4">
-            <div className="relative">
-              <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                placeholder="Tìm kiếm theo tên công việc..."
-                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#00b14f] focus:ring-2 focus:ring-[#00b14f]/20 transition-all bg-white"
-              />
-            </div>
+            <JobsSearchBar
+              value={searchKeyword}
+              onChange={setSearchKeyword}
+              placeholder="Tìm kiếm theo tên công việc..."
+            />
           </div>
 
           {/* Results Info */}
@@ -352,19 +342,15 @@ export default function AcceptedJobsList() {
 
           {/* Loading State */}
           {applicationsLoading ? (
-            <div className="bg-white rounded-lg shadow p-8 flex justify-center">
-              <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-            </div>
+            <JobsLoading />
           ) : (
             /* Applications List */
             <div className="space-y-4">
               {filteredApplications.length === 0 ? (
-                <div className="bg-white rounded-lg shadow p-8 text-center">
-                  <Icon name="send" size={48} className="text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">
-                    {searchKeyword ? "Không tìm thấy kết quả" : "Chưa ứng tuyển công việc nào"}
-                  </p>
-                </div>
+                <JobsEmptyState
+                  icon="send"
+                  message={searchKeyword ? "Không tìm thấy kết quả" : "Chưa ứng tuyển công việc nào"}
+                />
               ) : (
                 filteredApplications.map((app) => (
                   <div key={app.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
@@ -470,17 +456,12 @@ export default function AcceptedJobsList() {
 
           {/* Loading State */}
           {isLoading ? (
-            <div className="bg-white rounded-lg shadow p-8 flex justify-center">
-              <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin" />
-            </div>
+            <JobsLoading />
           ) : (
             /* Job List */
             <div className="space-y-4">
               {jobs.length === 0 ? (
-                <div className="bg-white rounded-lg shadow p-8 text-center">
-                  <Icon name="work_off" size={48} className="text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Không có công việc nào</p>
-                </div>
+                <JobsEmptyState message="Không có công việc nào" />
               ) : (
                 jobs.map((job) => (
                   <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
