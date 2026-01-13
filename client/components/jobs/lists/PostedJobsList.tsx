@@ -6,12 +6,14 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { usePostedJobs } from "@/hooks/usePostedJobs";
-import { api } from "@/lib/api";
+import { api, Dispute } from "@/lib/api";
 import { JOB_STATUS_CONFIG, JobStatus, Job } from "@/types/job";
 import JobsLoading from "../shared/JobsLoading";
 import JobsEmptyState from "../shared/JobsEmptyState";
 import JobsPageHeader from "../shared/JobsPageHeader";
 import JobHistoryTimeline from "../shared/JobHistoryTimeline";
+import { CreateDisputeDialog, ViewDisputeDialog } from "../dispute/DisputeDialog";
+import { WorkReviewDialog } from "../work/WorkDialogs";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +30,7 @@ const FILTER_TABS: { key: JobStatus | "all" | "history"; label: string }[] = [
   { key: "DRAFT", label: "Bản nháp" },
   { key: "OPEN", label: "Đang tuyển" },
   { key: "IN_PROGRESS", label: "Đang thực hiện" },
+  { key: "DISPUTED", label: "Tranh chấp" },
   { key: "COMPLETED", label: "Hoàn thành" },
   { key: "history", label: "Lịch sử" },
 ];
@@ -43,6 +46,16 @@ export default function PostedJobsList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyJobId, setHistoryJobId] = useState<number | null>(null);
+  
+  // Dispute states
+  const [createDisputeDialogOpen, setCreateDisputeDialogOpen] = useState(false);
+  const [disputeJob, setDisputeJob] = useState<Job | null>(null);
+  const [viewDisputeDialogOpen, setViewDisputeDialogOpen] = useState(false);
+  const [currentDispute, setCurrentDispute] = useState<Dispute | null>(null);
+
+  // Work review states
+  const [workReviewDialogOpen, setWorkReviewDialogOpen] = useState(false);
+  const [selectedJobForReview, setSelectedJobForReview] = useState<Job | null>(null);
 
   const hasAccess = user?.roles?.includes("ROLE_EMPLOYER");
 
@@ -92,6 +105,30 @@ export default function PostedJobsList() {
   const handleHistoryClick = (jobId: number) => {
     setHistoryJobId(jobId);
     setHistoryDialogOpen(true);
+  };
+
+  const handleCreateDispute = (job: Job) => {
+    setDisputeJob(job);
+    setCreateDisputeDialogOpen(true);
+  };
+
+  const handleViewDispute = async (jobId: number) => {
+    try {
+      const response = await api.getDispute(jobId);
+      if (response.status === "SUCCESS" && response.data) {
+        setCurrentDispute(response.data);
+        setViewDisputeDialogOpen(true);
+      } else {
+        toast.error("Không tìm thấy thông tin khiếu nại");
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra");
+    }
+  };
+
+  const handleReviewWork = (job: Job) => {
+    setSelectedJobForReview(job);
+    setWorkReviewDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -277,6 +314,20 @@ export default function PostedJobsList() {
                       </div>
                     )}
 
+                    {/* Deadline warnings for IN_PROGRESS jobs */}
+                    {job.status === "IN_PROGRESS" && job.workReviewDeadline && (
+                      <div className="mt-3 flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
+                        <Icon name="timer" size={16} />
+                        <span>Hạn duyệt sản phẩm: {formatDate(job.workReviewDeadline)}</span>
+                      </div>
+                    )}
+                    {job.status === "IN_PROGRESS" && job.workSubmissionDeadline && (
+                      <div className="mt-3 flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                        <Icon name="upload_file" size={16} />
+                        <span>Chờ freelancer nộp bài (hạn: {formatDate(job.workSubmissionDeadline)})</span>
+                      </div>
+                    )}
+
                   </div>
 
                   <div className="flex flex-row sm:flex-col gap-2">
@@ -286,7 +337,7 @@ export default function PostedJobsList() {
                         <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                       </Button>
                     </Link>
-                    {(job.status === "IN_PROGRESS" || job.status === "COMPLETED") && (
+                    {(job.status === "IN_PROGRESS" || job.status === "COMPLETED" || job.status === "DISPUTED") && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -295,6 +346,38 @@ export default function PostedJobsList() {
                       >
                         <Icon name="history" size={16} />
                         <span className="sm:hidden lg:inline ml-1">Lịch sử</span>
+                      </Button>
+                    )}
+                    {job.status === "IN_PROGRESS" && job.workReviewDeadline && (
+                      <Button
+                        size="sm"
+                        className="flex-1 sm:flex-none bg-[#00b14f] hover:bg-[#009643]"
+                        onClick={() => handleReviewWork(job)}
+                      >
+                        <Icon name="rate_review" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Duyệt sản phẩm</span>
+                      </Button>
+                    )}
+                    {job.status === "IN_PROGRESS" && job.workReviewDeadline && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => handleCreateDispute(job)}
+                      >
+                        <Icon name="report_problem" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Khiếu nại</span>
+                      </Button>
+                    )}
+                    {job.status === "DISPUTED" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none text-orange-600 border-orange-200 hover:bg-orange-50"
+                        onClick={() => handleViewDispute(job.id)}
+                      >
+                        <Icon name="gavel" size={16} />
+                        <span className="sm:hidden lg:inline ml-1">Xem tranh chấp</span>
                       </Button>
                     )}
                     {job.status === "DRAFT" && job.applicationCount === 0 && (
@@ -431,6 +514,39 @@ export default function PostedJobsList() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Create Dispute Dialog */}
+      {disputeJob && (
+        <CreateDisputeDialog
+          open={createDisputeDialogOpen}
+          onOpenChange={setCreateDisputeDialogOpen}
+          jobId={disputeJob.id}
+          jobTitle={disputeJob.title}
+          onSuccess={() => {
+            fetchJobs(filter === "all" || filter === "history" ? {} : { status: filter as JobStatus });
+          }}
+        />
+      )}
+
+      {/* View Dispute Dialog */}
+      <ViewDisputeDialog
+        open={viewDisputeDialogOpen}
+        onOpenChange={setViewDisputeDialogOpen}
+        dispute={currentDispute}
+      />
+
+      {/* Work Review Dialog */}
+      {selectedJobForReview && (
+        <WorkReviewDialog
+          open={workReviewDialogOpen}
+          onOpenChange={setWorkReviewDialogOpen}
+          jobId={selectedJobForReview.id}
+          jobTitle={selectedJobForReview.title}
+          onSuccess={() => {
+            fetchJobs(filter === "all" || filter === "history" ? {} : { status: filter as JobStatus });
+          }}
+        />
+      )}
     </div>
   );
 }

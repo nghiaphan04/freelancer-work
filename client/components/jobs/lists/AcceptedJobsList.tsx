@@ -6,12 +6,14 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAcceptedJobs } from "@/hooks/useAcceptedJobs";
 import { JOB_STATUS_CONFIG } from "@/types/job";
-import { api, JobApplication, ApplicationStatus, SavedJob } from "@/lib/api";
+import { api, JobApplication, ApplicationStatus, SavedJob, Dispute } from "@/lib/api";
 import JobsLoading from "../shared/JobsLoading";
 import JobsEmptyState from "../shared/JobsEmptyState";
 import JobsSearchBar from "../shared/JobsSearchBar";
 import JobsPageHeader from "../shared/JobsPageHeader";
 import JobHistoryTimeline from "../shared/JobHistoryTimeline";
+import { DisputeResponseDialog } from "../dispute/DisputeDialog";
+import { WorkSubmitDialog } from "../work/WorkDialogs";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,6 +48,14 @@ export default function AcceptedJobsList() {
   const [savedJobsLoading, setSavedJobsLoading] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyJobId, setHistoryJobId] = useState<number | null>(null);
+  
+  // Dispute states
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false);
+  const [currentDispute, setCurrentDispute] = useState<Dispute | null>(null);
+
+  // Work submission states
+  const [workSubmitDialogOpen, setWorkSubmitDialogOpen] = useState(false);
+  const [selectedJobForWork, setSelectedJobForWork] = useState<{ id: number; title: string } | null>(null);
 
   const hasAccess = user?.roles?.includes("ROLE_FREELANCER");
   const isAppliedTab = filter === "applied";
@@ -142,6 +152,25 @@ export default function AcceptedJobsList() {
     setHistoryDialogOpen(true);
   };
 
+  const handleViewDispute = async (jobId: number) => {
+    try {
+      const response = await api.getDispute(jobId);
+      if (response.status === "SUCCESS" && response.data) {
+        setCurrentDispute(response.data);
+        setDisputeDialogOpen(true);
+      } else {
+        toast.error("Không tìm thấy thông tin khiếu nại");
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra");
+    }
+  };
+
+  const handleSubmitWork = (job: { id: number; title: string }) => {
+    setSelectedJobForWork(job);
+    setWorkSubmitDialogOpen(true);
+  };
+
   if (!isHydrated) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -178,6 +207,7 @@ export default function AcceptedJobsList() {
           {[
             { key: "all", label: "Tất cả" },
             { key: "IN_PROGRESS", label: "Đang làm" },
+            { key: "DISPUTED", label: "Tranh chấp" },
             { key: "PENDING_REVIEW", label: "Chờ nghiệm thu" },
             { key: "COMPLETED", label: "Hoàn thành" },
             { key: "applied", label: "Đã ứng tuyển" },
@@ -577,6 +607,20 @@ export default function AcceptedJobsList() {
                             </span>
                           )}
                         </div>
+
+                        {/* Deadline warnings for IN_PROGRESS jobs */}
+                        {job.status === "IN_PROGRESS" && job.workSubmissionDeadline && (
+                          <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg mb-2">
+                            <Icon name="timer" size={16} />
+                            <span>⚠️ Hạn nộp sản phẩm: {new Date(job.workSubmissionDeadline).toLocaleDateString("vi-VN")}</span>
+                          </div>
+                        )}
+                        {job.status === "IN_PROGRESS" && job.workReviewDeadline && (
+                          <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg mb-2">
+                            <Icon name="hourglass_top" size={16} />
+                            <span>Đang chờ employer duyệt (hạn: {new Date(job.workReviewDeadline).toLocaleDateString("vi-VN")})</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Actions */}
@@ -587,7 +631,7 @@ export default function AcceptedJobsList() {
                             <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                           </Button>
                         </Link>
-                        {(job.status === "IN_PROGRESS" || job.status === "COMPLETED") && (
+                        {(job.status === "IN_PROGRESS" || job.status === "COMPLETED" || job.status === "DISPUTED") && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -599,9 +643,24 @@ export default function AcceptedJobsList() {
                           </Button>
                         )}
                         {job.status === "IN_PROGRESS" && (
-                          <Button size="sm" className="bg-[#00b14f] hover:bg-[#009643]">
+                          <Button 
+                            size="sm" 
+                            className="bg-[#00b14f] hover:bg-[#009643]"
+                            onClick={() => handleSubmitWork({ id: job.id, title: job.title })}
+                          >
                             <Icon name="upload" size={16} />
                             <span className="sm:hidden lg:inline ml-1">Nộp bài</span>
+                          </Button>
+                        )}
+                        {job.status === "DISPUTED" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                            onClick={() => handleViewDispute(job.id)}
+                          >
+                            <Icon name="gavel" size={16} />
+                            <span className="sm:hidden lg:inline ml-1">Tranh chấp</span>
                           </Button>
                         )}
                       </div>
@@ -628,6 +687,31 @@ export default function AcceptedJobsList() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dispute Response Dialog */}
+      {currentDispute && (
+        <DisputeResponseDialog
+          open={disputeDialogOpen}
+          onOpenChange={setDisputeDialogOpen}
+          dispute={currentDispute}
+          onSuccess={() => {
+            fetchJobs(filter);
+          }}
+        />
+      )}
+
+      {/* Work Submit Dialog */}
+      {selectedJobForWork && (
+        <WorkSubmitDialog
+          open={workSubmitDialogOpen}
+          onOpenChange={setWorkSubmitDialogOpen}
+          jobId={selectedJobForWork.id}
+          jobTitle={selectedJobForWork.title}
+          onSuccess={() => {
+            fetchJobs(filter);
+          }}
+        />
+      )}
     </div>
   );
 }

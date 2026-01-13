@@ -269,6 +269,46 @@ export const api = {
   adminCountPendingJobs: () =>
     request<number>("/api/jobs/admin/count/pending"),
 
+  // Admin - Disputes (TH3)
+  adminGetPendingDisputes: (params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Dispute>>(`/api/admin/disputes${query.toString() ? `?${query}` : ""}`);
+  },
+
+  adminCountPendingDisputes: () =>
+    request<number>("/api/admin/disputes/count"),
+
+  adminRequestDisputeResponse: (disputeId: number, daysToRespond?: number) =>
+    request<Dispute>(`/api/admin/disputes/${disputeId}/request-response`, {
+      method: "PUT",
+      body: JSON.stringify({ daysToRespond: daysToRespond || 3 }),
+    }),
+
+  adminResolveDispute: (disputeId: number, employerWins: boolean, note: string) =>
+    request<Dispute>(`/api/admin/disputes/${disputeId}/resolve`, {
+      method: "PUT",
+      body: JSON.stringify({ employerWins, note }),
+    }),
+
+  // Disputes - Employer
+  createDispute: (jobId: number, description: string, evidenceUrl: string) =>
+    request<Dispute>(`/api/jobs/${jobId}/disputes`, {
+      method: "POST",
+      body: JSON.stringify({ description, evidenceUrl }),
+    }),
+
+  getDispute: (jobId: number) =>
+    request<Dispute | null>(`/api/jobs/${jobId}/disputes`),
+
+  // Disputes - Freelancer
+  submitDisputeResponse: (disputeId: number, description: string, evidenceUrl: string) =>
+    request<Dispute>(`/api/disputes/${disputeId}/respond`, {
+      method: "PUT",
+      body: JSON.stringify({ description, evidenceUrl }),
+    }),
+
   // Notifications
   getNotifications: () =>
     request<Notification[]>("/api/notifications"),
@@ -385,6 +425,11 @@ export type NotificationType =
   | "WORK_SUBMISSION_TIMEOUT"
   | "WORK_REVIEW_TIMEOUT"
   | "JOB_REOPENED"
+  | "DISPUTE_CREATED"
+  | "DISPUTE_RESPONSE_REQUESTED"
+  | "DISPUTE_RESPONSE_SUBMITTED"
+  | "DISPUTE_RESOLVED_WIN"
+  | "DISPUTE_RESOLVED_LOSE"
   | "SYSTEM";
 
 export interface Notification {
@@ -417,6 +462,11 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; 
   WORK_SUBMISSION_TIMEOUT: { icon: "timer_off", color: "text-red-600" },
   WORK_REVIEW_TIMEOUT: { icon: "schedule", color: "text-orange-600" },
   JOB_REOPENED: { icon: "refresh", color: "text-blue-600" },
+  DISPUTE_CREATED: { icon: "report_problem", color: "text-red-600" },
+  DISPUTE_RESPONSE_REQUESTED: { icon: "question_answer", color: "text-orange-600" },
+  DISPUTE_RESPONSE_SUBMITTED: { icon: "reply", color: "text-blue-600" },
+  DISPUTE_RESOLVED_WIN: { icon: "emoji_events", color: "text-green-600" },
+  DISPUTE_RESOLVED_LOSE: { icon: "sentiment_dissatisfied", color: "text-red-600" },
   SYSTEM: { icon: "info", color: "text-gray-600" },
 };
 
@@ -503,4 +553,46 @@ export interface SavedJob {
     avatarUrl?: string;
   };
   savedAt: string;
+}
+
+// Dispute types (TH3)
+export type DisputeStatus = 
+  | "PENDING_FREELANCER_RESPONSE" 
+  | "PENDING_ADMIN_DECISION" 
+  | "EMPLOYER_WON" 
+  | "FREELANCER_WON" 
+  | "CANCELLED";
+
+export const DISPUTE_STATUS_CONFIG: Record<DisputeStatus, { label: string; color: string }> = {
+  PENDING_FREELANCER_RESPONSE: { label: "Chờ freelancer phản hồi", color: "text-orange-600" },
+  PENDING_ADMIN_DECISION: { label: "Chờ admin quyết định", color: "text-blue-600" },
+  EMPLOYER_WON: { label: "Employer thắng", color: "text-green-600" },
+  FREELANCER_WON: { label: "Freelancer thắng", color: "text-green-600" },
+  CANCELLED: { label: "Đã hủy", color: "text-gray-600" },
+};
+
+export interface DisputeUser {
+  id: number;
+  fullName: string;
+  avatarUrl?: string;
+}
+
+export interface Dispute {
+  id: number;
+  jobId: number;
+  jobTitle: string;
+  employer: DisputeUser;
+  employerEvidenceUrl: string;
+  employerDescription: string;
+  freelancer: DisputeUser;
+  freelancerEvidenceUrl?: string;
+  freelancerDescription?: string;
+  freelancerDeadline?: string;
+  status: DisputeStatus;
+  statusLabel: string;
+  adminNote?: string;
+  resolvedBy?: DisputeUser;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }

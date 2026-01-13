@@ -57,6 +57,15 @@ export default function JobDetailSidebar({
             {job.employer.title && (
               <p className="text-sm text-gray-500">{job.employer.title}</p>
             )}
+            {/* Trust Score */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 rounded">
+                UT: {job.employer.trustScore ?? 0}
+              </span>
+              <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-700 rounded">
+                KUT: {job.employer.untrustScore ?? 0}
+              </span>
+            </div>
           </div>
         </div>
         {job.employer.company && (
@@ -106,6 +115,42 @@ export default function JobDetailSidebar({
           </div>
         </div>
       </div>
+
+      {/* Deadline Card - TH2: Work Submission/Review Deadlines */}
+      {(job.status === "IN_PROGRESS" || job.status === "DISPUTED") && (job.workSubmissionDeadline || job.workReviewDeadline) && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-orange-800 mb-4 flex items-center gap-2">
+            <Icon name="timer" size={20} />
+            Hạn chót quan trọng
+          </h2>
+          <div className="space-y-3">
+            {job.workSubmissionDeadline && (
+              <div className="flex items-start gap-3">
+                <Icon name="upload_file" size={20} className="text-orange-600 mt-0.5" />
+                <div>
+                  <p className="text-sm text-orange-700">Hạn nộp sản phẩm</p>
+                  <p className="font-medium text-orange-900">{formatDate(job.workSubmissionDeadline)}</p>
+                  <p className="text-xs text-orange-600 mt-1">
+                    ⚠️ Quá hạn sẽ bị hủy và công việc mở lại
+                  </p>
+                </div>
+              </div>
+            )}
+            {job.workReviewDeadline && (
+              <div className="flex items-start gap-3">
+                <Icon name="rate_review" size={20} className="text-orange-600 mt-0.5" />
+                <div>
+                  <p className="text-sm text-orange-700">Hạn duyệt sản phẩm</p>
+                  <p className="font-medium text-orange-900">{formatDate(job.workReviewDeadline)}</p>
+                  <p className="text-xs text-orange-600 mt-1">
+                    ⚠️ Quá hạn sẽ tự động duyệt và thanh toán
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Apply Button - For non-owners */}
       {!isOwner && job.status === "OPEN" && (

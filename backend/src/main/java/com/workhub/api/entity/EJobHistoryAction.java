@@ -32,9 +32,14 @@ public enum EJobHistoryAction {
     WITHDRAWAL_REJECTED,   // Từ chối yêu cầu rút/hủy
     WITHDRAWAL_CANCELLED,  // Hủy yêu cầu của mình
 
-    // Timeout actions (TH2)
+    // Timeout actions
     FREELANCER_TIMEOUT,    // Freelancer không nộp đúng hạn
     EMPLOYER_TIMEOUT,      // Employer không review đúng hạn
     JOB_REOPENED,          // Job được mở lại
-    AUTO_APPROVED          // Tự động duyệt do timeout
+    AUTO_APPROVED,         // Tự động duyệt do timeout
+
+    // Dispute actions (TH3)
+    DISPUTE_CREATED,       // Employer tạo khiếu nại
+    DISPUTE_RESPONSE_SUBMITTED,  // Freelancer phản hồi
+    DISPUTE_RESOLVED       // Admin quyết định tranh chấp
 }

@@ -56,6 +56,9 @@ public class JobHistoryResponse {
             case EMPLOYER_TIMEOUT -> "Employer quá hạn";
             case JOB_REOPENED -> "Mở lại công việc";
             case AUTO_APPROVED -> "Tự động duyệt";
+            case DISPUTE_CREATED -> "Tạo khiếu nại";
+            case DISPUTE_RESPONSE_SUBMITTED -> "Phản hồi khiếu nại";
+            case DISPUTE_RESOLVED -> "Giải quyết tranh chấp";
         };
     }
 }

@@ -53,6 +53,11 @@ public class NotificationResponse {
             case WORK_SUBMISSION_TIMEOUT -> "Quá hạn nộp sản phẩm";
             case WORK_REVIEW_TIMEOUT -> "Quá hạn duyệt sản phẩm";
             case JOB_REOPENED -> "Công việc được mở lại";
+            case DISPUTE_CREATED -> "Có khiếu nại mới";
+            case DISPUTE_RESPONSE_REQUESTED -> "Yêu cầu phản hồi khiếu nại";
+            case DISPUTE_RESPONSE_SUBMITTED -> "Đã có phản hồi khiếu nại";
+            case DISPUTE_RESOLVED_WIN -> "Bạn thắng tranh chấp";
+            case DISPUTE_RESOLVED_LOSE -> "Bạn thua tranh chấp";
             case SYSTEM -> "Thông báo hệ thống";
         };
     }

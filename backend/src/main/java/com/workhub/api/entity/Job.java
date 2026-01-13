@@ -266,4 +266,20 @@ public class Job {
         return this.workReviewDeadline != null 
             && LocalDateTime.now().isAfter(this.workReviewDeadline);
     }
+
+    // Dispute methods
+    public void dispute() {
+        if (this.status == EJobStatus.IN_PROGRESS) {
+            this.status = EJobStatus.DISPUTED;
+            this.workReviewDeadline = null;  // Clear review deadline khi dispute
+        }
+    }
+
+    public boolean isDisputed() {
+        return this.status == EJobStatus.DISPUTED;
+    }
+
+    public boolean isInProgress() {
+        return this.status == EJobStatus.IN_PROGRESS;
+    }
 }

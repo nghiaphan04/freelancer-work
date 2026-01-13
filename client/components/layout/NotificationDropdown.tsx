@@ -140,10 +140,12 @@ export default function NotificationDropdown() {
                   >
                     {/* Icon */}
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                      notification.type.includes("ACCEPTED") || notification.type.includes("APPROVED")
+                      notification.type.includes("ACCEPTED") || notification.type.includes("APPROVED") || notification.type.includes("WIN")
                         ? "bg-green-100"
-                        : notification.type.includes("REJECTED")
+                        : notification.type.includes("REJECTED") || notification.type.includes("TIMEOUT") || notification.type.includes("LOSE")
                         ? "bg-red-100"
+                        : notification.type.includes("REOPENED") || notification.type.includes("DISPUTE")
+                        ? "bg-orange-100"
                         : "bg-blue-100"
                     }`}>
                       <Icon name={config.icon} size={18} className={config.color} />

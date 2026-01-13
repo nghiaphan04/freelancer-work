@@ -247,6 +247,10 @@ public class User {
         this.trustScore += amount;
     }
 
+    public void deductTrustScore(int amount) {
+        this.trustScore = Math.max(0, this.trustScore - amount);
+    }
+
     public void addUntrustScore(int amount) {
         this.untrustScore += amount;
     }

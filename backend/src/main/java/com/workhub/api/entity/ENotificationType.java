@@ -28,6 +28,13 @@ public enum ENotificationType {
     WORK_REVIEW_TIMEOUT,      // Employer không review đúng hạn → auto approve
     JOB_REOPENED,             // Job được mở lại sau khi clear freelancer
     
+    // Dispute notifications (TH3)
+    DISPUTE_CREATED,          // Employer tạo khiếu nại
+    DISPUTE_RESPONSE_REQUESTED,  // Admin yêu cầu freelancer phản hồi
+    DISPUTE_RESPONSE_SUBMITTED,  // Freelancer đã gửi phản hồi
+    DISPUTE_RESOLVED_WIN,     // Bạn thắng tranh chấp
+    DISPUTE_RESOLVED_LOSE,    // Bạn thua tranh chấp
+    
     // General
     SYSTEM                    // Thông báo hệ thống
 }

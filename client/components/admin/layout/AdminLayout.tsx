@@ -12,12 +12,14 @@ import AdminDashboard from "../pages/AdminDashboard";
 import AdminUsers from "../pages/AdminUsers";
 import AdminPayments from "../pages/AdminPayments";
 import AdminJobs from "../pages/AdminJobs";
+import AdminDisputes from "../pages/AdminDisputes";
 
-type TabType = "dashboard" | "jobs" | "users" | "payments";
+type TabType = "dashboard" | "jobs" | "disputes" | "users" | "payments";
 
 const TABS = [
   { id: "dashboard" as TabType, label: "Tổng quan", icon: "dashboard" },
   { id: "jobs" as TabType, label: "Duyệt công việc", icon: "work" },
+  { id: "disputes" as TabType, label: "Tranh chấp", icon: "gavel" },
   { id: "users" as TabType, label: "Người dùng", icon: "group" },
   { id: "payments" as TabType, label: "Thanh toán", icon: "payments" },
 ];
@@ -152,6 +154,7 @@ export default function AdminLayout() {
       <main className="flex-1 p-4 overflow-y-auto">
         {activeTab === "dashboard" && <AdminDashboard />}
         {activeTab === "jobs" && <AdminJobs />}
+        {activeTab === "disputes" && <AdminDisputes />}
         {activeTab === "users" && <AdminUsers />}
         {activeTab === "payments" && <AdminPayments />}
       </main>

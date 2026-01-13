@@ -333,4 +333,86 @@ public class NotificationService {
                 .build();
         notificationRepository.save(notification);
     }
+
+    // ==================== DISPUTE NOTIFICATIONS (TH3) ====================
+
+    /**
+     * Thông báo cho freelancer khi employer tạo khiếu nại
+     */
+    @Transactional
+    public void notifyDisputeCreated(User freelancer, Job job, User employer) {
+        Notification notification = Notification.builder()
+                .user(freelancer)
+                .type(ENotificationType.DISPUTE_CREATED)
+                .title("Có khiếu nại mới")
+                .message(employer.getFullName() + " đã tạo khiếu nại về sản phẩm của bạn cho công việc \"" + job.getTitle() + "\". Công việc đã bị khóa, chờ admin xử lý.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho freelancer khi admin yêu cầu phản hồi
+     */
+    @Transactional
+    public void notifyDisputeResponseRequested(User freelancer, Job job, int daysToRespond) {
+        Notification notification = Notification.builder()
+                .user(freelancer)
+                .type(ENotificationType.DISPUTE_RESPONSE_REQUESTED)
+                .title("Yêu cầu phản hồi khiếu nại")
+                .message("Admin yêu cầu bạn phản hồi khiếu nại cho công việc \"" + job.getTitle() + "\" trong vòng " + daysToRespond + " ngày. Vui lòng gửi bằng chứng và giải thích.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho employer khi freelancer đã gửi phản hồi
+     */
+    @Transactional
+    public void notifyDisputeResponseSubmitted(User employer, Job job, User freelancer) {
+        Notification notification = Notification.builder()
+                .user(employer)
+                .type(ENotificationType.DISPUTE_RESPONSE_SUBMITTED)
+                .title("Freelancer đã phản hồi khiếu nại")
+                .message(freelancer.getFullName() + " đã gửi phản hồi cho khiếu nại của bạn về công việc \"" + job.getTitle() + "\". Chờ admin quyết định.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho bên thắng tranh chấp
+     */
+    @Transactional
+    public void notifyDisputeResolvedWin(User winner, Job job, String amount) {
+        Notification notification = Notification.builder()
+                .user(winner)
+                .type(ENotificationType.DISPUTE_RESOLVED_WIN)
+                .title("Bạn thắng tranh chấp")
+                .message("Chúc mừng! Bạn đã thắng tranh chấp cho công việc \"" + job.getTitle() + "\". Số tiền " + amount + " VND đã được chuyển vào tài khoản của bạn.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo cho bên thua tranh chấp
+     */
+    @Transactional
+    public void notifyDisputeResolvedLose(User loser, Job job) {
+        Notification notification = Notification.builder()
+                .user(loser)
+                .type(ENotificationType.DISPUTE_RESOLVED_LOSE)
+                .title("Bạn thua tranh chấp")
+                .message("Rất tiếc, bạn đã thua tranh chấp cho công việc \"" + job.getTitle() + "\". Điểm uy tín của bạn đã bị trừ 1 và điểm không uy tín đã tăng 1.")
+                .referenceId(job.getId())
+                .referenceType("JOB")
+                .build();
+        notificationRepository.save(notification);
+    }
 }

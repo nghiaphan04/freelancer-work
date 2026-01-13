@@ -1,5 +1,5 @@
 // Enums matching backend
-export type JobStatus = "DRAFT" | "PENDING_APPROVAL" | "OPEN" | "REJECTED" | "IN_PROGRESS" | "COMPLETED" | "CLOSED" | "CANCELLED";
+export type JobStatus = "DRAFT" | "PENDING_APPROVAL" | "OPEN" | "REJECTED" | "IN_PROGRESS" | "DISPUTED" | "COMPLETED" | "CLOSED" | "CANCELLED";
 export type JobComplexity = "ENTRY" | "INTERMEDIATE" | "EXPERT";
 export type JobDuration = "SHORT_TERM" | "MEDIUM_TERM" | "LONG_TERM";
 export type WorkType = "PART_TIME" | "FULL_TIME";
@@ -97,6 +97,7 @@ export const JOB_STATUS_CONFIG = {
   OPEN: { label: "Đang tuyển", color: "bg-green-100 text-green-700" },
   REJECTED: { label: "Đã từ chối", color: "bg-red-100 text-red-700" },
   IN_PROGRESS: { label: "Đang thực hiện", color: "bg-blue-100 text-blue-700" },
+  DISPUTED: { label: "Đang tranh chấp", color: "bg-orange-100 text-orange-700" },
   COMPLETED: { label: "Hoàn thành", color: "bg-emerald-100 text-emerald-700" },
   CLOSED: { label: "Đã đóng", color: "bg-gray-100 text-gray-600" },
   CANCELLED: { label: "Đã hủy", color: "bg-red-100 text-red-700" },
@@ -147,7 +148,10 @@ export type JobHistoryAction =
   | "FREELANCER_TIMEOUT"
   | "EMPLOYER_TIMEOUT"
   | "JOB_REOPENED"
-  | "AUTO_APPROVED";
+  | "AUTO_APPROVED"
+  | "DISPUTE_CREATED"
+  | "DISPUTE_RESPONSE_SUBMITTED"
+  | "DISPUTE_RESOLVED";
 
 export interface JobHistoryUser {
   id: number;
@@ -195,4 +199,7 @@ export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string
   EMPLOYER_TIMEOUT: { label: "Employer quá hạn", icon: "schedule", color: "text-orange-600" },
   JOB_REOPENED: { label: "Mở lại công việc", icon: "refresh", color: "text-blue-600" },
   AUTO_APPROVED: { label: "Tự động duyệt", icon: "auto_awesome", color: "text-purple-600" },
+  DISPUTE_CREATED: { label: "Tạo khiếu nại", icon: "report_problem", color: "text-red-600" },
+  DISPUTE_RESPONSE_SUBMITTED: { label: "Phản hồi khiếu nại", icon: "reply", color: "text-blue-600" },
+  DISPUTE_RESOLVED: { label: "Giải quyết tranh chấp", icon: "gavel", color: "text-purple-600" },
 };
