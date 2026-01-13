@@ -66,6 +66,9 @@ public class Job {
     @Column(precision = 15, scale = 2)
     private BigDecimal budget;
 
+    @Column(name = "escrow_amount", precision = 15, scale = 2)
+    private BigDecimal escrowAmount;  // Số tiền đã giữ (budget + fee)
+
     @Column(length = 10)
     @Builder.Default
     private String currency = "VND";
@@ -94,6 +97,9 @@ public class Job {
     @Column(name = "application_count", nullable = false)
     @Builder.Default
     private Integer applicationCount = 0;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;  // Lý do từ chối (nếu bị reject)
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -144,6 +150,38 @@ public class Job {
         if (this.status == EJobStatus.DRAFT || this.status == EJobStatus.CANCELLED) {
             this.status = EJobStatus.OPEN;
         }
+    }
+
+    // Submit job for approval
+    public void submitForApproval() {
+        if (this.status == EJobStatus.DRAFT || this.status == EJobStatus.REJECTED) {
+            this.status = EJobStatus.PENDING_APPROVAL;
+            this.rejectionReason = null;
+        }
+    }
+
+    // Admin approves job
+    public void approve() {
+        if (this.status == EJobStatus.PENDING_APPROVAL) {
+            this.status = EJobStatus.OPEN;
+            this.rejectionReason = null;
+        }
+    }
+
+    // Admin rejects job
+    public void reject(String reason) {
+        if (this.status == EJobStatus.PENDING_APPROVAL) {
+            this.status = EJobStatus.REJECTED;
+            this.rejectionReason = reason;
+        }
+    }
+
+    public boolean isPendingApproval() {
+        return this.status == EJobStatus.PENDING_APPROVAL;
+    }
+
+    public boolean isRejected() {
+        return this.status == EJobStatus.REJECTED;
     }
 
     public void close() {

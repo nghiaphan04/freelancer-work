@@ -2,6 +2,7 @@ package com.workhub.api.controller;
 
 import com.workhub.api.dto.request.ApplyJobRequest;
 import com.workhub.api.dto.request.CreateJobRequest;
+import com.workhub.api.dto.request.RejectJobRequest;
 import com.workhub.api.dto.request.UpdateJobRequest;
 import com.workhub.api.dto.response.ApiResponse;
 import com.workhub.api.dto.response.JobApplicationResponse;
@@ -236,5 +237,63 @@ public class JobController {
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         return ResponseEntity.ok(jobService.rejectApplication(applicationId, userDetails.getId()));
+    }
+
+
+    /**
+     * [ADMIN] Lấy danh sách jobs chờ duyệt
+     */
+    @GetMapping("/admin/pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Page<JobResponse>>> getPendingJobs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(jobService.getPendingJobs(page, size));
+    }
+
+    /**
+     * [ADMIN] Lấy jobs theo status
+     */
+    @GetMapping("/admin/status/{status}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Page<JobResponse>>> getJobsByStatus(
+            @PathVariable EJobStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(jobService.getJobsByStatus(status, page, size));
+    }
+
+    /**
+     * [ADMIN] Duyệt job
+     */
+    @PutMapping("/admin/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<JobResponse>> approveJob(@PathVariable Long id) {
+
+        return ResponseEntity.ok(jobService.approveJob(id));
+    }
+
+    /**
+     * [ADMIN] Từ chối job
+     */
+    @PutMapping("/admin/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<JobResponse>> rejectJob(
+            @PathVariable Long id,
+            @Valid @RequestBody RejectJobRequest request) {
+
+        return ResponseEntity.ok(jobService.rejectJob(id, request.getReason()));
+    }
+
+    /**
+     * [ADMIN] Đếm số jobs chờ duyệt
+     */
+    @GetMapping("/admin/count/pending")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Long>> countPendingJobs() {
+
+        return ResponseEntity.ok(jobService.countPendingJobs());
     }
 }

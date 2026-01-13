@@ -30,10 +30,12 @@ public class JobResponse {
     private EJobDuration duration;
     private EWorkType workType;
     private BigDecimal budget;
+    private BigDecimal escrowAmount;  // Số tiền đã giữ (budget + fee)
     private String currency;
     private LocalDateTime applicationDeadline;
     private LocalDateTime expectedStartDate;
     private EJobStatus status;
+    private String rejectionReason;  // Lý do từ chối (nếu bị reject)
     private Integer viewCount;
     private Integer applicationCount;
     private EmployerResponse employer;

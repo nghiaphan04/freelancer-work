@@ -37,4 +37,15 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     long countByEmployerId(Long employerId);
 
     long countByEmployerIdAndStatus(Long employerId, EJobStatus status);
+
+    // Count jobs by status (for admin)
+    long countByStatus(EJobStatus status);
+
+    // Get all jobs with details for admin
+    @Query("SELECT j FROM Job j JOIN FETCH j.employer ORDER BY j.createdAt DESC")
+    Page<Job> findAllWithEmployer(Pageable pageable);
+
+    // Get jobs by status with employer details for admin
+    @Query("SELECT j FROM Job j JOIN FETCH j.employer WHERE j.status = :status ORDER BY j.createdAt DESC")
+    Page<Job> findByStatusWithEmployer(@Param("status") EJobStatus status, Pageable pageable);
 }

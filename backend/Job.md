@@ -1,7 +1,5 @@
 # WorkHub - Job System Documentation
 
-> Cập nhật 2026-01: PaymentService/ZaloPay đã bỏ. Đăng job trừ trực tiếp số dư `balance` của employer: chi phí = `budget + 5% fee`, job OPEN ngay sau khi trừ.
-
 ## 1. Kiến trúc tổng quan
 ```
 Client → RateLimiter → JWT Filter → JobController
@@ -16,7 +14,10 @@ jobs
 - id (PK), title, description, context, requirements, deliverables
 - skills (set<string>), complexity (ENUM), duration (ENUM), work_type (ENUM)
 - budget (DECIMAL), currency (VARCHAR), application_deadline, expected_start_date
-- status (ENUM: DRAFT/OPEN/CLOSED), view_count, application_count
+- status (ENUM: DRAFT/PENDING_APPROVAL/OPEN/REJECTED/IN_PROGRESS/COMPLETED/CLOSED/CANCELLED)
+- escrow_amount (DECIMAL) ◄─ số tiền đã giữ (budget + fee), hoàn lại khi reject
+- rejection_reason (TEXT) ◄─ lý do từ chối (nếu bị reject)
+- view_count, application_count
 - employer_id (FK → users)
 - created_at, updated_at
 
@@ -31,20 +32,26 @@ users (liên quan)
 - hasBankInfo (bank_account_number, bank_name) bắt buộc khi đăng/apply
 ```
 
-## 3. Luồng đăng job (dùng balance)
+## 3. Luồng đăng job (dùng balance + admin approval)
 1) Employer gửi `CreateJob`.
 2) JobService:
    - Yêu cầu `hasBankInfo`.
    - Kiểm tra `budget > 0`.
    - Tính phí: `fee = budget * 5%` (ceil); `total = budget + fee`.
    - Kiểm tra `employer.hasEnoughBalance(total)`, trừ balance.
-   - Lưu job với `status=OPEN`.
-3) Trả JobResponse; không có bước thanh toán ngoài.
+   - Lưu job với `status=PENDING_APPROVAL`, `escrow_amount=total`.
+3) Admin duyệt/từ chối:
+   - **Duyệt**: `PUT /api/jobs/admin/{id}/approve` → status = OPEN (hiển thị công khai).
+   - **Từ chối**: `PUT /api/jobs/admin/{id}/reject` → status = REJECTED + hoàn `escrow_amount` về balance employer.
 
 ## 4. Trạng thái job
-- DRAFT: chưa hiển thị (toggle được).
-- OPEN: hiển thị, nhận ứng tuyển.
-- CLOSED: đóng tay hoặc business logic khác.
+- DRAFT: bản nháp, chưa gửi duyệt.
+- PENDING_APPROVAL: đã trừ tiền, chờ admin duyệt.
+- OPEN: đã duyệt, hiển thị công khai, nhận ứng tuyển.
+- REJECTED: admin từ chối, đã hoàn tiền escrow.
+- IN_PROGRESS: đang thực hiện.
+- COMPLETED: hoàn thành.
+- CLOSED/CANCELLED: đóng/hủy.
 
 ## 5. Ứng tuyển job (freelancer)
 - Yêu cầu role FREELANCER, không phải chủ job, job OPEN, có bank info.
@@ -72,11 +79,19 @@ users (liên quan)
   - `POST /api/jobs/{id}/apply`
   - `POST /api/jobs/applications/{applicationId}/withdraw`
   - `GET /api/jobs/my-applications?status=&page=&size=`
+- Admin (kiểm duyệt job):
+  - `GET /api/jobs/admin/pending` - danh sách jobs chờ duyệt
+  - `GET /api/jobs/admin/status/{status}` - lọc theo trạng thái
+  - `PUT /api/jobs/admin/{id}/approve` - duyệt job → OPEN
+  - `PUT /api/jobs/admin/{id}/reject` - từ chối + hoàn tiền escrow
+  - `GET /api/jobs/admin/count/pending` - đếm jobs chờ duyệt
 
-## 7. Phí & số dư
+## 7. Phí & số dư & escrow
 - Phí đăng job: 5% trên budget, làm tròn lên (ceiling).
-- Số dư cần có: `budget + fee`.
-- Không còn escrow/refund qua ZaloPay; hoàn/tái mở job do business sẽ thao tác trực tiếp (nếu cần) bằng cách điều chỉnh balance thủ công/feature riêng.
+- Số dư cần có: `budget + fee` = `escrow_amount`.
+- Khi tạo job: trừ `escrow_amount` từ balance employer, lưu vào job.
+- Admin từ chối: hoàn `escrow_amount` về balance employer.
+- Admin duyệt: giữ nguyên escrow (sẽ dùng để thanh toán cho freelancer sau).
 
 ## 8. Lưu ý
 - Với luồng mới, mọi thanh toán ngoài đều đi qua nạp balance (xem `balance.md`).
@@ -148,10 +163,12 @@ users (liên quan)
 │   │ currency (VARCHAR 10)           │◄── VND/USD                            │
 │   │ application_deadline (DATETIME) │◄── Hạn nộp hồ sơ                      │
 │   │ expected_start_date (DATETIME)  │◄── Ngày dự kiến bắt đầu               │
-│   │ status (ENUM)                   │◄── DRAFT/OPEN/IN_PROGRESS/...         │
-│   │ employer_id (FK → users)        │◄── Người đăng tin                     │
-│   │ view_count (INT)                │◄── Số lượt xem                        │
-│   │ application_count (INT)         │◄── Số đơn ứng tuyển                   │
+│   │ status (ENUM)                   │◄── PENDING_APPROVAL/OPEN/REJECTED/... │
+   │   │ escrow_amount (DECIMAL 15,2)    │◄── Số tiền giữ (budget + fee)         │
+   │   │ rejection_reason (TEXT)         │◄── Lý do từ chối (nếu REJECTED)       │
+   │   │ employer_id (FK → users)        │◄── Người đăng tin                     │
+   │   │ view_count (INT)                │◄── Số lượt xem                        │
+   │   │ application_count (INT)         │◄── Số đơn ứng tuyển                   │
 │   │ created_at (DATETIME)           │                                       │
 │   │ updated_at (DATETIME)           │                                       │
 │   └────────────┬────────────────────┘                                       │
@@ -292,40 +309,43 @@ backend/src/main/java/com/workhub/api/
      │<────────────────────────────────│                │
 ```
 
-### 4.2 Job Status Flow
+### 4.2 Job Status Flow (Admin Approval)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    JOB STATUS TRANSITIONS (VỚI ZALOPAY)                     │
+│                    JOB STATUS TRANSITIONS (ADMIN APPROVAL)                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│                              ┌─────────┐                                    │
-│                              │  DRAFT  │ ◄── POST /api/jobs                 │
-│                              └────┬────┘                                    │
-│                                   │                                         │
-│                    POST /api/payments/jobs/{id}                             │
+│   Employer tạo job (POST /api/jobs)                                         │
+│   → Trừ balance (escrow_amount = budget + 5% fee)                           │
 │                                   │                                         │
 │                                   ▼                                         │
-│                         ┌─────────────────┐                                 │
-│                         │ PAYMENT PENDING │                                 │
-│                         └────────┬────────┘                                 │
+│                      ┌──────────────────────┐                               │
+│                      │  PENDING_APPROVAL    │ ◄── Chờ admin duyệt           │
+│                      └───────────┬──────────┘                               │
 │                                  │                                          │
-│                    ZaloPay Callback (thanh toán thành công)                 │
-│                                  │                                          │
-│                                  ▼                                          │
-│   ┌─────────┐              ┌─────────┐                                      │
-│   │CANCELLED│◄─────────────│  OPEN   │ ◄── Đang tuyển dụng                  │
-│   └─────────┘              └────┬────┘                                      │
-│                                 │                                           │
-│                                 ▼                                           │
-│                          ┌─────────────┐                                    │
-│                          │ IN_PROGRESS │                                    │
-│                          └──────┬──────┘                                    │
-│                                 │                                           │
-│                                 ▼                                           │
-│                          ┌─────────────┐                                    │
-│                          │  COMPLETED  │                                    │
-│                          └─────────────┘                                    │
+│             ┌────────────────────┴────────────────────┐                     │
+│             │                                         │                     │
+│    Admin duyệt                               Admin từ chối                  │
+│    PUT /approve                              PUT /reject                    │
+│             │                                         │                     │
+│             ▼                                         ▼                     │
+│      ┌─────────┐                              ┌──────────┐                  │
+│      │  OPEN   │                              │ REJECTED │                  │
+│      └────┬────┘                              └──────────┘                  │
+│           │                                   + Hoàn tiền escrow            │
+│           │                                   + Lưu rejection_reason        │
+│           ▼                                                                 │
+│   ┌─────────────┐                                                           │
+│   │ IN_PROGRESS │ ◄── Đã chọn freelancer                                    │
+│   └──────┬──────┘                                                           │
+│          │                                                                  │
+│          ▼                                                                  │
+│   ┌─────────────┐                                                           │
+│   │  COMPLETED  │                                                           │
+│   └─────────────┘                                                           │
+│                                                                             │
+│   Các status khác: DRAFT (nháp), CLOSED, CANCELLED                          │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -338,7 +358,7 @@ backend/src/main/java/com/workhub/api/
 
 | Method | Endpoint | Mô tả | Auth |
 |--------|----------|-------|------|
-| `POST` | `/api/jobs` | Tạo job mới (DRAFT) | ✅ |
+| `POST` | `/api/jobs` | Tạo job mới (PENDING_APPROVAL) | ✅ EMPLOYER |
 | `GET` | `/api/jobs` | Danh sách jobs OPEN | ❌ |
 | `GET` | `/api/jobs/{id}` | Chi tiết job | ❌ |
 | `GET` | `/api/jobs/my-jobs` | Jobs của tôi | ✅ |
@@ -347,6 +367,16 @@ backend/src/main/java/com/workhub/api/
 | `PUT` | `/api/jobs/{id}` | Cập nhật | ✅ Owner |
 | `PATCH` | `/api/jobs/{id}/close` | Đóng tin | ✅ Owner |
 | `DELETE` | `/api/jobs/{id}` | Xóa | ✅ Owner/Admin |
+
+### Admin Job Approval Endpoints
+
+| Method | Endpoint | Mô tả | Auth |
+|--------|----------|-------|------|
+| `GET` | `/api/jobs/admin/pending` | Danh sách jobs chờ duyệt | ✅ ADMIN |
+| `GET` | `/api/jobs/admin/status/{status}` | Lọc theo trạng thái | ✅ ADMIN |
+| `PUT` | `/api/jobs/admin/{id}/approve` | Duyệt job → OPEN | ✅ ADMIN |
+| `PUT` | `/api/jobs/admin/{id}/reject` | Từ chối + hoàn escrow | ✅ ADMIN |
+| `GET` | `/api/jobs/admin/count/pending` | Đếm jobs chờ duyệt | ✅ ADMIN |
 
 ### Job Application Endpoints
 
@@ -452,48 +482,47 @@ Request + Cookie accessToken
 │             "trong profile trước khi đăng tin tuyển dụng");         │
 │     }                                                                │
 │                                                                      │
-│     // 2. Tạo Job entity                                             │
-│     Job job = Job.builder()                                          │
-│             .title(req.getTitle())                                   │
-│             .description(req.getDescription())                       │
-│             .context(req.getContext())                               │
-│             .requirements(req.getRequirements())                     │
-│             .deliverables(req.getDeliverables())                     │
-│             .skills(req.getSkills() != null ? req.getSkills()        │
-│                                             : new HashSet<>())       │
-│             .complexity(req.getComplexity() != null                  │
-│                         ? req.getComplexity()                        │
-│                         : EJobComplexity.INTERMEDIATE)               │
-│             .duration(req.getDuration())                             │
-│             .workType(req.getWorkType())                             │
-│             .budget(req.getBudget())                                 │
-│             .currency(req.getCurrency() != null                      │
-│                       ? req.getCurrency() : "VND")                   │
-│             .applicationDeadline(req.getApplicationDeadline())       │
-│             .expectedStartDate(req.getExpectedStartDate())           │
-│             .status(EJobStatus.DRAFT)   ◄── LUÔN LÀ DRAFT            │
-│             .employer(employer)                                      │
-│             .build();                                                │
-│                                                                      │
-│     // 3. Lưu vào PostgreSQL                                         │
-│     Job savedJob = jobRepository.save(job);                          │
-│                                                                      │
-│     return ApiResponse.success(                                      │
-│         "Tạo job thành công. Vui lòng thanh toán để đăng tin.",      │
-│         buildJobResponse(savedJob));                                 │
-│ }                                                                    │
+│     // 2. Tính phí và trừ balance                                    │
+   │     BigDecimal fee = budget.multiply(FEE_PERCENT)                    │
+   │         .divide(new BigDecimal("100"), 0, RoundingMode.CEILING);     │
+   │     BigDecimal total = budget.add(fee);  // escrow_amount           │
+   │                                                                      │
+   │     if (!employer.hasEnoughBalance(total)) {                         │
+   │         throw new IllegalStateException("Không đủ số dư");           │
+   │     }                                                                │
+   │     employer.deductBalance(total);                                   │
+   │     userService.save(employer);                                      │
+   │                                                                      │
+   │     // 3. Tạo Job entity (PENDING_APPROVAL)                          │
+   │     Job job = Job.builder()                                          │
+   │             .title(req.getTitle())                                   │
+   │             .budget(req.getBudget())                                 │
+   │             .escrowAmount(total)  ◄── Lưu số tiền đã giữ             │
+   │             .status(EJobStatus.PENDING_APPROVAL)  ◄── CHỜ DUYỆT      │
+   │             .employer(employer)                                      │
+   │             ...                                                      │
+   │             .build();                                                │
+   │                                                                      │
+   │     // 4. Lưu vào PostgreSQL                                         │
+   │     Job savedJob = jobRepository.save(job);                          │
+   │                                                                      │
+   │     return ApiResponse.success(                                      │
+   │         "Tạo job thành công, đang chờ admin duyệt",                  │
+   │         buildJobResponse(savedJob));                                 │
+   │ }                                                                    │
 └──────────────────────────────────────────────────────────────────────┘
    │
    ▼
 Response: 201 Created
 {
     "status": "SUCCESS",
-    "message": "Tạo job thành công. Vui lòng thanh toán để đăng tin.",
+    "message": "Tạo job thành công, đang chờ admin duyệt",
     "data": {
         "id": 1,
         "title": "Viết bài SEO cho website du lịch",
-        "status": "DRAFT",  ◄── Cần thanh toán mới chuyển OPEN
+        "status": "PENDING_APPROVAL",  ◄── Chờ admin duyệt
         "budget": 1000000,
+        "escrowAmount": 1050000,  ◄── budget + 5% fee đã trừ
         "currency": "VND",
         "skills": ["SEO", "Content Writing"],
         "complexity": "INTERMEDIATE",
@@ -1865,540 +1894,105 @@ Lỗi thường gặp:
 
 ---
 
-## 8. POSTMAN TEST
+### 8.4 ADMIN JOB APPROVAL APIs
 
-### 8.0 Đăng nhập (Lấy Token)
+#### GET /api/jobs/admin/pending - Danh sách jobs chờ duyệt
 ```http
-POST http://localhost:8080/api/auth/login
-Content-Type: application/json
-
-{
-    "email": "user@example.com",
-    "password": "Password123!"
-}
+GET http://localhost:8080/api/jobs/admin/pending?page=0&size=10
+Authorization: Bearer <admin_access_token>
 ```
 
-**Response:** Cookie `accessToken` được set tự động
-
----
-
-### 8.1 JOB APIs
-
-#### POST /api/jobs - Tạo Job (DRAFT)
-```http
-POST http://localhost:8080/api/jobs
-Cookie: accessToken=eyJ...
-Content-Type: application/json
-
-{
-    "title": "Viết bài SEO cho website du lịch",
-    "description": "Cần freelancer viết 10 bài blog về du lịch Việt Nam, mỗi bài 1500-2000 từ, chuẩn SEO on-page.",
-    "context": "Công ty du lịch ABC đang mở rộng thị trường online",
-    "requirements": "- Có kinh nghiệm viết content du lịch\n- Biết SEO cơ bản\n- Nộp bài đúng deadline",
-    "deliverables": "- 10 bài viết format Word/Google Docs\n- Ảnh minh họa kèm theo",
-    "skills": ["SEO", "Content Writing", "Travel"],
-    "complexity": "INTERMEDIATE",
-    "duration": "SHORT_TERM",
-    "workType": "PART_TIME",
-    "budget": 5000000,
-    "currency": "VND",
-    "applicationDeadline": "2026-02-01T23:59:59",
-    "expectedStartDate": "2026-02-05T09:00:00"
-}
-```
-
-**Response: 201 Created**
+**Response: 200 OK**
 ```json
 {
     "status": "SUCCESS",
-    "message": "Tạo job thành công. Vui lòng thanh toán để đăng tin.",
+    "message": "Lấy danh sách jobs chờ duyệt thành công",
+    "data": {
+        "content": [
+            {
+                "id": 1,
+                "title": "Viết bài SEO cho website du lịch",
+                "status": "PENDING_APPROVAL",
+                "budget": 1000000,
+                "escrowAmount": 1050000,
+                "employer": { "id": 2, "fullName": "ABC Company" },
+                "createdAt": "2026-01-13T10:00:00"
+            }
+        ],
+        "totalElements": 1,
+        "totalPages": 1
+    }
+}
+```
+
+---
+
+#### PUT /api/jobs/admin/{id}/approve - Duyệt job
+```http
+PUT http://localhost:8080/api/jobs/admin/1/approve
+Authorization: Bearer <admin_access_token>
+```
+
+**Response: 200 OK**
+```json
+{
+    "status": "SUCCESS",
+    "message": "Đã duyệt job thành công",
     "data": {
         "id": 1,
         "title": "Viết bài SEO cho website du lịch",
-        "status": "DRAFT",
-        "budget": 5000000,
+        "status": "OPEN",
+        "budget": 1000000,
+        "escrowAmount": 1050000,
         ...
     }
 }
 ```
 
-Errors:
-- 400: "Vui lòng cập nhật số tài khoản ngân hàng trong profile trước khi đăng tin tuyển dụng"
-- 400: Validate request body (title, description, budget, deadline...)
-
 ---
 
-#### GET /api/jobs - Danh sách Jobs OPEN (Public)
+#### PUT /api/jobs/admin/{id}/reject - Từ chối job (hoàn tiền)
 ```http
-GET http://localhost:8080/api/jobs?page=0&size=10&sortBy=createdAt&sortDir=desc
-```
+PUT http://localhost:8080/api/jobs/admin/1/reject
+Authorization: Bearer <admin_access_token>
+Content-Type: application/json
 
-**Response: 200 OK**
-```json
 {
-    "status": "SUCCESS",
-    "data": {
-        "content": [
-            {
-                "id": 1,
-                "title": "Viết bài SEO...",
-                "status": "OPEN",
-                "budget": 5000000,
-                "viewCount": 15,
-                "employer": {
-                    "id": 1,
-                    "fullName": "Nguyen Van A"
-                }
-            }
-        ],
-        "totalPages": 1,
-        "totalElements": 1,
-        "number": 0,
-        "size": 10
-    }
+    "reason": "Nội dung không phù hợp với quy định"
 }
 ```
 
----
-
-#### GET /api/jobs/{id} - Chi tiết Job (Public)
-```http
-GET http://localhost:8080/api/jobs/1
-```
-
 **Response: 200 OK**
 ```json
 {
     "status": "SUCCESS",
+    "message": "Đã từ chối job và hoàn 1050000 VND cho employer",
     "data": {
         "id": 1,
         "title": "Viết bài SEO cho website du lịch",
-        "description": "Cần freelancer viết 10 bài blog...",
-        "context": "Công ty du lịch ABC...",
-        "requirements": "- Có kinh nghiệm...",
-        "deliverables": "- 10 bài viết...",
-        "skills": ["SEO", "Content Writing", "Travel"],
-        "complexity": "INTERMEDIATE",
-        "duration": "SHORT_TERM",
-        "workType": "PART_TIME",
-        "budget": 5000000,
-        "currency": "VND",
-        "status": "OPEN",
-        "viewCount": 16,
-        "applicationCount": 0,
-        "employer": {
-            "id": 1,
-            "fullName": "Nguyen Van A",
-            "avatarUrl": null,
-            "isVerified": false
-        },
-        "createdAt": "2026-01-12T10:00:00",
-        "updatedAt": "2026-01-12T10:00:00"
+        "status": "REJECTED",
+        "rejectionReason": "Nội dung không phù hợp với quy định",
+        "budget": 1000000,
+        "escrowAmount": 1050000,
+        ...
     }
 }
 ```
 
 ---
 
-#### GET /api/jobs/my-jobs - Jobs của tôi (Auth)
+#### GET /api/jobs/admin/count/pending - Đếm jobs chờ duyệt
 ```http
-GET http://localhost:8080/api/jobs/my-jobs?status=DRAFT&page=0&size=10
-Cookie: accessToken=eyJ...
-```
-
-**Query params:**
-- `status` (optional): `DRAFT`, `OPEN`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`
-- `page`: 0, 1, 2...
-- `size`: 10, 20...
-- `sortBy`: `createdAt`, `budget`, `title`
-- `sortDir`: `asc`, `desc`
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "data": {
-        "content": [
-            { "id": 1, "status": "DRAFT", ... },
-            { "id": 2, "status": "DRAFT", ... }
-        ],
-        "totalElements": 2
-    }
-}
-```
-
----
-
-#### GET /api/jobs/search - Tìm kiếm (Public)
-```http
-GET http://localhost:8080/api/jobs/search?keyword=SEO&page=0&size=10
-```
-
-**Response: 200 OK** - Tìm trong title, description
-
----
-
-#### GET /api/jobs/by-skills - Tìm theo kỹ năng (Public)
-```http
-GET http://localhost:8080/api/jobs/by-skills?skills=SEO&skills=Content&page=0&size=10
-```
-
-**Response: 200 OK** - Jobs có chứa ít nhất 1 skill
-
----
-
-#### PUT /api/jobs/{id} - Cập nhật Job (Owner)
-```http
-PUT http://localhost:8080/api/jobs/1
-Cookie: accessToken=eyJ...
-Content-Type: application/json
-
-{
-    "title": "Viết bài SEO cho website du lịch (Updated)",
-    "budget": 6000000,
-    "skills": ["SEO", "Content Writing", "Travel", "Vietnamese"]
-}
+GET http://localhost:8080/api/jobs/admin/count/pending
+Authorization: Bearer <admin_access_token>
 ```
 
 **Response: 200 OK**
 ```json
 {
     "status": "SUCCESS",
-    "message": "Cập nhật job thành công",
-    "data": { ... }
-}
-```
-
----
-
-#### PATCH /api/jobs/{id}/close - Đóng tin (Owner)
-```http
-PATCH http://localhost:8080/api/jobs/1/close
-Cookie: accessToken=eyJ...
-```
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "message": "Đã đóng tin tuyển dụng",
-    "data": {
-        "id": 1,
-        "status": "CANCELLED"
-    }
-}
-```
-
----
-
-#### DELETE /api/jobs/{id} - Xóa Job (Owner/Admin)
-```http
-DELETE http://localhost:8080/api/jobs/1
-Cookie: accessToken=eyJ...
-```
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "message": "Xóa job thành công"
-}
-```
-
-**Response (nếu có payment PAID):**
-```json
-{
-    "status": "SUCCESS",
-    "message": "Xóa job thành công (đã hoàn tiền escrow)"
-}
-```
-
-**Errors:**
-- `403`: Không phải Owner và không phải Admin
-- `404`: Job không tồn tại
-
-**Lưu ý:** Nếu job đã được thanh toán (PAID), hệ thống sẽ **TỰ ĐỘNG REFUND** trước khi xóa.
-
----
-
-### 8.2 JOB APPLICATION APIs
-
-#### POST /api/jobs/{id}/apply - Ứng tuyển vào job
-```http
-POST http://localhost:8080/api/jobs/5/apply
-Cookie: accessToken=eyJ...
-Content-Type: application/json
-
-{
-    "coverLetter": "Tôi có 3 năm kinh nghiệm viết content SEO. Đã từng làm việc cho các dự án du lịch lớn."
-}
-```
-
-**Response: 201 Created**
-```json
-{
-    "status": "SUCCESS",
-    "message": "Ứng tuyển thành công",
-    "data": {
-        "id": 1,
-        "jobId": 5,
-        "jobTitle": "Viết bài SEO cho website du lịch",
-        "coverLetter": "Tôi có 3 năm kinh nghiệm...",
-        "status": "PENDING",
-        "freelancer": {
-            "id": 2,
-            "fullName": "Nguyen Van B",
-            "avatarUrl": "https://...",
-            "phoneNumber": "0901234567",
-            "bio": "Freelancer content writer",
-            "skills": ["SEO", "Content Writing"]
-        },
-        "createdAt": "2026-01-12T10:00:00"
-    }
-}
-```
-
-**Error Responses:**
-```json
-// Không phải FREELANCER
-{
-    "status": "ERROR",
-    "message": "Chỉ freelancer mới được ứng tuyển"
-}
-
-// Apply vào job của mình
-{
-    "status": "ERROR",
-    "message": "Bạn không thể ứng tuyển vào job của chính mình"
-}
-
-// Job không OPEN
-{
-    "status": "ERROR",
-    "message": "Job này không còn nhận đơn ứng tuyển"
-}
-
-// Đã apply rồi
-{
-    "status": "ERROR",
-    "message": "Bạn đã ứng tuyển vào job này rồi"
-}
-
-// Chưa có bank info
-{
-    "status": "ERROR",
-    "message": "Vui lòng cập nhật thông tin ngân hàng trước khi ứng tuyển"
-}
-
-// Không đủ credit
-{
-    "status": "ERROR",
-    "message": "Bạn không đủ credit để ứng tuyển. Vui lòng mua thêm credit."
-}
-```
-
----
-
-#### GET /api/jobs/my-applications - Đơn ứng tuyển của tôi
-```http
-GET http://localhost:8080/api/jobs/my-applications?status=PENDING&page=0&size=10
-Cookie: accessToken=eyJ...
-```
-
-**Query params:**
-- `status` (optional): `PENDING`, `ACCEPTED`, `REJECTED`, `WITHDRAWN`
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "data": {
-        "content": [
-            {
-                "id": 1,
-                "jobId": 5,
-                "jobTitle": "Viết bài SEO cho website du lịch",
-                "status": "PENDING",
-                "createdAt": "2026-01-12T10:00:00"
-            },
-            {
-                "id": 2,
-                "jobId": 8,
-                "jobTitle": "Thiết kế logo công ty",
-                "status": "ACCEPTED",
-                "createdAt": "2026-01-11T15:30:00"
-            }
-        ],
-        "totalPages": 1,
-        "totalElements": 2
-    }
-}
-```
-
----
-
-#### DELETE /api/jobs/applications/{id} - Rút đơn ứng tuyển
-```http
-DELETE http://localhost:8080/api/jobs/applications/1
-Cookie: accessToken=eyJ...
-```
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "message": "Đã rút đơn ứng tuyển"
-}
-```
-
-**Error Responses:**
-```json
-// Không phải owner
-{
-    "status": "ERROR",
-    "message": "Bạn không có quyền rút đơn này"
-}
-
-// Không còn PENDING
-{
-    "status": "ERROR",
-    "message": "Chỉ có thể rút đơn khi đang chờ xử lý"
-}
-```
-
----
-
-### 8.4 PAYMENT APIs
-
-#### POST /api/payments/jobs/{jobId} - Tạo Đơn Thanh Toán
-```http
-POST http://localhost:8080/api/payments/jobs/1
-Cookie: accessToken=eyJ...
-```
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "message": "Tạo đơn hàng thanh toán thành công",
-    "data": {
-        "id": 1,
-        "appTransId": "260112_1_123456",
-        "zpTransId": null,
-        "jobId": 1,
-        "jobTitle": "Viết bài SEO cho website du lịch",
-        "jobAmount": 5000000,
-        "feeAmount": 250000,
-        "feePercent": 5.00,
-        "totalAmount": 5250000,
-        "currency": "VND",
-        "description": "WorkHub - Thanh toan job #1",
-        "orderUrl": "https://qcgateway.zalopay.vn/openinapp?order=eyJ...",
-        "qrCode": "00020101021226520010vn.zalopay...",
-        "status": "PENDING",
-        "paymentChannel": null,
-        "expiredAt": "2026-01-12T16:15:00",
-        "paidAt": null,
-        "createdAt": "2026-01-12T16:00:00"
-    }
-}
-```
-
-**→ Mở `orderUrl` trong browser hoặc quét `qrCode` để thanh toán**
-
----
-
-#### POST /api/payments/callback - ZaloPay Callback (Public)
-```http
-POST http://localhost:8080/api/payments/callback
-Content-Type: application/json
-
-{
-    "data": "{\"app_id\":2553,\"app_trans_id\":\"260112_1_123456\",\"app_time\":1736668800000,\"app_user\":\"Nguyen Van A\",\"amount\":5250000,\"embed_data\":\"{\\\"redirecturl\\\":\\\"http://localhost:3000/payment/success\\\",\\\"jobId\\\":1}\",\"item\":\"[]\",\"zp_trans_id\":260112000000389,\"server_time\":1736668813498,\"channel\":38,\"merchant_user_id\":\"zalo_user_123\",\"user_fee_amount\":0,\"discount_amount\":0}",
-    "mac": "d8d33baf449b31d7f9b94fa50d7c942c08cd4d83f28fa185557da21acb104f67",
-    "type": 1
-}
-```
-
-**Response: 200 OK**
-```json
-{
-    "return_code": 1,
-    "return_message": "success"
-}
-```
-
-**Return codes:**
-| Code | Ý nghĩa |
-|------|---------|
-| 1 | Thành công |
-| 2 | Trùng (đã xử lý) |
-| -1 | MAC không hợp lệ |
-| 0 | Lỗi (ZaloPay retry) |
-
-**⚠️ Test local:** Tạm comment verify MAC trong `PaymentService.handleCallback()`
-
----
-
-#### GET /api/payments/query/{appTransId} - Truy vấn trạng thái
-```http
-GET http://localhost:8080/api/payments/query/260112_1_123456
-Cookie: accessToken=eyJ...
-```
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "data": {
-        "appTransId": "260112_1_123456",
-        "zpTransId": 260112000000389,
-        "status": "PAID",
-        "paymentChannel": 38,
-        "paidAt": "2026-01-12T16:05:00"
-    }
-}
-```
-
----
-
-#### GET /api/payments/jobs/{jobId} - Thanh toán của Job
-```http
-GET http://localhost:8080/api/payments/jobs/1
-Cookie: accessToken=eyJ...
-```
-
-**Response: 200 OK** - Giống response của POST /api/payments/jobs/{jobId}
-
----
-
-#### GET /api/payments/my-payments - Danh sách thanh toán
-```http
-GET http://localhost:8080/api/payments/my-payments?status=PAID&page=0&size=10
-Cookie: accessToken=eyJ...
-```
-
-**Query params:**
-- `status` (optional): `PENDING`, `PAID`, `CANCELLED`, `EXPIRED`, `REFUNDED`
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "data": {
-        "content": [
-            {
-                "id": 1,
-                "appTransId": "260112_1_123456",
-                "jobId": 1,
-                "jobTitle": "Viết bài SEO...",
-                "totalAmount": 5250000,
-                "status": "PAID",
-                "paidAt": "2026-01-12T16:05:00"
-            }
-        ],
-        "totalElements": 1
-    }
+    "message": "Thành công",
+    "data": 5
 }
 ```
 
@@ -2408,50 +2002,53 @@ Cookie: accessToken=eyJ...
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         FLOW TEST THANH TOÁN                                │
+│                    FLOW TEST ĐĂNG JOB (ADMIN APPROVAL)                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. POST /api/auth/login          → Lấy accessToken                         │
+│  1. POST /api/auth/login          → Lấy accessToken (EMPLOYER)              │
 │                                                                             │
-│  2. POST /api/jobs                → Tạo Job (DRAFT)                         │
-│     Body: { title, description, budget, ... }                               │
-│     Response: { id: 1, status: "DRAFT" }                                    │
+│  2. POST /api/jobs                → Tạo Job (PENDING_APPROVAL)              │
+│     Body: { title, description, budget: 1000000, ... }                      │
+│     Response: { id: 1, status: "PENDING_APPROVAL", escrowAmount: 1050000 }  │
+│     → Employer balance bị trừ 1,050,000 (1tr + 5% phí)                      │
 │                                                                             │
-│  3. GET /api/jobs/my-jobs?status=DRAFT → Kiểm tra job DRAFT                 │
+│  3. GET /api/jobs/my-jobs         → Kiểm tra job PENDING_APPROVAL           │
 │                                                                             │
-│  4. POST /api/payments/jobs/1     → Tạo đơn thanh toán                      │
-│     Response: { orderUrl, qrCode, status: "PENDING" }                       │
+│  ─────────── ADMIN LOGIN ───────────                                        │
 │                                                                             │
-│  5. Mở orderUrl hoặc quét qrCode  → Thanh toán qua ZaloPay                  │
+│  4. POST /api/auth/login          → Lấy accessToken (ADMIN)                 │
 │                                                                             │
-│  6. POST /api/payments/callback   → ZaloPay gọi (hoặc giả lập)              │
-│     Body: { data, mac, type }                                               │
-│     → Job tự động chuyển OPEN                                               │
+│  5. GET /api/jobs/admin/pending   → Xem danh sách jobs chờ duyệt            │
 │                                                                             │
-│  7. GET /api/jobs/1               → Kiểm tra status = "OPEN"                │
+│  6a. PUT /api/jobs/admin/1/approve → DUYỆT                                  │
+│      → Job status = OPEN                                                    │
+│      → Job xuất hiện trong danh sách công khai                              │
 │                                                                             │
-│  8. GET /api/payments/query/260112_1_123456 → Kiểm tra payment PAID         │
+│  6b. PUT /api/jobs/admin/1/reject  → TỪ CHỐI                                │
+│      Body: { reason: "Lý do từ chối" }                                      │
+│      → Job status = REJECTED                                                │
+│      → Hoàn escrowAmount (1,050,000) về balance employer                    │
 │                                                                             │
-│  9. GET /api/jobs                 → Job xuất hiện trong danh sách công khai │
+│  7. GET /api/jobs                 → Job OPEN xuất hiện, REJECTED không      │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         FLOW TEST XÓA JOB (TỰ ĐỘNG REFUND)                  │
+│                         FLOW TEST TỪ CHỐI + HOÀN TIỀN                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  1. GET /api/payments/jobs/1      → Kiểm tra payment status = "PAID"        │
+│  Trước khi tạo job:                                                         │
+│  - Employer balance = 5,000,000 VND                                         │
 │                                                                             │
-│  2. DELETE /api/jobs/1            → ✅ Xóa job thành công                   │
-│     Response: "Xóa job thành công (đã hoàn tiền escrow)"                    │
-│     → Hệ thống TỰ ĐỘNG:                                                     │
-│        1. Gọi refund ZaloPay                                                │
-│        2. Xóa payment record                                                │
-│        3. Xóa job                                                           │
+│  1. POST /api/jobs (budget: 1,000,000)                                      │
+│     → escrowAmount = 1,050,000 (budget + 5% fee)                            │
+│     → Employer balance = 3,950,000 VND                                      │
 │                                                                             │
-│  3. GET /api/jobs/1               → 404 Not Found                           │
+│  2. PUT /api/jobs/admin/1/reject                                            │
+│     → Hoàn escrowAmount = 1,050,000                                         │
+│     → Employer balance = 5,000,000 VND (về như ban đầu)                     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -2496,138 +2093,7 @@ Cookie: accessToken=eyJ...
 
 ---
 
-### 8.6 ERROR RESPONSES
 
-#### 400 Bad Request - Validation Error
-```json
-{
-    "status": "ERROR",
-    "message": "Validation failed",
-    "errors": {
-        "title": "Tiêu đề không được để trống",
-        "budget": "Ngân sách phải >= 0"
-    }
-}
-```
-
-#### 401 Unauthorized - Chưa đăng nhập
-```json
-{
-    "status": "ERROR",
-    "message": "Unauthorized"
-}
-```
-
-#### 403 Forbidden - Không có quyền
-```json
-{
-    "status": "ERROR",
-    "message": "Bạn không có quyền xóa job này"
-}
-```
-
-#### 404 Not Found - Không tìm thấy
-```json
-{
-    "status": "ERROR",
-    "message": "Không tìm thấy job với id: 999"
-}
-```
-
----
-
-### 8.7 ADMIN PAYMENT APIs (Yêu cầu ROLE_ADMIN)
-
-#### GET /api/admin/payments/statistics - Thống kê tổng quan
-```http
-GET http://localhost:8080/api/admin/payments/statistics
-Cookie: accessToken={{admin_token}}
-```
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "data": {
-        "totalRevenue": 15750000,
-        "totalJobAmount": 15000000,
-        "totalFeeAmount": 750000,
-        "totalTransactions": 10,
-        "paidTransactions": 5,
-        "pendingTransactions": 3,
-        "cancelledTransactions": 1,
-        "expiredTransactions": 1,
-        "todayRevenue": 5250000,
-        "todayTransactions": 2,
-        "monthRevenue": 15750000,
-        "monthTransactions": 5
-    }
-}
-```
-
----
-
-#### GET /api/admin/payments - Danh sách thanh toán
-```http
-GET http://localhost:8080/api/admin/payments?status=PAID&page=0&size=10
-Cookie: accessToken={{admin_token}}
-```
-
-**Query params:**
-- `status` (optional): `PENDING`, `PAID`, `CANCELLED`, `EXPIRED`
-- `page`: 0, 1, 2...
-- `size`: 10, 20...
-
----
-
-#### GET /api/admin/payments/search - Tìm kiếm
-```http
-GET http://localhost:8080/api/admin/payments/search?keyword=260112&page=0&size=10
-Cookie: accessToken={{admin_token}}
-```
-
----
-
-#### GET /api/admin/payments/recent - Giao dịch gần đây
-```http
-GET http://localhost:8080/api/admin/payments/recent
-Cookie: accessToken={{admin_token}}
-```
-
-**Response: 200 OK**
-```json
-{
-    "status": "SUCCESS",
-    "data": [
-        {
-            "id": 1,
-            "appTransId": "260112_1_123456",
-            "zpTransId": 260112000000389,
-            "jobId": 1,
-            "jobTitle": "Viết bài SEO...",
-            "totalAmount": 5250000,
-            "status": "PAID",
-            "paidAt": "2026-01-12T16:05:00"
-        }
-    ]
-}
-```
-
----
-
-## 9. CẤU HÌNH
-
-### .env
-```env
-ZALOPAY_APP_ID=2553
-ZALOPAY_KEY1=PcY4iZIKFCIdgZvA6ueMcMHHUbRLYjPL
-ZALOPAY_KEY2=kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz
-ZALOPAY_ENDPOINT=https://sb-openapi.zalopay.vn/v2
-
-# Payment URLs
-PAYMENT_RETURN_URL=http://localhost:3000/payment/success
-PAYMENT_CANCEL_URL=http://localhost:3000/payment/cancel
-```
 
 ### SecurityConfig
 ```
@@ -2647,21 +2113,6 @@ PAYMENT_CANCEL_URL=http://localhost:3000/payment/cancel
 ```
 
 ---
-
-## 10. SQL MIGRATION
-
-### Đổi job_amount → escrow_amount
-```sql
-ALTER TABLE payments RENAME COLUMN job_amount TO escrow_amount;
-```
-
-### Thêm refund fields
-```sql
-ALTER TABLE payments ADD COLUMN refund_amount DECIMAL(15,2);
-ALTER TABLE payments ADD COLUMN refunded_at TIMESTAMP;
-ALTER TABLE payments ADD COLUMN refund_reason VARCHAR(500);
-ALTER TABLE payments ADD COLUMN m_refund_id VARCHAR(50);
-```
 
 ---
 

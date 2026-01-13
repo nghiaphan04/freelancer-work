@@ -65,10 +65,11 @@ public class JobService {
                 .duration(req.getDuration() != null ? req.getDuration() : EJobDuration.SHORT_TERM)
                 .workType(req.getWorkType() != null ? req.getWorkType() : EWorkType.PART_TIME)
                 .budget(req.getBudget())
+                .escrowAmount(total)  // Lưu số tiền đã giữ (budget + fee)
                 .currency(req.getCurrency() != null ? req.getCurrency() : "VND")
                 .applicationDeadline(req.getApplicationDeadline())
                 .expectedStartDate(req.getExpectedStartDate())
-                .status(EJobStatus.OPEN)
+                .status(EJobStatus.PENDING_APPROVAL)  // Chờ admin duyệt
                 .employer(employer)
                 .build();
 
@@ -77,7 +78,7 @@ public class JobService {
 
         Job savedJob = jobRepository.save(job);
 
-        return ApiResponse.success("Tạo job thành công và đã trừ số dư (gồm phí 5%)", buildJobResponse(savedJob));
+        return ApiResponse.success("Tạo job thành công, đang chờ admin duyệt", buildJobResponse(savedJob));
     }
 
     public ApiResponse<JobResponse> getJobById(Long jobId) {
@@ -220,6 +221,82 @@ public class JobService {
     public Job getById(Long id) {
         return jobRepository.findById(id)
                 .orElseThrow(() -> new JobNotFoundException(id));
+    }
+
+    // ===== ADMIN APPROVAL METHODS =====
+
+    /**
+     * [ADMIN] Lấy danh sách jobs chờ duyệt
+     */
+    public ApiResponse<Page<JobResponse>> getPendingJobs(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").ascending());
+        Page<Job> jobs = jobRepository.findByStatusWithEmployer(EJobStatus.PENDING_APPROVAL, pageable);
+        Page<JobResponse> response = jobs.map(this::buildJobResponse);
+        return ApiResponse.success("Lấy danh sách jobs chờ duyệt thành công", response);
+    }
+
+    /**
+     * [ADMIN] Lấy tất cả jobs theo status
+     */
+    public ApiResponse<Page<JobResponse>> getJobsByStatus(EJobStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Job> jobs = jobRepository.findByStatusWithEmployer(status, pageable);
+        Page<JobResponse> response = jobs.map(this::buildJobResponse);
+        return ApiResponse.success("Thành công", response);
+    }
+
+    /**
+     * [ADMIN] Duyệt job
+     */
+    @Transactional
+    public ApiResponse<JobResponse> approveJob(Long jobId) {
+        Job job = getById(jobId);
+
+        if (!job.isPendingApproval()) {
+            return ApiResponse.error("Job không ở trạng thái chờ duyệt");
+        }
+
+        job.approve();
+        Job updatedJob = jobRepository.save(job);
+
+        return ApiResponse.success("Đã duyệt job thành công", buildJobResponse(updatedJob));
+    }
+
+    /**
+     * [ADMIN] Từ chối job - hoàn tiền escrow cho employer
+     */
+    @Transactional
+    public ApiResponse<JobResponse> rejectJob(Long jobId, String reason) {
+        Job job = getById(jobId);
+
+        if (!job.isPendingApproval()) {
+            return ApiResponse.error("Job không ở trạng thái chờ duyệt");
+        }
+
+        // Hoàn tiền escrow cho employer
+        User employer = job.getEmployer();
+        BigDecimal escrowAmount = job.getEscrowAmount();
+        if (escrowAmount != null && escrowAmount.compareTo(BigDecimal.ZERO) > 0) {
+            employer.addBalance(escrowAmount);
+            userService.save(employer);
+        }
+
+        job.reject(reason);
+        Job updatedJob = jobRepository.save(job);
+
+        String message = escrowAmount != null 
+                ? "Đã từ chối job và hoàn " + escrowAmount.toPlainString() + " VND cho employer"
+                : "Đã từ chối job";
+
+        return ApiResponse.success(message, buildJobResponse(updatedJob));
+    }
+
+    /**
+     * [ADMIN] Đếm số jobs chờ duyệt
+     */
+    public ApiResponse<Long> countPendingJobs() {
+        long count = jobRepository.countByStatus(EJobStatus.PENDING_APPROVAL);
+        return ApiResponse.success("Thành công", count);
     }
 
 
@@ -464,10 +541,12 @@ public class JobService {
                 .duration(job.getDuration())
                 .workType(job.getWorkType())
                 .budget(job.getBudget())
+                .escrowAmount(job.getEscrowAmount())
                 .currency(job.getCurrency())
                 .applicationDeadline(job.getApplicationDeadline())
                 .expectedStartDate(job.getExpectedStartDate())
                 .status(job.getStatus())
+                .rejectionReason(job.getRejectionReason())
                 .viewCount(job.getViewCount())
                 .applicationCount(job.getApplicationCount())
                 .employer(employerResponse)
