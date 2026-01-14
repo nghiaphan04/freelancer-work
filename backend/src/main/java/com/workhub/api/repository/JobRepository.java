@@ -55,4 +55,19 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     @Query("SELECT j FROM Job j WHERE j.status = :status AND j.workReviewDeadline IS NOT NULL AND j.workReviewDeadline < :deadline")
     List<Job> findByStatusAndWorkReviewDeadlineBefore(@Param("status") EJobStatus status, @Param("deadline") java.time.LocalDateTime deadline);
+
+    // Freelancer's working jobs (jobs where freelancer has ACCEPTED application)
+    @Query("SELECT j FROM Job j WHERE EXISTS (SELECT a FROM JobApplication a WHERE a.job = j AND a.freelancer.id = :freelancerId AND a.status = 'ACCEPTED')")
+    Page<Job> findByAcceptedFreelancerId(@Param("freelancerId") Long freelancerId, Pageable pageable);
+
+    @Query("SELECT j FROM Job j WHERE j.status = :status AND EXISTS (SELECT a FROM JobApplication a WHERE a.job = j AND a.freelancer.id = :freelancerId AND a.status = 'ACCEPTED')")
+    Page<Job> findByStatusAndAcceptedFreelancerId(@Param("status") EJobStatus status, @Param("freelancerId") Long freelancerId, Pageable pageable);
+
+    // Count freelancer's jobs by status
+    @Query("SELECT COUNT(j) FROM Job j WHERE j.status = :status AND EXISTS (SELECT a FROM JobApplication a WHERE a.job = j AND a.freelancer.id = :freelancerId AND a.status = 'ACCEPTED')")
+    long countByStatusAndAcceptedFreelancerId(@Param("status") EJobStatus status, @Param("freelancerId") Long freelancerId);
+
+    // Sum earnings for completed jobs
+    @Query("SELECT COALESCE(SUM(j.budget), 0) FROM Job j WHERE j.status = 'COMPLETED' AND EXISTS (SELECT a FROM JobApplication a WHERE a.job = j AND a.freelancer.id = :freelancerId AND a.status = 'ACCEPTED')")
+    long sumEarningsByAcceptedFreelancerId(@Param("freelancerId") Long freelancerId);
 }

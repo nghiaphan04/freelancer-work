@@ -90,6 +90,21 @@ export const api = {
     return request<Page<Job>>(`/api/jobs/my-jobs${query.toString() ? `?${query}` : ""}`);
   },
 
+  // Lấy danh sách jobs đang làm của freelancer
+  getMyWorkingJobs: (params?: { status?: JobStatus; page?: number; size?: number; sortBy?: string; sortDir?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    if (params?.sortBy) query.append("sortBy", params.sortBy);
+    if (params?.sortDir) query.append("sortDir", params.sortDir);
+    return request<Page<Job>>(`/api/jobs/my-working-jobs${query.toString() ? `?${query}` : ""}`);
+  },
+
+  // Lấy thống kê jobs của freelancer
+  getMyWorkingJobsStats: () =>
+    request<{ inProgress: number; completed: number; disputed: number; totalEarnings: number }>("/api/jobs/my-working-jobs/stats"),
+
   // Tìm kiếm jobs
   searchJobs: (params: { keyword: string; page?: number; size?: number }) => {
     const query = new URLSearchParams({ keyword: params.keyword });
@@ -141,10 +156,13 @@ export const api = {
     request<JobApplication[]>(`/api/jobs/${jobId}/applications`),
 
   acceptApplication: (jobId: number, applicationId: number) =>
-    request<JobApplication>(`/api/jobs/${jobId}/applications/${applicationId}/accept`, { method: "PATCH" }),
+    request<JobApplication>(`/api/jobs/applications/${applicationId}/accept`, { method: "PUT" }),
 
   rejectApplication: (jobId: number, applicationId: number) =>
-    request<JobApplication>(`/api/jobs/${jobId}/applications/${applicationId}/reject`, { method: "PATCH" }),
+    request<JobApplication>(`/api/jobs/applications/${applicationId}/reject`, { method: "PUT" }),
+
+  withdrawApplication: (applicationId: number) =>
+    request<void>(`/api/jobs/applications/${applicationId}`, { method: "DELETE" }),
 
   // Job History
   getJobHistory: (jobId: number) =>

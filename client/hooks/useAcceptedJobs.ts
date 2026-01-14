@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
-import { Job } from "@/types/job";
+import { Job, JobStatus } from "@/types/job";
+import { api } from "@/lib/api";
 
 interface AcceptedJobsStats {
   inProgress: number;
-  pendingReview: number;
   completed: number;
+  disputed: number;
   totalEarnings: number;
 }
 
@@ -18,9 +19,20 @@ export function useAcceptedJobs() {
     setIsLoading(true);
     setError(null);
     try {
-      setJobs([]);
+      const params: { status?: JobStatus; size?: number } = { size: 100 };
+      if (status && status !== "all") {
+        params.status = status as JobStatus;
+      }
+      const res = await api.getMyWorkingJobs(params);
+      if (res.status === "SUCCESS" && res.data) {
+        setJobs(res.data.content);
+      } else {
+        setError(res.message || "Không thể tải danh sách công việc");
+        setJobs([]);
+      }
     } catch {
       setError("Không thể tải danh sách công việc");
+      setJobs([]);
     } finally {
       setIsLoading(false);
     }
@@ -28,8 +40,12 @@ export function useAcceptedJobs() {
 
   const fetchStats = useCallback(async () => {
     try {
-      setStats(null);
+      const res = await api.getMyWorkingJobsStats();
+      if (res.status === "SUCCESS" && res.data) {
+        setStats(res.data);
+      }
     } catch {
+      // Silent fail for stats
     }
   }, []);
 

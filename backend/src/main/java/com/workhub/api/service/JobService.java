@@ -128,6 +128,42 @@ public class JobService {
         return ApiResponse.success("Thành công", response);
     }
 
+    /**
+     * Lấy danh sách jobs đang làm của freelancer (jobs có application ACCEPTED)
+     */
+    public ApiResponse<Page<JobResponse>> getFreelancerWorkingJobs(Long freelancerId, EJobStatus status,
+                                                                    int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Job> jobs;
+        if (status != null) {
+            jobs = jobRepository.findByStatusAndAcceptedFreelancerId(status, freelancerId, pageable);
+        } else {
+            jobs = jobRepository.findByAcceptedFreelancerId(freelancerId, pageable);
+        }
+
+        Page<JobResponse> response = jobs.map(this::buildJobResponse);
+        return ApiResponse.success("Thành công", response);
+    }
+
+    /**
+     * Lấy thống kê jobs của freelancer
+     */
+    public ApiResponse<FreelancerJobStats> getFreelancerJobStats(Long freelancerId) {
+        long inProgress = jobRepository.countByStatusAndAcceptedFreelancerId(EJobStatus.IN_PROGRESS, freelancerId);
+        long completed = jobRepository.countByStatusAndAcceptedFreelancerId(EJobStatus.COMPLETED, freelancerId);
+        long disputed = jobRepository.countByStatusAndAcceptedFreelancerId(EJobStatus.DISPUTED, freelancerId);
+        long totalEarnings = jobRepository.sumEarningsByAcceptedFreelancerId(freelancerId);
+
+        FreelancerJobStats stats = new FreelancerJobStats(inProgress, completed, disputed, totalEarnings);
+        return ApiResponse.success("Thành công", stats);
+    }
+
+    public record FreelancerJobStats(long inProgress, long completed, long disputed, long totalEarnings) {}
+
     public ApiResponse<Page<JobResponse>> searchJobs(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Job> jobs = jobRepository.searchJobs(keyword, EJobStatus.OPEN, pageable);

@@ -57,6 +57,11 @@ export default function AcceptedJobsList() {
   const [workSubmitDialogOpen, setWorkSubmitDialogOpen] = useState(false);
   const [selectedJobForWork, setSelectedJobForWork] = useState<{ id: number; title: string } | null>(null);
 
+  // Withdraw application states
+  const [withdrawDialogOpen, setWithdrawDialogOpen] = useState(false);
+  const [selectedAppToWithdraw, setSelectedAppToWithdraw] = useState<JobApplication | null>(null);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+
   const hasAccess = user?.roles?.includes("ROLE_FREELANCER");
   const isAppliedTab = filter === "applied";
   const isSavedTab = filter === "saved";
@@ -171,6 +176,38 @@ export default function AcceptedJobsList() {
     setWorkSubmitDialogOpen(true);
   };
 
+  const handleWithdrawClick = (app: JobApplication) => {
+    setSelectedAppToWithdraw(app);
+    setWithdrawDialogOpen(true);
+  };
+
+  const executeWithdraw = async () => {
+    if (!selectedAppToWithdraw) return;
+    
+    setWithdrawLoading(true);
+    try {
+      const res = await api.withdrawApplication(selectedAppToWithdraw.id);
+      if (res.status === "SUCCESS") {
+        toast.success("Đã rút đơn ứng tuyển thành công");
+        setApplications((apps) =>
+          apps.map((a) =>
+            a.id === selectedAppToWithdraw.id
+              ? { ...a, status: "WITHDRAWN" as ApplicationStatus }
+              : a
+          )
+        );
+        setWithdrawDialogOpen(false);
+      } else {
+        toast.error(res.message || "Không thể rút đơn");
+      }
+    } catch {
+      toast.error("Đã có lỗi xảy ra");
+    } finally {
+      setWithdrawLoading(false);
+      setSelectedAppToWithdraw(null);
+    }
+  };
+
   if (!isHydrated) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -208,7 +245,6 @@ export default function AcceptedJobsList() {
             { key: "all", label: "Tất cả" },
             { key: "IN_PROGRESS", label: "Đang làm" },
             { key: "DISPUTED", label: "Tranh chấp" },
-            { key: "PENDING_REVIEW", label: "Chờ nghiệm thu" },
             { key: "COMPLETED", label: "Hoàn thành" },
             { key: "applied", label: "Đã ứng tuyển" },
             { key: "saved", label: "Đã lưu" },
@@ -486,6 +522,17 @@ export default function AcceptedJobsList() {
                             <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
                           </Button>
                         </Link>
+                        {app.status === "PENDING" && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                            onClick={() => handleWithdrawClick(app)}
+                          >
+                            <Icon name="undo" size={16} />
+                            <span className="sm:hidden lg:inline ml-1">Rút đơn</span>
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -512,12 +559,12 @@ export default function AcceptedJobsList() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                    <Icon name="hourglass_top" size={20} className="text-yellow-600" />
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                    <Icon name="gavel" size={20} className="text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{stats.pendingReview}</p>
-                    <p className="text-xs text-gray-500">Chờ duyệt</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.disputed}</p>
+                    <p className="text-xs text-gray-500">Tranh chấp</p>
                   </div>
                 </div>
               </div>
@@ -712,6 +759,45 @@ export default function AcceptedJobsList() {
           }}
         />
       )}
+
+      {/* Withdraw Application Dialog */}
+      <Dialog open={withdrawDialogOpen} onOpenChange={(open) => !withdrawLoading && setWithdrawDialogOpen(open)}>
+        <DialogContent
+          onPointerDownOutside={(e) => withdrawLoading && e.preventDefault()}
+          onEscapeKeyDown={(e) => withdrawLoading && e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Rút đơn ứng tuyển</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc muốn rút đơn ứng tuyển cho công việc &quot;{selectedAppToWithdraw?.jobTitle}&quot;?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <p className="text-sm text-gray-500">
+              Lưu ý: Sau khi rút đơn, bạn có thể ứng tuyển lại nhưng sẽ mất thêm 1 credit.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setWithdrawDialogOpen(false)} disabled={withdrawLoading}>
+              Hủy
+            </Button>
+            <Button
+              onClick={executeWithdraw}
+              disabled={withdrawLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {withdrawLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Đang xử lý...
+                </>
+              ) : (
+                "Rút đơn"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

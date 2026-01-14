@@ -104,7 +104,6 @@ export default function JobApplicationsTable() {
     if (!selectedApp || !confirmAction) return;
 
     setProcessingId(selectedApp.id);
-    setShowConfirmDialog(false);
 
     try {
       const res = confirmAction === "accept"
@@ -120,6 +119,7 @@ export default function JobApplicationsTable() {
               : a
           )
         );
+        setShowConfirmDialog(false);
       } else {
         toast.error(res.message || "Thao tác thất bại");
       }
@@ -294,8 +294,11 @@ export default function JobApplicationsTable() {
       </div>
 
       {/* Confirm Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
+      <Dialog open={showConfirmDialog} onOpenChange={(open) => !processingId && setShowConfirmDialog(open)}>
+        <DialogContent 
+          onPointerDownOutside={(e) => processingId && e.preventDefault()} 
+          onEscapeKeyDown={(e) => processingId && e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>
               {confirmAction === "accept" ? "Chấp nhận ứng viên" : "Từ chối ứng viên"}
@@ -307,14 +310,22 @@ export default function JobApplicationsTable() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+            <Button variant="outline" onClick={() => setShowConfirmDialog(false)} disabled={!!processingId}>
               Hủy
             </Button>
             <Button
               onClick={executeAction}
+              disabled={!!processingId}
               className={confirmAction === "accept" ? "bg-[#00b14f] hover:bg-[#009643]" : "bg-red-600 hover:bg-red-700"}
             >
-              {confirmAction === "accept" ? "Chấp nhận" : "Từ chối"}
+              {processingId ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Đang xử lý...
+                </>
+              ) : (
+                confirmAction === "accept" ? "Chấp nhận" : "Từ chối"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

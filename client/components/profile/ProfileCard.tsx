@@ -57,6 +57,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
   };
 
   const handleSave = async () => {
+    // Chỉ gửi form data, không gửi avatar/cover (tách riêng)
     const success = await onUpdate(formData);
     if (success) {
       setIsEditOpen(false);
@@ -104,6 +105,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
           <ImageUploadButton
             onUpload={handleCoverUpload}
             usage="COVER_IMAGE"
+            disabled={isLoading}
             className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
           >
             <Icon name="photo_camera" size={18} className="text-gray-600" />
@@ -121,6 +123,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
             <ImageUploadButton
               onUpload={handleAvatarUpload}
               usage="AVATAR"
+              disabled={isLoading}
               className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 border border-gray-200 disabled:opacity-50"
             >
               <Icon name="photo_camera" size={14} className="text-gray-600" />
@@ -132,7 +135,8 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{user.fullName}</h1>
               <button
                 onClick={handleOpenEdit}
-                className="text-gray-500 hover:text-[#00b14f]"
+                disabled={isLoading}
+                className="text-gray-500 hover:text-[#00b14f] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Icon name="edit" size={18} />
               </button>
@@ -142,7 +146,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
                   Đã xác thực
                 </span>
               ) : (
-                <button className="text-sm text-[#00b14f] border border-[#00b14f] rounded-full px-3 py-0.5 hover:bg-[#00b14f]/5 flex items-center gap-1">
+                <button disabled={isLoading} className="text-sm text-[#00b14f] border border-[#00b14f] rounded-full px-3 py-0.5 hover:bg-[#00b14f]/5 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
                   <Icon name="verified" size={14} />
                   Thêm huy hiệu xác thực
                 </button>
@@ -189,7 +193,8 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
                 {!user.title && (
                   <button
                     onClick={handleOpenEdit}
-                    className="text-gray-400 text-sm hover:text-[#00b14f] flex items-center gap-1"
+                    disabled={isLoading}
+                    className="text-gray-400 text-sm hover:text-[#00b14f] flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Icon name="add" size={16} />
                     Thêm chức danh
@@ -198,16 +203,18 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
                 {!user.location && (
                   <button
                     onClick={handleOpenEdit}
-                    className="text-gray-400 text-sm hover:text-[#00b14f] flex items-center gap-1"
+                    disabled={isLoading}
+                    className="text-gray-400 text-sm hover:text-[#00b14f] flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Icon name="add" size={16} />
-                    Them dia diem
+                    Thêm địa điểm
                   </button>
                 )}
                 {!user.company && (
                   <button
                     onClick={handleOpenEdit}
-                    className="text-gray-400 text-sm hover:text-[#00b14f] flex items-center gap-1"
+                    disabled={isLoading}
+                    className="text-gray-400 text-sm hover:text-[#00b14f] flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Icon name="add" size={16} />
                     Thêm công ty
@@ -221,6 +228,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
             <Button 
               className={`rounded-full w-full sm:w-auto ${user.isOpenToWork ? "bg-[#00b14f] hover:bg-[#009643]" : "bg-gray-500 hover:bg-gray-600"}`}
               onClick={handleOpenEdit}
+              disabled={isLoading}
             >
               {user.isOpenToWork ? "Đang tìm việc" : "Chưa sẵn sàng"}
             </Button>
@@ -228,6 +236,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               variant="outline"
               className="rounded-full border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f]/5 w-full sm:w-auto"
               onClick={handleOpenEdit}
+              disabled={isLoading}
             >
               Chỉnh sửa hồ sơ
             </Button>

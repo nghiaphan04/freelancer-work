@@ -145,8 +145,12 @@ public class User {
             this.fullName = fullName;
         }
         this.phoneNumber = phoneNumber;
-        this.avatarUrl = avatarUrl;
-        this.coverImageUrl = coverImageUrl;
+        if (avatarUrl != null) {
+            this.avatarUrl = avatarUrl;
+        }
+        if (coverImageUrl != null) {
+            this.coverImageUrl = coverImageUrl;
+        }
         this.title = title;
         this.location = location;
         this.company = company;

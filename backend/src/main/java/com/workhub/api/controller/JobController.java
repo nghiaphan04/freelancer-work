@@ -71,7 +71,7 @@ public class JobController {
     /**
      * Lấy chi tiết job (công khai, tăng lượt xem)
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<JobResponse>> getJobById(@PathVariable Long id) {
         return ResponseEntity.ok(jobService.getJobByIdAndIncrementView(id));
     }
@@ -89,6 +89,32 @@ public class JobController {
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         return ResponseEntity.ok(jobService.getMyJobs(userDetails.getId(), status, page, size, sortBy, sortDir));
+    }
+
+    /**
+     * Lấy danh sách jobs đang làm của freelancer
+     */
+    @GetMapping("/my-working-jobs")
+    @PreAuthorize("hasRole('FREELANCER')")
+    public ResponseEntity<ApiResponse<Page<JobResponse>>> getMyWorkingJobs(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(required = false) EJobStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "updatedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        return ResponseEntity.ok(jobService.getFreelancerWorkingJobs(userDetails.getId(), status, page, size, sortBy, sortDir));
+    }
+
+    /**
+     * Lấy thống kê jobs của freelancer
+     */
+    @GetMapping("/my-working-jobs/stats")
+    @PreAuthorize("hasRole('FREELANCER')")
+    public ResponseEntity<ApiResponse<JobService.FreelancerJobStats>> getMyWorkingJobsStats(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(jobService.getFreelancerJobStats(userDetails.getId()));
     }
 
     /**
