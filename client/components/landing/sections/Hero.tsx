@@ -90,7 +90,6 @@ export default function Hero() {
           className="md:hidden flex items-center justify-between w-full bg-white rounded-xl px-4 py-3 mb-4 shadow-lg"
         >
           <div className="flex items-center gap-2">
-            <Icon name="category" size={20} className="text-[#00b14f]" />
             <span className="font-medium text-gray-700">Danh mục việc làm</span>
           </div>
           <Icon name={mobileMenuOpen ? "expand_less" : "expand_more"} size={20} className="text-gray-400" />
