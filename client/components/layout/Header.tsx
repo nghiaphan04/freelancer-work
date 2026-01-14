@@ -73,7 +73,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur text-gray-800 border-b border-gray-200 w-full">
+    <header className="bg-white text-gray-800 border-b border-gray-200 w-full md:sticky md:top-0 z-[9999]">
       <div className="w-full px-4 md:px-8 lg:px-12">
         <div className="flex items-center justify-between h-16">
           
@@ -475,8 +475,29 @@ export default function Header() {
 
       {/* Mobile Menu Overlay - Full screen */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-16 z-[9998]">
-          <div className="absolute inset-0 bg-white overflow-y-auto">
+        <div className="md:hidden fixed inset-0 z-[9999] bg-white">
+          {/* Mobile Menu Header */}
+          <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200 bg-white sticky top-0">
+            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex flex-col items-start shrink-0">
+              <Image
+                src="/logo.svg"
+                alt="Freelancer"
+                width={140}
+                height={44}
+                className="h-9 w-auto object-contain"
+              />
+              <p className="text-xs text-gray-500 -mt-0.5">Freelancer</p>
+            </Link>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <Icon name="close" size={24} className="text-gray-700" />
+            </button>
+          </div>
+
+          {/* Mobile Menu Content - scrollable */}
+          <div className="overflow-y-auto h-[calc(100vh-64px)]">
             {/* User info if logged in */}
             {isAuthenticated && user && (
               <div className="p-4 bg-gray-50 border-b border-gray-200">
