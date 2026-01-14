@@ -12,15 +12,23 @@ export function useConversations() {
 
   const selectedConversation = conversations.find(c => c.id === selectedId) || null;
 
+  const sortByNewest = useCallback((list: ChatConversation[]) => {
+    return [...list].sort((a, b) =>
+      new Date(b.lastMessageTime || b.createdAt).getTime() -
+      new Date(a.lastMessageTime || a.createdAt).getTime()
+    );
+  }, []);
+
   useEffect(() => {
     const fetchConversations = async () => {
       try {
         setLoading(true);
         const res = await api.getConversations();
         if (res.status === "SUCCESS") {
-          setConversations(res.data);
-          if (res.data.length > 0 && !selectedId) {
-            setSelectedId(res.data[0].id);
+          const sorted = sortByNewest(res.data);
+          setConversations(sorted);
+          if (sorted.length > 0 && !selectedId) {
+            setSelectedId(sorted[0].id);
           }
         }
       } catch (error) {
@@ -32,7 +40,7 @@ export function useConversations() {
     };
 
     fetchConversations();
-  }, []);
+  }, [sortByNewest]);
 
   const selectConversation = useCallback((id: number) => {
     setSelectedId(id);
@@ -60,18 +68,16 @@ export function useConversations() {
         }
         return conv;
       });
-      return updated.sort((a, b) =>
-        new Date(b.lastMessageTime || b.createdAt).getTime() -
-        new Date(a.lastMessageTime || a.createdAt).getTime()
-      );
+      return sortByNewest(updated);
     });
-  }, []);
+  }, [sortByNewest]);
 
   const handleConversationUpdated = useCallback((conversation: ChatConversation) => {
     setConversations(prev => {
       const exists = prev.find(c => c.id === conversation.id);
+      let updated;
       if (exists) {
-        return prev.map(c => {
+        updated = prev.map(c => {
           if (c.id === conversation.id) {
             return {
               ...conversation,
@@ -84,10 +90,12 @@ export function useConversations() {
           }
           return c;
         });
+      } else {
+        updated = [conversation, ...prev];
       }
-      return [conversation, ...prev];
+      return sortByNewest(updated);
     });
-  }, []);
+  }, [sortByNewest]);
 
   const handleMessageStatus = useCallback((data: { conversationId: number; status: string }) => {
     setConversations(prev =>

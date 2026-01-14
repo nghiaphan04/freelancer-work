@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Không tìm thấy trang",
+  description: "Trang bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.",
+};
 
 export default function NotFound() {
   return (

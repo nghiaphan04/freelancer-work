@@ -1,4 +1,4 @@
-# WorkHub - Messenger API Documentation
+# Freelancer - Messenger API Documentation
 
 > Cập nhật 2026-01: Hệ thống nhắn tin realtime với WebSocket.
 

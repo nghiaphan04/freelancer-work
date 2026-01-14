@@ -3,6 +3,7 @@ import { Lexend } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/context/AuthContext";
 import FloatingSupport from "@/components/layout/FloatingSupport";
+import UnreadMessageTitle from "@/components/layout/UnreadMessageTitle";
 import "./globals.css";
 
 const lexend = Lexend({
@@ -13,10 +14,20 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: "Freelancer - Kiến tạo sự nghiệp của riêng bạn",
-  description: "Trải nghiệm tạo CV, tìm việc, ứng tuyển và hơn thế nữa - chỉ với một ứng dụng duy nhất. Bắt đầu ngay hôm nay!",
+  title: {
+    default: "Freelancer - Kiến tạo sự nghiệp của riêng bạn",
+    template: "%s | Freelancer",
+  },
+  description: "Nền tảng kết nối Freelancer và Nhà tuyển dụng. Tìm việc, đăng tin tuyển dụng, quản lý dự án - tất cả trong một.",
   icons: {
     icon: "/logo.svg",
+  },
+  keywords: ["việc làm", "freelancer", "tuyển dụng", "remote work", "job", "ứng tuyển"],
+  authors: [{ name: "Freelancer Team" }],
+  openGraph: {
+    type: "website",
+    locale: "vi_VN",
+    siteName: "Freelancer",
   },
 };
 
@@ -38,6 +49,7 @@ export default function RootLayout({
         className={`${lexend.variable} ${lexend.className} antialiased overflow-x-hidden w-full`}
       >
         <AuthProvider>
+          <UnreadMessageTitle />
           {children}
           <FloatingSupport />
         </AuthProvider>
