@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import Icon from "@/components/ui/Icon";
 import { User } from "@/types/user";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface ProfileCardProps {
   user: User;
@@ -22,8 +24,15 @@ interface ProfileCardProps {
   isLoading?: boolean;
 }
 
+const MAX_IMAGE_SIZE = 200 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+
 export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     fullName: user.fullName || "",
     title: user.title || "",
@@ -50,10 +59,88 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Chỉ hỗ trợ định dạng: JPG, PNG, GIF, WebP");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error("Ảnh không được vượt quá 200KB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const response = await api.uploadImage(file, "AVATAR");
+      if (response.status === "SUCCESS" && response.data) {
+        const success = await onUpdate({ avatarUrl: response.data.secureUrl });
+        if (success) {
+          toast.success("Cập nhật ảnh đại diện thành công");
+        }
+      } else {
+        toast.error(response.message || "Upload thất bại");
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi upload");
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Chỉ hỗ trợ định dạng: JPG, PNG, GIF, WebP");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error("Ảnh không được vượt quá 200KB");
+      return;
+    }
+
+    setUploadingCover(true);
+    try {
+      const response = await api.uploadImage(file, "COVER_IMAGE");
+      if (response.status === "SUCCESS" && response.data) {
+        const success = await onUpdate({ coverImageUrl: response.data.secureUrl });
+        if (success) {
+          toast.success("Cập nhật ảnh bìa thành công");
+        }
+      } else {
+        toast.error(response.message || "Upload thất bại");
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi upload");
+    } finally {
+      setUploadingCover(false);
+      if (coverInputRef.current) coverInputRef.current.value = "";
+    }
+  };
+
   return (
     <>
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={handleAvatarChange}
+      />
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={handleCoverChange}
+      />
+      
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {/* Cover Image - responsive height */}
         <div className="h-32 sm:h-48 relative">
           <Image
             src={user.coverImageUrl || "/background_user.png"}
@@ -61,14 +148,20 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
             fill
             className="object-cover"
           />
-          <button className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50">
-            <Icon name="photo_camera" size={18} className="text-gray-600" />
+          <button 
+            onClick={() => coverInputRef.current?.click()}
+            disabled={uploadingCover}
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+          >
+            {uploadingCover ? (
+              <Icon name="sync" size={18} className="text-gray-600 animate-spin" />
+            ) : (
+              <Icon name="photo_camera" size={18} className="text-gray-600" />
+            )}
           </button>
         </div>
 
-        {/* Profile Info */}
         <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-          {/* Avatar - responsive size */}
           <div className="relative -mt-12 sm:-mt-16 mb-3 sm:mb-4 w-fit">
             <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-white shadow-lg">
               <AvatarImage src={user.avatarUrl} alt={user.fullName} />
@@ -76,8 +169,16 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
                 {user.fullName?.charAt(0)?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
-            <button className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 border border-gray-200">
-              <Icon name="edit" size={14} className="text-gray-600" />
+            <button 
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 border border-gray-200 disabled:opacity-50"
+            >
+              {uploadingAvatar ? (
+                <Icon name="sync" size={14} className="text-gray-600 animate-spin" />
+              ) : (
+                <Icon name="photo_camera" size={14} className="text-gray-600" />
+              )}
             </button>
           </div>
 
