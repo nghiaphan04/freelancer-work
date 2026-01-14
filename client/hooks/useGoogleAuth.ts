@@ -19,8 +19,9 @@ export function useGoogleAuth() {
       try {
         const response = await api.googleAuth(tokenResponse.access_token);
         if (response.status === "SUCCESS") {
-          saveAuthData({ user: (response.data as { user: User }).user });
-          setUser((response.data as { user: User }).user);
+          const responseData = response.data as { user: User; accessToken?: string };
+          saveAuthData({ user: responseData.user, accessToken: responseData.accessToken });
+          setUser(responseData.user);
           toast.success("Đăng nhập thành công!");
           router.push("/");
         } else {

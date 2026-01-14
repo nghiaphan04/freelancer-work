@@ -108,6 +108,9 @@ public class User {
     @Column(name = "untrust_score", nullable = false)
     @Builder.Default
     private Integer untrustScore = 0;
+
+    @Column(name = "last_active_at")
+    private LocalDateTime lastActiveAt;
     
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -253,5 +256,9 @@ public class User {
 
     public void addUntrustScore(int amount) {
         this.untrustScore += amount;
+    }
+
+    public void updateLastActive() {
+        this.lastActiveAt = LocalDateTime.now();
     }
 }

@@ -96,8 +96,9 @@ export default function RegisterForm() {
     try {
       const response = await api.verifyOtp({ email: formData.email, otp: otpCode });
       if (response.status === "SUCCESS") {
-        saveAuthData({ user: (response.data as { user: User }).user });
-        setUser((response.data as { user: User }).user);
+        const responseData = response.data as { user: User; accessToken?: string };
+        saveAuthData({ user: responseData.user, accessToken: responseData.accessToken });
+        setUser(responseData.user);
         toast.success("Xác thực thành công!");
         router.push("/");
       } else { setErrors({ ...errors, otp: response.message || "Mã OTP không đúng" }); }

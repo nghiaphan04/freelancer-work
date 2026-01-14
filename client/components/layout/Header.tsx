@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import Icon from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { api } from "@/lib/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,8 +32,29 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileNav, setExpandedMobileNav] = useState<string | null>(null);
   const [isBecomingEmployer, setIsBecomingEmployer] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const { user, isAuthenticated, isHydrated, logout } = useAuth();
   const { becomeEmployer } = useProfile();
+
+  // Fetch unread messages count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await api.getChatCounts();
+      if (res.status === "SUCCESS") {
+        setUnreadMessagesCount(res.data.unreadMessages);
+      }
+    } catch (error) {
+      console.error("Failed to fetch unread messages count:", error);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   // Check if current path matches
   const isActive = (path: string) => pathname === path;
@@ -342,6 +364,11 @@ export default function Header() {
                       size={22} 
                       className={`hover:text-[#00b14f] transition-colors ${isActivePrefix("/messages") ? "text-[#00b14f]" : "text-gray-600"}`}
                     />
+                    {unreadMessagesCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                      </span>
+                    )}
                   </Link>
 
                   {/* Notification Bell */}
@@ -425,6 +452,11 @@ export default function Header() {
                       size={22} 
                       className={isActivePrefix("/messages") ? "text-[#00b14f]" : "text-gray-600"} 
                     />
+                    {unreadMessagesCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                      </span>
+                    )}
                   </Link>
                   <NotificationDropdown />
                 </>
@@ -441,11 +473,10 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay - Slide from right */}
+      {/* Mobile Menu Overlay - Full screen */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 top-16 z-[9998]">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
-          <div className="absolute right-0 top-0 bottom-0 bg-white w-full max-w-xs overflow-y-auto shadow-xl">
+          <div className="absolute inset-0 bg-white overflow-y-auto">
             {/* User info if logged in */}
             {isAuthenticated && user && (
               <div className="p-4 bg-gray-50 border-b border-gray-200">
@@ -563,7 +594,12 @@ export default function Header() {
                     }`}
                   >
                     <Icon name="chat" size={20} className={isActivePrefix("/messages") ? "text-[#00b14f]" : "text-gray-400"} />
-                    <span>Tin nhắn</span>
+                    <span className="flex-1">Tin nhắn</span>
+                    {unreadMessagesCount > 0 && (
+                      <span className="min-w-[20px] h-[20px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+                        {unreadMessagesCount > 99 ? "99+" : unreadMessagesCount}
+                      </span>
+                    )}
                   </Link>
                   <Link
                     href="/notifications"

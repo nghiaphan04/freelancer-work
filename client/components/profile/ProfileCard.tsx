@@ -104,18 +104,18 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               )}
             </div>
 
-            {/* Trust Score Badge */}
-            <div className="flex items-center gap-3 mt-2">
-              <div className="flex items-center gap-1 px-2 py-1 bg-green-50 border border-green-200 rounded-full">
-                <Icon name="verified" size={14} className="text-green-600" />
-                <span className="text-xs font-medium text-green-700">
-                  UT: {user.trustScore ?? 0}
+            {/* Trust Score */}
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1">
+                <Icon name="verified" size={16} className="text-green-600" />
+                <span className="text-sm font-medium text-green-700">
+                  {user.trustScore ?? 0} UT
                 </span>
               </div>
-              <div className="flex items-center gap-1 px-2 py-1 bg-red-50 border border-red-200 rounded-full">
-                <Icon name="error" size={14} className="text-red-600" />
-                <span className="text-xs font-medium text-red-700">
-                  KUT: {user.untrustScore ?? 0}
+              <div className="flex items-center gap-1">
+                <Icon name="dangerous" size={16} className="text-red-500" />
+                <span className="text-sm font-medium text-red-600">
+                  {user.untrustScore ?? 0} KUT
                 </span>
               </div>
             </div>

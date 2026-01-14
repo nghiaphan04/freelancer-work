@@ -47,6 +47,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
         
+        <!-- WebSocket for Real-time Chat -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        
         <!-- Dotenv for reading .env file -->
         <dependency>
             <groupId>me.paulschwarz</groupId>

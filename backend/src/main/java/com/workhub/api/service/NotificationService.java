@@ -415,4 +415,69 @@ public class NotificationService {
                 .build();
         notificationRepository.save(notification);
     }
+
+    // ==================== CHAT/FRIEND NOTIFICATIONS ====================
+
+    /**
+     * Thông báo khi nhận được yêu cầu kết bạn
+     */
+    @Transactional
+    public void notifyChatRequestReceived(User receiver, User sender, Long conversationId) {
+        Notification notification = Notification.builder()
+                .user(receiver)
+                .type(ENotificationType.CHAT_REQUEST_RECEIVED)
+                .title("Có yêu cầu kết bạn mới")
+                .message(sender.getFullName() + " đã gửi yêu cầu kết bạn cho bạn.")
+                .referenceId(conversationId)
+                .referenceType("CONVERSATION")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo khi yêu cầu kết bạn được chấp nhận
+     */
+    @Transactional
+    public void notifyChatRequestAccepted(User initiator, User accepter, Long conversationId) {
+        Notification notification = Notification.builder()
+                .user(initiator)
+                .type(ENotificationType.CHAT_REQUEST_ACCEPTED)
+                .title("Yêu cầu kết bạn được chấp nhận")
+                .message(accepter.getFullName() + " đã chấp nhận yêu cầu kết bạn của bạn. Bạn có thể bắt đầu nhắn tin ngay!")
+                .referenceId(conversationId)
+                .referenceType("CONVERSATION")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo khi yêu cầu kết bạn bị từ chối
+     */
+    @Transactional
+    public void notifyChatRequestRejected(User initiator, User rejecter, Long conversationId) {
+        Notification notification = Notification.builder()
+                .user(initiator)
+                .type(ENotificationType.CHAT_REQUEST_REJECTED)
+                .title("Yêu cầu kết bạn bị từ chối")
+                .message(rejecter.getFullName() + " đã từ chối yêu cầu kết bạn của bạn.")
+                .referenceId(conversationId)
+                .referenceType("CONVERSATION")
+                .build();
+        notificationRepository.save(notification);
+    }
+
+    /**
+     * Thông báo khi bị chặn
+     */
+    @Transactional
+    public void notifyChatBlocked(User blockedUser, User blocker) {
+        Notification notification = Notification.builder()
+                .user(blockedUser)
+                .type(ENotificationType.CHAT_BLOCKED)
+                .title("Bạn đã bị chặn")
+                .message(blocker.getFullName() + " đã chặn bạn. Bạn không thể gửi tin nhắn cho người này nữa.")
+                .referenceType("USER")
+                .build();
+        notificationRepository.save(notification);
+    }
 }

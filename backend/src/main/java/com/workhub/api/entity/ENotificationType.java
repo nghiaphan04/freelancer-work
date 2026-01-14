@@ -35,6 +35,12 @@ public enum ENotificationType {
     DISPUTE_RESOLVED_WIN,     // Bạn thắng tranh chấp
     DISPUTE_RESOLVED_LOSE,    // Bạn thua tranh chấp
     
+    // Chat/Friend notifications
+    CHAT_REQUEST_RECEIVED,    // Nhận được yêu cầu kết bạn
+    CHAT_REQUEST_ACCEPTED,    // Yêu cầu kết bạn được chấp nhận
+    CHAT_REQUEST_REJECTED,    // Yêu cầu kết bạn bị từ chối
+    CHAT_BLOCKED,             // Bị chặn bởi người dùng
+    
     // General
     SYSTEM                    // Thông báo hệ thống
 }

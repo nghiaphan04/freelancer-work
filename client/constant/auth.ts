@@ -33,15 +33,23 @@ export const validatePassword = (password: string) => AUTH_REGEX.PASSWORD.test(p
 export const formatOtpTime = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`
 
-export const saveAuthData = (data: { user: unknown }) => {
+export const saveAuthData = (data: { user: unknown; accessToken?: string }) => {
   localStorage.setItem("user", JSON.stringify(data.user))
+  if (data.accessToken) {
+    localStorage.setItem("accessToken", data.accessToken)
+  }
 }
 
 export const clearAuthData = () => {
   localStorage.removeItem("user")
+  localStorage.removeItem("accessToken")
 }
 
 export const getUser = () => {
   const user = localStorage.getItem("user")
   return user ? JSON.parse(user) : null
+}
+
+export const getAccessToken = () => {
+  return localStorage.getItem("accessToken")
 }

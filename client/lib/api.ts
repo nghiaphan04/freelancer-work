@@ -16,7 +16,15 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<ApiR
     headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
   });
-  return res.json();
+  
+  const data = await res.json();
+  
+  // Log for debugging
+  if (!res.ok) {
+    console.error(`API Error [${res.status}] ${endpoint}:`, data);
+  }
+  
+  return data;
 }
 
 export const api = {
@@ -365,6 +373,85 @@ export const api = {
 
   getWithdrawalRequestHistory: (jobId: number) =>
     request<WithdrawalRequest[]>(`/api/jobs/${jobId}/withdrawal/history`),
+
+  // ==================== CHAT ====================
+  
+  // Search users to add friend
+  chatSearchUsers: (email: string) =>
+    request<ChatUserSearchResult[]>(`/api/chat/users/search?email=${encodeURIComponent(email)}`),
+
+  // Send chat request (first message to add friend)
+  sendChatRequest: (receiverId: number, message: string) =>
+    request<ChatConversation>("/api/chat/request", {
+      method: "POST",
+      body: JSON.stringify({ receiverId, message }),
+    }),
+
+  // Get pending requests (received from others)
+  getPendingChatRequests: () =>
+    request<ChatConversation[]>("/api/chat/requests/pending"),
+
+  // Get sent requests (waiting for accept)
+  getSentChatRequests: () =>
+    request<ChatConversation[]>("/api/chat/requests/sent"),
+
+  // Accept chat request
+  acceptChatRequest: (conversationId: number) =>
+    request<ChatConversation>(`/api/chat/requests/${conversationId}/accept`, { method: "POST" }),
+
+  // Reject chat request
+  rejectChatRequest: (conversationId: number) =>
+    request<void>(`/api/chat/requests/${conversationId}/reject`, { method: "POST" }),
+
+  // Cancel sent chat request (hủy yêu cầu đã gửi)
+  cancelChatRequest: (conversationId: number) =>
+    request<void>(`/api/chat/requests/${conversationId}/cancel`, { method: "POST" }),
+
+  // Get all accepted conversations
+  getConversations: () =>
+    request<ChatConversation[]>("/api/chat/conversations"),
+
+  // Get messages for a conversation
+  getMessages: (conversationId: number, params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<ChatMessage>>(`/api/chat/conversations/${conversationId}/messages${query.toString() ? `?${query}` : ""}`);
+  },
+
+  // Mark messages as read
+  markMessagesAsRead: (conversationId: number) =>
+    request<void>(`/api/chat/conversations/${conversationId}/read`, { method: "POST" }),
+
+  // Send message (REST fallback)
+  sendMessage: (receiverId: number, content: string, messageType: ChatMessageType = "TEXT", replyToId?: number) =>
+    request<ChatMessage>("/api/chat/send", {
+      method: "POST",
+      body: JSON.stringify({ receiverId, content, messageType, replyToId }),
+    }),
+
+  // Update message
+  updateMessage: (messageId: number, content: string) =>
+    request<ChatMessage>(`/api/chat/messages/${messageId}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    }),
+
+  // Delete message
+  deleteMessage: (messageId: number) =>
+    request<ChatMessage>(`/api/chat/messages/${messageId}`, { method: "DELETE" }),
+
+  // Get chat counts (unread + pending requests)
+  getChatCounts: () =>
+    request<{ unreadMessages: number; pendingRequests: number }>("/api/chat/counts"),
+
+  // Block user
+  blockUser: (conversationId: number) =>
+    request<void>(`/api/chat/conversations/${conversationId}/block`, { method: "POST" }),
+
+  unblockUser: (conversationId: number) =>
+    request<ChatConversation>(`/api/chat/conversations/${conversationId}/unblock`, { method: "POST" }),
+
 };
 
 // Withdrawal Request types
@@ -433,6 +520,10 @@ export type NotificationType =
   | "DISPUTE_RESPONSE_SUBMITTED"
   | "DISPUTE_RESOLVED_WIN"
   | "DISPUTE_RESOLVED_LOSE"
+  | "CHAT_REQUEST_RECEIVED"
+  | "CHAT_REQUEST_ACCEPTED"
+  | "CHAT_REQUEST_REJECTED"
+  | "CHAT_BLOCKED"
   | "SYSTEM";
 
 export interface Notification {
@@ -470,6 +561,10 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; 
   DISPUTE_RESPONSE_SUBMITTED: { icon: "reply", color: "text-blue-600" },
   DISPUTE_RESOLVED_WIN: { icon: "emoji_events", color: "text-green-600" },
   DISPUTE_RESOLVED_LOSE: { icon: "sentiment_dissatisfied", color: "text-red-600" },
+  CHAT_REQUEST_RECEIVED: { icon: "person_add", color: "text-blue-600" },
+  CHAT_REQUEST_ACCEPTED: { icon: "how_to_reg", color: "text-green-600" },
+  CHAT_REQUEST_REJECTED: { icon: "person_remove", color: "text-red-600" },
+  CHAT_BLOCKED: { icon: "block", color: "text-red-600" },
   SYSTEM: { icon: "info", color: "text-gray-600" },
 };
 
@@ -598,4 +693,68 @@ export interface Dispute {
   resolvedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ==================== CHAT TYPES ====================
+
+export type ChatMessageType = "TEXT" | "IMAGE" | "FILE" | "LIKE";
+export type ChatMessageStatus = "SENT" | "DELIVERED" | "READ" | "FAILED";
+export type ChatConversationStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "BLOCKED";
+
+export interface ChatUserInfo {
+  id: number;
+  fullName: string;
+  email?: string;
+  avatarUrl?: string;
+  online?: boolean;
+  lastActiveAt?: string;
+}
+
+export interface ChatUserSearchResult {
+  id: number;
+  fullName: string;
+  email: string;
+  avatarUrl?: string;
+  bio?: string;
+  canSendRequest: boolean;
+  relationStatus?: "NONE" | "PENDING" | "ACCEPTED" | "BLOCKED" | "REJECTED";
+  conversationId?: number;
+  trustScore?: number;
+  untrustScore?: number;
+}
+
+export interface ChatMessage {
+  id: number;
+  conversationId: number;
+  sender: ChatUserInfo;
+  content: string;
+  messageType: ChatMessageType;
+  status: ChatMessageStatus;
+  isEdited: boolean;
+  isDeleted: boolean;
+  editedAt?: string;
+  deletedAt?: string;
+  createdAt: string;
+  replyTo?: {
+    id: number;
+    sender: ChatUserInfo;
+    content: string;
+  };
+}
+
+export interface ChatConversation {
+  id: number;
+  otherUser: ChatUserInfo;
+  status: ChatConversationStatus;
+  blockedById?: number;
+  lastMessage?: string;
+  lastMessageType?: ChatMessageType;
+  lastMessageDeleted?: boolean;
+  lastMessageStatus?: ChatMessageStatus;
+  lastMessageTime?: string;
+  lastMessageSenderId?: number;
+  unreadCount: number;
+  firstMessage?: string;
+  isInitiator: boolean;
+  createdAt: string;
 }

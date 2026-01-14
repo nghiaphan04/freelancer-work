@@ -1,137 +1,239 @@
 "use client";
 
-import { useState } from "react";
-import Icon from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChatBoxProps } from "./types";
+import React, { useRef, useEffect, useState } from "react";
+import { ChatConversation, ChatMessage, ChatUserSearchResult, ChatMessageType } from "@/lib/api";
+import { useScrollPosition } from "@/hooks/useScrollPosition";
+import { useChatActions } from "@/hooks/useChatActions";
+import ChatHeader from "./chat/ChatHeader";
+import ChatInput from "./chat/ChatInput";
+import MessageList from "./chat/MessageList";
+import UserProfileView from "./profile/UserProfileView";
 
-export default function ChatBox({ 
-  user, 
-  messages, 
-  onBack, 
+interface ChatBoxProps {
+  conversation: ChatConversation | null;
+  messages: ChatMessage[];
+  currentUserId: number;
+  onBack?: () => void;
+  onSend?: (message: string, messageType?: ChatMessageType) => void;
+  onLoadMore?: () => void;
+  onEditMessage?: (messageId: number, content: string) => Promise<void>;
+  onDeleteMessage?: (messageId: number) => Promise<void>;
+  onReplyMessage?: (message: ChatMessage) => void;
+  onStartEdit?: (message: ChatMessage) => void;
+  onBlock?: (conversationId: number) => Promise<void>;
+  onUnblock?: (conversationId: number) => Promise<void>;
+  showBackButton?: boolean;
+  loading?: boolean;
+  hasMore?: boolean;
+  replyingTo?: ChatMessage | null;
+  onCancelReply?: () => void;
+  editingMessage?: ChatMessage | null;
+  onCancelEdit?: () => void;
+  rateLimitError?: string | null;
+}
+
+export default function ChatBox({
+  conversation,
+  messages,
+  currentUserId,
+  onBack,
   onSend,
-  showBackButton = false 
+  onLoadMore,
+  onEditMessage,
+  onDeleteMessage,
+  onReplyMessage,
+  onStartEdit,
+  onBlock,
+  onUnblock,
+  showBackButton = false,
+  loading = false,
+  hasMore = false,
+  replyingTo,
+  onCancelReply,
+  editingMessage,
+  onCancelEdit,
+  rateLimitError,
 }: ChatBoxProps) {
-  const [message, setMessage] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    onSend?.(message);
-    setMessage("");
+  const {
+    containerRef: messagesContainerRef,
+    endRef: messagesEndRef,
+    handleScroll,
+    scrollToElement,
+  } = useScrollPosition({
+    onLoadMore,
+    hasMore,
+    loading,
+    itemsLength: messages.length,
+  });
+
+  const {
+    message,
+    setMessage,
+    hoveredMsgId,
+    showMenuId,
+    highlightedMsgId,
+    expandedTimeIds,
+    toggleTimeDisplay,
+    highlightMessage,
+    handleSend,
+    handleDelete,
+    handleReply,
+    handleStartEdit,
+    handleCancelEdit,
+    handleMouseEnter,
+    handleMouseLeave,
+    toggleMenu,
+    closeMenu,
+  } = useChatActions({
+    onSend,
+    onEditMessage,
+    onDeleteMessage,
+    onReplyMessage,
+    onStartEdit,
+    onCancelEdit,
+    onCancelReply,
+  });
+
+  const [showProfileSidebar, setShowProfileSidebar] = useState(false);
+
+  useEffect(() => {
+    if (editingMessage) {
+      setMessage(editingMessage.content);
+      inputRef.current?.focus();
+    }
+  }, [editingMessage, setMessage]);
+
+  useEffect(() => {
+    if (showMenuId !== null) {
+      document.addEventListener("click", closeMenu);
+      return () => document.removeEventListener("click", closeMenu);
+    }
+  }, [showMenuId, closeMenu]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setShowProfileSidebar(false);
+      }
+    };
+    if (showProfileSidebar) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showProfileSidebar]);
+
+  const scrollToMessage = (messageId: number) => {
+    const messageEl = messageRefs.current.get(messageId);
+    scrollToElement(messageEl || null);
+    highlightMessage(messageId);
   };
 
-  if (!user) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
-        <div className="text-center text-gray-500">
-          <Icon name="forum" size={64} className="mx-auto mb-4 text-gray-300" />
-          <p>Chọn một cuộc hội thoại để bắt đầu</p>
-        </div>
-      </div>
-    );
+  if (!conversation) {
+    return null;
   }
 
+  const user = conversation.otherUser;
+  const isBlocked = conversation.status === "BLOCKED";
+  const blockedByMe = isBlocked && conversation.blockedById === currentUserId;
+
+  const userProfileData: ChatUserSearchResult = {
+    id: user.id,
+    fullName: user.fullName,
+    email: user.email || "",
+    avatarUrl: user.avatarUrl,
+    canSendRequest: blockedByMe,
+    relationStatus: isBlocked ? "BLOCKED" : "ACCEPTED",
+    conversationId: conversation.id,
+    trustScore: 0,
+    untrustScore: 0,
+  };
+
   return (
-    <div className="flex-1 flex flex-col bg-white h-full">
-      {/* Chat Header */}
-      <div className="shrink-0 border-b border-gray-200 safe-area-top">
-        <div className="flex items-center gap-3 px-3 md:px-4 py-3 mt-1 md:mt-1.5 md:mb-1">
-        {showBackButton && (
-          <button onClick={onBack} className="p-2 -ml-1 active:bg-gray-100 rounded-full md:hidden">
-            <Icon name="arrow_back" size={24} className="text-gray-700" />
-          </button>
-        )}
-        <Avatar className="w-10 h-10">
-          <AvatarImage src={user.avatar} />
-          <AvatarFallback className="bg-gray-200 text-gray-600">
-            {user.name.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-gray-900 truncate">{user.name}</h2>
-          <p className="text-xs text-gray-500">
-            {user.online ? (
-              <span className="text-green-500">Đang hoạt động</span>
-            ) : (
-              "Offline"
-            )}
-          </p>
-        </div>
-        <button className="p-2 active:bg-gray-100 md:hover:bg-gray-100 rounded-full">
-          <Icon name="phone" size={22} className="text-[#00b14f]" />
-        </button>
-        <button className="p-2 active:bg-gray-100 md:hover:bg-gray-100 rounded-full">
-          <Icon name="videocam" size={22} className="text-[#00b14f]" />
-        </button>
-        <button className="p-2 active:bg-gray-100 md:hover:bg-gray-100 rounded-full">
-          <Icon name="info" size={22} className="text-[#00b14f]" />
-        </button>
-        </div>
-      </div>
+    <div className="flex-1 flex bg-white h-full relative">
+      <div className={`flex-1 flex flex-col h-full ${showProfileSidebar ? "md:mr-80" : ""}`}>
+        <ChatHeader
+          user={user}
+          showBackButton={showBackButton}
+          showProfileActive={showProfileSidebar}
+          onBack={onBack}
+          onToggleProfile={() => setShowProfileSidebar(!showProfileSidebar)}
+        />
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 md:px-4 py-4 scrollbar-hide bg-white">
-        <div className="space-y-3">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] md:max-w-[70%] px-4 py-2.5 rounded-3xl ${
-                  msg.sender === "me"
-                    ? "bg-[#00b14f] text-white"
-                    : "bg-gray-100 text-gray-900"
-                }`}
-              >
-                <p className="text-[15px] leading-relaxed">{msg.text}</p>
-                <p className={`text-[10px] mt-1 ${msg.sender === "me" ? "text-white/70" : "text-gray-400"}`}>
-                  {msg.time}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Input - fixed at bottom on mobile */}
-      <div className="border-t border-gray-100 bg-white safe-area-bottom shrink-0">
-        <div className="flex items-center gap-0.5 md:gap-1 px-2 md:px-3 py-2 mb-1 md:mb-1.5 mt-1">
-          <button className="p-1.5 active:bg-gray-100 rounded-full shrink-0">
-            <Icon name="add_circle" size={22} className="text-[#00b14f]" />
-          </button>
-          <button className="p-1.5 active:bg-gray-100 rounded-full shrink-0">
-            <Icon name="camera_alt" size={20} className="text-[#00b14f]" />
-          </button>
-          <button className="p-1.5 active:bg-gray-100 rounded-full shrink-0">
-            <Icon name="image" size={20} className="text-[#00b14f]" />
-          </button>
-          <button className="p-1.5 active:bg-gray-100 rounded-full shrink-0">
-            <Icon name="mic" size={20} className="text-[#00b14f]" />
-          </button>
-          <Input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Aa"
-            className="flex-1 rounded-full bg-gray-100 border-0 focus-visible:ring-[#00b14f] h-9"
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto overflow-x-hidden px-3 md:px-4 py-4 scrollbar-hide bg-white"
+        >
+          <MessageList
+            messages={messages}
+            currentUserId={currentUserId}
+            otherUser={user}
+            loading={loading}
+            hoveredMsgId={hoveredMsgId}
+            showMenuId={showMenuId}
+            highlightedMsgId={highlightedMsgId}
+            expandedTimeIds={expandedTimeIds}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onToggleMenu={toggleMenu}
+            onToggleTime={toggleTimeDisplay}
+            onReply={handleReply}
+            onEdit={handleStartEdit}
+            onDelete={handleDelete}
+            onScrollToMessage={scrollToMessage}
+            messageRefs={messageRefs}
+            endRef={messagesEndRef}
           />
-          {message.trim() ? (
-            <button
-              onClick={handleSend}
-              className="p-1.5 shrink-0"
-            >
-              <Icon name="send" size={20} className="text-[#00b14f]" />
-            </button>
-          ) : (
-            <button className="p-1.5 shrink-0">
-              <Icon name="thumb_up" size={22} className="text-[#00b14f]" />
-            </button>
-          )}
         </div>
+
+        <ChatInput
+          ref={inputRef}
+          value={message}
+          onChange={setMessage}
+          onSend={() => handleSend(editingMessage)}
+          onSendLike={() => onSend?.("👍", "LIKE")}
+          onCancelEdit={handleCancelEdit}
+          onCancelReply={onCancelReply}
+          editingMessage={editingMessage}
+          replyingTo={replyingTo}
+          currentUserId={currentUserId}
+          rateLimitError={rateLimitError}
+          isBlocked={isBlocked}
+          blockedByMe={blockedByMe}
+        />
       </div>
+
+      {showProfileSidebar && (
+        <>
+          <div className="absolute inset-0 h-full w-full bg-white z-20 overflow-hidden md:hidden">
+            <UserProfileView
+              user={userProfileData}
+              onBack={() => setShowProfileSidebar(false)}
+              onBlock={onBlock}
+              onUnblock={onUnblock}
+              showBackButton={true}
+              isSidebar={false}
+            />
+          </div>
+          <div
+            ref={sidebarRef}
+            className="hidden md:block absolute right-0 top-0 h-full w-80 bg-white border-l border-gray-200 z-20 overflow-hidden"
+          >
+            <UserProfileView
+              user={userProfileData}
+              onBack={() => setShowProfileSidebar(false)}
+              onBlock={onBlock}
+              onUnblock={onUnblock}
+              showBackButton={false}
+              isSidebar={true}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

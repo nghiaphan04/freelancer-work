@@ -58,6 +58,10 @@ public class NotificationResponse {
             case DISPUTE_RESPONSE_SUBMITTED -> "Đã có phản hồi khiếu nại";
             case DISPUTE_RESOLVED_WIN -> "Bạn thắng tranh chấp";
             case DISPUTE_RESOLVED_LOSE -> "Bạn thua tranh chấp";
+            case CHAT_REQUEST_RECEIVED -> "Có yêu cầu kết bạn mới";
+            case CHAT_REQUEST_ACCEPTED -> "Yêu cầu kết bạn được chấp nhận";
+            case CHAT_REQUEST_REJECTED -> "Yêu cầu kết bạn bị từ chối";
+            case CHAT_BLOCKED -> "Bạn đã bị chặn";
             case SYSTEM -> "Thông báo hệ thống";
         };
     }

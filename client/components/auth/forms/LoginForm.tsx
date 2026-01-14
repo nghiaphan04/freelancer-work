@@ -45,12 +45,12 @@ export default function LoginForm() {
     try {
       const response = await api.login(formData);
       if (response.status === "SUCCESS") {
-        const userData = (response.data as { user: User }).user;
-        saveAuthData({ user: userData });
-        setUser(userData);
+        const responseData = response.data as { user: User; accessToken?: string };
+        saveAuthData({ user: responseData.user, accessToken: responseData.accessToken });
+        setUser(responseData.user);
         toast.success("Đăng nhập thành công!");
         
-        if (userData.roles?.includes("ROLE_ADMIN")) {
+        if (responseData.user.roles?.includes("ROLE_ADMIN")) {
           router.push("/admin");
         } else {
           router.push("/");
