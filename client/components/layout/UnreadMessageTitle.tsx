@@ -6,7 +6,7 @@ import { api, ChatConversation } from "@/lib/api";
 
 export default function UnreadMessageTitle() {
   const { user, isAuthenticated, isHydrated } = useAuth();
-  const [totalUnread, setTotalUnread] = useState(0);
+  const [unreadUserCount, setUnreadUserCount] = useState(0);
   const [latestSender, setLatestSender] = useState<string | null>(null);
   const [showSender, setShowSender] = useState(false);
   const baseTitleRef = useRef("Freelancer - Kiến tạo sự nghiệp của riêng bạn");
@@ -17,15 +17,14 @@ export default function UnreadMessageTitle() {
       if (res.status === "SUCCESS") {
         const conversations: ChatConversation[] = res.data;
         
-        const total = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
-        setTotalUnread(total);
-
         const unreadConvs = conversations
           .filter(conv => conv.unreadCount > 0 && conv.lastMessageSenderId !== user?.id)
           .sort((a, b) => 
             new Date(b.lastMessageTime || b.createdAt).getTime() - 
             new Date(a.lastMessageTime || a.createdAt).getTime()
           );
+
+        setUnreadUserCount(unreadConvs.length);
 
         if (unreadConvs.length > 0) {
           setLatestSender(unreadConvs[0].otherUser.fullName);
@@ -48,7 +47,7 @@ export default function UnreadMessageTitle() {
   }, [isHydrated, isAuthenticated, fetchUnreadData]);
 
   useEffect(() => {
-    if (!isHydrated || totalUnread === 0 || !latestSender) {
+    if (!isHydrated || unreadUserCount === 0 || !latestSender) {
       setShowSender(false);
       return;
     }
@@ -58,21 +57,21 @@ export default function UnreadMessageTitle() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isHydrated, totalUnread, latestSender]);
+  }, [isHydrated, unreadUserCount, latestSender]);
 
   useEffect(() => {
     if (!isHydrated) return;
 
-    if (totalUnread > 0) {
+    if (unreadUserCount > 0) {
       if (showSender && latestSender) {
         document.title = `${latestSender} đã nhắn tin cho bạn`;
       } else {
-        document.title = `(${totalUnread}) ${baseTitleRef.current}`;
+        document.title = `(${unreadUserCount}) ${baseTitleRef.current}`;
       }
     } else {
       document.title = baseTitleRef.current;
     }
-  }, [totalUnread, showSender, latestSender, isHydrated]);
+  }, [unreadUserCount, showSender, latestSender, isHydrated]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
