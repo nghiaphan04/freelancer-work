@@ -27,15 +27,15 @@ export function useMessageGroups(messages: ChatMessage[], currentUserId: number)
       const now = Date.now();
       const isWithin24h = (now - msgTime) < 24 * 60 * 60 * 1000;
       const prevMsgTime = prevMsg ? new Date(prevMsg.createdAt).getTime() : 0;
-      const isSameSenderAsPrev = prevMsg && prevMsg.sender.id === msg.sender.id;
-      const isWithin10MinOfPrev = prevMsg && (msgTime - prevMsgTime) < 10 * 60 * 1000;
+      const isSameSenderAsPrev = prevMsg !== null && prevMsg.sender.id === msg.sender.id;
+      const isWithin10MinOfPrev = prevMsg !== null && (msgTime - prevMsgTime) < 10 * 60 * 1000;
       const isGroupedWithPrev = isWithin24h && isSameSenderAsPrev && isWithin10MinOfPrev && !showDateSeparator;
 
       const nextMsgTime = nextMsg ? new Date(nextMsg.createdAt).getTime() : 0;
-      const isSameSenderAsNext = nextMsg && nextMsg.sender.id === msg.sender.id;
-      const isWithin10MinOfNext = nextMsg && (nextMsgTime - msgTime) < 10 * 60 * 1000;
-      const nextHasDifferentDate = nextMsg && !isSameDay(msg.createdAt, nextMsg.createdAt);
-      const isLastInGroup = !nextMsg || !isSameSenderAsNext || !isWithin10MinOfNext || nextHasDifferentDate;
+      const isSameSenderAsNext = nextMsg !== null && nextMsg.sender.id === msg.sender.id;
+      const isWithin10MinOfNext = nextMsg !== null && (nextMsgTime - msgTime) < 10 * 60 * 1000;
+      const nextHasDifferentDate = nextMsg !== null && !isSameDay(msg.createdAt, nextMsg.createdAt);
+      const isLastInGroup = !nextMsg || !isSameSenderAsNext || !isWithin10MinOfNext || !!nextHasDifferentDate;
 
       const isLastMessage = index === messages.length - 1;
 
