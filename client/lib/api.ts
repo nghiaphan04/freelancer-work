@@ -424,10 +424,10 @@ export const api = {
     request<void>(`/api/chat/conversations/${conversationId}/read`, { method: "POST" }),
 
   // Send message (REST fallback)
-  sendMessage: (receiverId: number, content: string, messageType: ChatMessageType = "TEXT", replyToId?: number) =>
+  sendMessage: (receiverId: number, content: string, messageType: ChatMessageType = "TEXT", replyToId?: number, fileId?: number) =>
     request<ChatMessage>("/api/chat/send", {
       method: "POST",
-      body: JSON.stringify({ receiverId, content, messageType, replyToId }),
+      body: JSON.stringify({ receiverId, content, messageType, replyToId, fileId }),
     }),
 
   // Update message
@@ -452,7 +452,77 @@ export const api = {
   unblockUser: (conversationId: number) =>
     request<ChatConversation>(`/api/chat/conversations/${conversationId}/unblock`, { method: "POST" }),
 
+  // ==================== FILE UPLOAD ====================
+  
+  // Upload image (max 200KB)
+  uploadImage: async (file: File, usage: string): Promise<ApiResponse<FileUploadResponse>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("usage", usage);
+    
+    const res = await fetch(`${API_URL}/api/files/image`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    return res.json();
+  },
+
+  // Upload document (max 5MB)
+  uploadDocument: async (file: File, usage: string): Promise<ApiResponse<FileUploadResponse>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("usage", usage);
+    
+    const res = await fetch(`${API_URL}/api/files/document`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    return res.json();
+  },
+
+  // Upload file (auto detect type)
+  uploadFile: async (file: File, usage: string): Promise<ApiResponse<FileUploadResponse>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("usage", usage);
+    
+    const res = await fetch(`${API_URL}/api/files`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    return res.json();
+  },
+
+  // Delete file
+  deleteFile: (fileId: number) =>
+    request<void>(`/api/files/${fileId}`, { method: "DELETE" }),
+
 };
+
+// ==================== FILE UPLOAD TYPES ====================
+export interface FileUploadResponse {
+  id: number;
+  publicId: string;
+  url: string;
+  secureUrl: string;
+  originalFilename: string;
+  fileType: "IMAGE" | "DOCUMENT";
+  mimeType: string;
+  format: string;
+  sizeBytes: number;
+  readableSize: string;
+  width?: number;
+  height?: number;
+  usage: string;
+  referenceType?: string;
+  referenceId?: number;
+  uploaderId: number;
+  uploaderName: string;
+  createdAt: string;
+}
 
 // Withdrawal Request types
 export type WithdrawalRequestType = "FREELANCER_WITHDRAW" | "EMPLOYER_CANCEL";
@@ -723,6 +793,20 @@ export interface ChatUserSearchResult {
   untrustScore?: number;
 }
 
+export interface ChatMessageFile {
+  id: number;
+  url: string;
+  secureUrl: string;
+  originalFilename: string;
+  fileType: "IMAGE" | "DOCUMENT";
+  mimeType: string;
+  format: string;
+  sizeBytes: number;
+  readableSize: string;
+  width?: number;
+  height?: number;
+}
+
 export interface ChatMessage {
   id: number;
   conversationId: number;
@@ -739,7 +823,9 @@ export interface ChatMessage {
     id: number;
     sender: ChatUserInfo;
     content: string;
+    messageType?: string;
   };
+  file?: ChatMessageFile;
 }
 
 export interface ChatConversation {

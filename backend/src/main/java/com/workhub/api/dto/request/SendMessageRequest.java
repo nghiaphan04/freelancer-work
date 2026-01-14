@@ -3,7 +3,6 @@ package com.workhub.api.dto.request;
 import com.workhub.api.entity.EMessageType;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +18,6 @@ public class SendMessageRequest {
     @NotNull(message = "Receiver ID is required")
     private Long receiverId;
 
-    @NotBlank(message = "Content is required")
     private String content;
 
     @Builder.Default
@@ -27,4 +25,6 @@ public class SendMessageRequest {
     private EMessageType messageType = EMessageType.TEXT;
 
     private Long replyToId;
+    
+    private Long fileId;
 }

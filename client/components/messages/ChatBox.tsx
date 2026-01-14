@@ -14,7 +14,7 @@ interface ChatBoxProps {
   messages: ChatMessage[];
   currentUserId: number;
   onBack?: () => void;
-  onSend?: (message: string, messageType?: ChatMessageType) => void;
+  onSend?: (message: string, messageType?: ChatMessageType, fileId?: number, filePreview?: { url: string; size: number }) => void;
   onLoadMore?: () => void;
   onEditMessage?: (messageId: number, content: string) => Promise<void>;
   onDeleteMessage?: (messageId: number) => Promise<void>;
@@ -196,6 +196,11 @@ export default function ChatBox({
           onChange={setMessage}
           onSend={() => handleSend(editingMessage)}
           onSendLike={() => onSend?.("👍", "LIKE")}
+          onSendFile={(fileId, fileType, fileName, previewUrl, fileSize) => {
+            const msgType = fileType === "IMAGE" ? "IMAGE" : "FILE";
+            const filePreview = previewUrl && fileSize ? { url: previewUrl, size: fileSize } : undefined;
+            onSend?.(fileName, msgType, fileId, filePreview);
+          }}
           onCancelEdit={handleCancelEdit}
           onCancelReply={onCancelReply}
           editingMessage={editingMessage}

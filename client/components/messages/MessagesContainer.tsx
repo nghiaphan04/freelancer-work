@@ -324,12 +324,22 @@ export default function MessagesContainer() {
     }
   }, [selectedConversation, setConversations]);
 
-  const handleSend = useCallback((content: string, messageType: ChatMessageType = "TEXT") => {
+  const handleSend = useCallback((content: string, messageType: ChatMessageType = "TEXT", fileId?: number, filePreview?: { url: string; size: number }) => {
     if (!selectedConversation || !user) return;
 
     setRateLimitError(null);
     const receiverId = selectedConversation.otherUser.id;
     const replyToId = replyingTo?.id;
+
+    const displayContent = messageType === "IMAGE" ? "Hình ảnh" : 
+                          messageType === "FILE" ? content : 
+                          content;
+
+    const formatFileSize = (bytes: number) => {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    };
 
     const tempMessage: ChatMessage = {
       id: Date.now(),
@@ -342,6 +352,17 @@ export default function MessagesContainer() {
       isDeleted: false,
       createdAt: new Date().toISOString(),
       replyTo: replyingTo ? { id: replyingTo.id, sender: replyingTo.sender, content: replyingTo.content } : undefined,
+      file: filePreview ? {
+        id: fileId || 0,
+        url: filePreview.url,
+        secureUrl: filePreview.url,
+        originalFilename: content,
+        fileType: messageType === "IMAGE" ? "IMAGE" : "DOCUMENT",
+        mimeType: messageType === "IMAGE" ? "image/jpeg" : "application/pdf",
+        format: messageType === "IMAGE" ? "jpg" : "pdf",
+        sizeBytes: filePreview.size,
+        readableSize: formatFileSize(filePreview.size),
+      } : undefined,
     };
 
     setMessages(prev => [...prev, tempMessage]);
@@ -352,7 +373,7 @@ export default function MessagesContainer() {
         if (conv.id === selectedConversation.id) {
           return {
             ...conv,
-            lastMessage: content,
+            lastMessage: displayContent,
             lastMessageType: messageType,
             lastMessageDeleted: false,
             lastMessageTime: new Date().toISOString(),
@@ -367,6 +388,28 @@ export default function MessagesContainer() {
         new Date(a.lastMessageTime || a.createdAt).getTime()
       );
     });
+
+    // File messages always use REST API (không qua WebSocket)
+    if (fileId) {
+      (async () => {
+        try {
+          const res = await api.sendMessage(receiverId, content, messageType, replyToId, fileId);
+          if (res.status === "SUCCESS") {
+            setMessages(prev => prev.map(m => m.id === tempMessage.id ? res.data : m));
+          } else {
+            setMessages(prev => prev.map(m => m.id === tempMessage.id ? { ...m, status: "FAILED" as const } : m));
+            setTimeout(() => setMessages(prev => prev.filter(m => m.id !== tempMessage.id)), 3000);
+            toast.error(res.message || "Không thể gửi tin nhắn");
+          }
+        } catch (error: any) {
+          console.error("Failed to send file message:", error);
+          setMessages(prev => prev.map(m => m.id === tempMessage.id ? { ...m, status: "FAILED" as const } : m));
+          setTimeout(() => setMessages(prev => prev.filter(m => m.id !== tempMessage.id)), 3000);
+          toast.error("Không thể gửi tin nhắn");
+        }
+      })();
+      return;
+    }
 
     if (connected) {
       pendingTempIdsRef.current.add(tempMessage.id);

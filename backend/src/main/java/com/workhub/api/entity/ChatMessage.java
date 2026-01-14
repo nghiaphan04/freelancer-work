@@ -58,12 +58,27 @@ public class ChatMessage {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // Reply to another message
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reply_to_id")
     private ChatMessage replyTo;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "file_id")
+    private FileUpload file;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+    
+    public boolean hasFile() {
+        return this.file != null;
+    }
+    
+    public boolean isImageMessage() {
+        return this.messageType == EMessageType.IMAGE;
+    }
+    
+    public boolean isFileMessage() {
+        return this.messageType == EMessageType.FILE;
+    }
 }

@@ -3,6 +3,7 @@ package com.workhub.api.dto.response;
 import com.workhub.api.entity.ChatMessage;
 import com.workhub.api.entity.EMessageStatus;
 import com.workhub.api.entity.EMessageType;
+import com.workhub.api.entity.FileUpload;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,6 +29,7 @@ public class ChatMessageResponse {
     private LocalDateTime deletedAt;
     private LocalDateTime createdAt;
     private ReplyInfo replyTo;
+    private FileInfo file;
 
     @Data
     @Builder
@@ -47,6 +49,25 @@ public class ChatMessageResponse {
         private Long id;
         private SenderInfo sender;
         private String content;
+        private String messageType;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FileInfo {
+        private Long id;
+        private String url;
+        private String secureUrl;
+        private String originalFilename;
+        private String fileType;
+        private String mimeType;
+        private String format;
+        private Long sizeBytes;
+        private String readableSize;
+        private Integer width;
+        private Integer height;
     }
 
     public static ChatMessageResponse fromEntity(ChatMessage message) {
@@ -78,6 +99,25 @@ public class ChatMessageResponse {
                             .avatarUrl(replyMsg.getSender().getAvatarUrl())
                             .build())
                     .content(replyMsg.getIsDeleted() ? "Tin nhắn đã bị xóa" : replyMsg.getContent())
+                    .messageType(replyMsg.getMessageType().name())
+                    .build());
+        }
+
+        // Add file info if exists
+        if (message.hasFile() && !message.getIsDeleted()) {
+            FileUpload file = message.getFile();
+            builder.file(FileInfo.builder()
+                    .id(file.getId())
+                    .url(file.getUrl())
+                    .secureUrl(file.getSecureUrl())
+                    .originalFilename(file.getOriginalFilename())
+                    .fileType(file.getFileType().name())
+                    .mimeType(file.getMimeType())
+                    .format(file.getFormat())
+                    .sizeBytes(file.getSizeBytes())
+                    .readableSize(file.getReadableSize())
+                    .width(file.getWidth())
+                    .height(file.getHeight())
                     .build());
         }
 

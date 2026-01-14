@@ -4,10 +4,12 @@ import com.workhub.api.dto.request.SendMessageRequest;
 import com.workhub.api.dto.response.ChatMessageResponse;
 import com.workhub.api.dto.response.ConversationResponse;
 import com.workhub.api.entity.*;
+import com.workhub.api.exception.FileUploadException;
 import com.workhub.api.exception.MessageRateLimitException;
 import com.workhub.api.exception.UserNotFoundException;
 import com.workhub.api.repository.ChatMessageRepository;
 import com.workhub.api.repository.ConversationRepository;
+import com.workhub.api.repository.FileUploadRepository;
 import com.workhub.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class MessageService {
     private final ConversationRepository conversationRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final FileUploadRepository fileUploadRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final OnlineStatusService onlineStatusService;
 
@@ -90,12 +93,33 @@ public class MessageService {
                 ? EMessageStatus.DELIVERED
                 : EMessageStatus.SENT;
 
+        FileUpload fileUpload = null;
+        if (request.getFileId() != null) {
+            fileUpload = fileUploadRepository.findByIdAndIsDeletedFalse(request.getFileId())
+                    .orElseThrow(() -> FileUploadException.fileNotFound());
+            
+            if (!fileUpload.isOwnedBy(senderId)) {
+                throw FileUploadException.accessDenied();
+            }
+            
+            fileUpload.assignToReference("MESSAGE", null); 
+        }
+
+        String content = request.getContent();
+        if ((content == null || content.isBlank()) && fileUpload != null) {
+            content = fileUpload.getOriginalFilename();
+        }
+        if (content == null || content.isBlank()) {
+            throw new RuntimeException("Nội dung tin nhắn không được để trống");
+        }
+
         ChatMessage.ChatMessageBuilder messageBuilder = ChatMessage.builder()
                 .conversation(conversation)
                 .sender(sender)
-                .content(request.getContent())
+                .content(content)
                 .messageType(request.getMessageType())
-                .status(initialStatus);
+                .status(initialStatus)
+                .file(fileUpload);
 
         if (request.getReplyToId() != null) {
             ChatMessage replyToMessage = chatMessageRepository.findById(request.getReplyToId()).orElse(null);
@@ -107,8 +131,20 @@ public class MessageService {
         ChatMessage message = messageBuilder.build();
         message = chatMessageRepository.save(message);
 
+        if (fileUpload != null) {
+            fileUpload.assignToReference("MESSAGE", message.getId());
+            fileUploadRepository.save(fileUpload);
+        }
+
+        String lastMessageText = content;
+        if (request.getMessageType() == EMessageType.IMAGE) {
+            lastMessageText = "📷 Hình ảnh";
+        } else if (request.getMessageType() == EMessageType.FILE) {
+            lastMessageText = "📎 " + (fileUpload != null ? fileUpload.getOriginalFilename() : "Tệp đính kèm");
+        }
+
         conversation.setLastMessageId(message.getId());
-        conversation.setLastMessage(request.getContent());
+        conversation.setLastMessage(lastMessageText);
         conversation.setLastMessageType(request.getMessageType());
         conversation.setLastMessageDeleted(false);
         conversation.setLastMessageStatus(initialStatus);

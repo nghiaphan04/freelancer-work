@@ -23,16 +23,21 @@ export default function ConversationItem({
   const isMyMessage = lastMessageSenderId === currentUserId;
   const messageTime = lastMessageTime ? formatRelativeTime(lastMessageTime) : null;
   const isLikeMessage = lastMessageType === "LIKE";
+  const isImageMessage = lastMessageType === "IMAGE";
+  const isFileMessage = lastMessageType === "FILE";
   const isBlocked = status === "BLOCKED";
   const blockedByMe = isBlocked && blockedById === currentUserId;
   
-  const displayMessage = isBlocked
-    ? (blockedByMe ? "Bạn đã chặn người này" : "Bạn đã bị chặn")
-    : lastMessageDeleted 
-      ? "Tin nhắn đã bị xóa" 
-      : isLikeMessage 
-        ? "Đã gửi một lượt thích" 
-        : lastMessage;
+  const getDisplayMessage = () => {
+    if (isBlocked) return blockedByMe ? "Bạn đã chặn người này" : "Bạn đã bị chặn";
+    if (lastMessageDeleted) return "Tin nhắn đã bị xóa";
+    if (isLikeMessage) return "Đã gửi một lượt thích";
+    if (isImageMessage) return "Hình ảnh";
+    if (isFileMessage) return "Tệp đính kèm";
+    return lastMessage;
+  };
+  
+  const displayMessage = getDisplayMessage();
 
   return (
     <button

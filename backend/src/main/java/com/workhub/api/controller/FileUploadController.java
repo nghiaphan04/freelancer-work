@@ -27,10 +27,6 @@ public class FileUploadController {
 
     private final FileUploadService fileUploadService;
 
-    /**
-     * Upload ảnh (max 200KB)
-     * Định dạng hỗ trợ: jpg, jpeg, png, gif, webp
-     */
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<FileUploadResponse>> uploadImage(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -52,9 +48,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Upload ảnh thành công", response));
     }
 
-    /**
-     * Upload tài liệu PDF (max 5MB)
-     */
     @PostMapping(value = "/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<FileUploadResponse>> uploadDocument(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -76,9 +69,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Upload tài liệu thành công", response));
     }
 
-    /**
-     * Upload file tự động detect loại (ảnh hoặc tài liệu)
-     */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<FileUploadResponse>> uploadFile(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -100,9 +90,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Upload thành công", response));
     }
 
-    /**
-     * Gán file cho một entity
-     */
     @PostMapping("/assign")
     public ResponseEntity<ApiResponse<Void>> assignFiles(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -116,9 +103,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Gán file thành công"));
     }
 
-    /**
-     * Lấy thông tin file theo ID
-     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<FileUploadResponse>> getFile(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -128,9 +112,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
-    /**
-     * Lấy danh sách file của user hiện tại
-     */
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<Page<FileUploadResponse>>> getMyFiles(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -144,9 +125,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
-    /**
-     * Lấy file theo usage của user hiện tại
-     */
     @GetMapping("/me/by-usage")
     public ResponseEntity<ApiResponse<List<FileUploadResponse>>> getMyFilesByUsage(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -159,9 +137,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
-    /**
-     * Lấy file theo reference (entity)
-     */
     @GetMapping("/by-reference")
     public ResponseEntity<ApiResponse<List<FileUploadResponse>>> getFilesByReference(
             @RequestParam("referenceType") String referenceType,
@@ -173,9 +148,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
-    /**
-     * Lấy avatar hiện tại của user
-     */
     @GetMapping("/user/{userId}/avatar")
     public ResponseEntity<ApiResponse<FileUploadResponse>> getUserAvatar(
             @PathVariable Long userId) {
@@ -185,9 +157,6 @@ public class FileUploadController {
                 .orElse(ResponseEntity.ok(ApiResponse.success("Không có avatar", null)));
     }
 
-    /**
-     * Lấy cover image hiện tại của user
-     */
     @GetMapping("/user/{userId}/cover")
     public ResponseEntity<ApiResponse<FileUploadResponse>> getUserCover(
             @PathVariable Long userId) {
@@ -197,9 +166,6 @@ public class FileUploadController {
                 .orElse(ResponseEntity.ok(ApiResponse.success("Không có cover image", null)));
     }
 
-    /**
-     * Lấy attachments của một message
-     */
     @GetMapping("/message/{messageId}")
     public ResponseEntity<ApiResponse<List<FileUploadResponse>>> getMessageAttachments(
             @PathVariable Long messageId) {
@@ -208,9 +174,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
-    /**
-     * Lấy evidence của một dispute
-     */
     @GetMapping("/dispute/{disputeId}")
     public ResponseEntity<ApiResponse<List<FileUploadResponse>>> getDisputeEvidence(
             @PathVariable Long disputeId) {
@@ -219,9 +182,6 @@ public class FileUploadController {
         return ResponseEntity.ok(ApiResponse.success("Thành công", response));
     }
 
-    /**
-     * Xóa file (soft delete)
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteFile(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
@@ -230,8 +190,6 @@ public class FileUploadController {
         fileUploadService.deleteFile(id, userDetails.getId());
         return ResponseEntity.ok(ApiResponse.success("Xóa file thành công"));
     }
-
-    // ===== HELPER METHODS =====
 
     private EFileUsage parseUsage(String usage) {
         try {

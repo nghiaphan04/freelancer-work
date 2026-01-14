@@ -15,22 +15,12 @@ import java.util.List;
 @AllArgsConstructor
 public class AssignFileRequest {
     
-    /**
-     * Danh sách ID file cần gán
-     */
     @NotNull(message = "File IDs is required")
     private List<Long> fileIds;
     
-    /**
-     * Loại entity liên kết
-     * Ví dụ: USER, MESSAGE, JOB, APPLICATION, DISPUTE
-     */
     @NotBlank(message = "Reference type is required")
     private String referenceType;
     
-    /**
-     * ID của entity liên kết
-     */
     @NotNull(message = "Reference ID is required")
     private Long referenceId;
 }

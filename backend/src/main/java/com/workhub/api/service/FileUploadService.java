@@ -29,10 +29,10 @@ public class FileUploadService {
     private final UserRepository userRepository;
 
     @Value("${app.upload.max-image-size:204800}")
-    private long maxImageSize; // 200KB default
+    private long maxImageSize;
 
     @Value("${app.upload.max-document-size:5242880}")
-    private long maxDocumentSize; // 5MB default
+    private long maxDocumentSize;
 
     @Value("${app.upload.allowed-image-extensions:jpg,jpeg,png,gif,webp}")
     private String allowedImageExtensions;
@@ -40,29 +40,18 @@ public class FileUploadService {
     @Value("${app.upload.allowed-document-extensions:pdf}")
     private String allowedDocumentExtensions;
 
-    // ===== UPLOAD METHODS =====
-
-    /**
-     * Upload ảnh (max 200KB)
-     */
     @Transactional
     public FileUploadResponse uploadImage(MultipartFile file, EFileUsage usage, Long uploaderId) {
         validateImageFile(file);
         return uploadToCloudinary(file, EFileType.IMAGE, usage, uploaderId, "image");
     }
 
-    /**
-     * Upload tài liệu PDF (max 5MB)
-     */
     @Transactional
     public FileUploadResponse uploadDocument(MultipartFile file, EFileUsage usage, Long uploaderId) {
         validateDocumentFile(file);
         return uploadToCloudinary(file, EFileType.DOCUMENT, usage, uploaderId, "raw");
     }
 
-    /**
-     * Upload file tự động detect loại
-     */
     @Transactional
     public FileUploadResponse uploadFile(MultipartFile file, EFileUsage usage, Long uploaderId) {
         String extension = getFileExtension(file.getOriginalFilename()).toLowerCase();
@@ -77,9 +66,6 @@ public class FileUploadService {
         }
     }
 
-    /**
-     * Upload và gán file cho một entity cụ thể
-     */
     @Transactional
     public FileUploadResponse uploadAndAssign(MultipartFile file, EFileUsage usage, 
                                                Long uploaderId, String referenceType, Long referenceId) {
@@ -88,11 +74,6 @@ public class FileUploadService {
         return response;
     }
 
-    // ===== ASSIGNMENT METHODS =====
-
-    /**
-     * Gán file cho một entity
-     */
     @Transactional
     public void assignFileToReference(Long fileId, String referenceType, Long referenceId) {
         FileUpload file = fileUploadRepository.findByIdAndIsDeletedFalse(fileId)
@@ -104,9 +85,6 @@ public class FileUploadService {
         log.info("Assigned file {} to {} #{}", fileId, referenceType, referenceId);
     }
 
-    /**
-     * Gán nhiều file cho một entity
-     */
     @Transactional
     public void assignFilesToReference(List<Long> fileIds, String referenceType, Long referenceId) {
         for (Long fileId : fileIds) {
@@ -114,11 +92,6 @@ public class FileUploadService {
         }
     }
 
-    // ===== DELETE METHODS =====
-
-    /**
-     * Soft delete file
-     */
     @Transactional
     public void deleteFile(Long fileId, Long userId) {
         FileUpload file = fileUploadRepository.findByIdAndIsDeletedFalse(fileId)
@@ -131,15 +104,11 @@ public class FileUploadService {
         file.markDeleted();
         fileUploadRepository.save(file);
         
-        // Xóa file trên Cloudinary (async có thể tốt hơn)
         deleteFromCloudinary(file.getPublicId());
         
         log.info("Deleted file {} by user {}", fileId, userId);
     }
 
-    /**
-     * Hard delete file (admin only hoặc cleanup job)
-     */
     @Transactional
     public void hardDeleteFile(Long fileId) {
         FileUpload file = fileUploadRepository.findById(fileId)
@@ -151,20 +120,12 @@ public class FileUploadService {
         log.info("Hard deleted file {}", fileId);
     }
 
-    // ===== QUERY METHODS =====
-
-    /**
-     * Lấy file theo ID
-     */
     public FileUploadResponse getFileById(Long fileId) {
         FileUpload file = fileUploadRepository.findByIdAndIsDeletedFalse(fileId)
             .orElseThrow(FileUploadException::fileNotFound);
         return mapToResponse(file);
     }
 
-    /**
-     * Lấy file theo ID và kiểm tra quyền
-     */
     public FileUploadResponse getFileByIdAndUser(Long fileId, Long userId) {
         FileUpload file = fileUploadRepository.findByIdAndIsDeletedFalse(fileId)
             .orElseThrow(FileUploadException::fileNotFound);
@@ -176,18 +137,12 @@ public class FileUploadService {
         return mapToResponse(file);
     }
 
-    /**
-     * Lấy tất cả file của user
-     */
     public Page<FileUploadResponse> getFilesByUser(Long userId, Pageable pageable) {
         return fileUploadRepository
             .findByUploaderIdAndIsDeletedFalseOrderByCreatedAtDesc(userId, pageable)
             .map(this::mapToResponse);
     }
 
-    /**
-     * Lấy file theo usage
-     */
     public List<FileUploadResponse> getFilesByUserAndUsage(Long userId, EFileUsage usage) {
         return fileUploadRepository
             .findByUploaderIdAndUsageAndIsDeletedFalseOrderByCreatedAtDesc(userId, usage)
@@ -196,9 +151,6 @@ public class FileUploadService {
             .toList();
     }
 
-    /**
-     * Lấy file của một entity
-     */
     public List<FileUploadResponse> getFilesByReference(String referenceType, Long referenceId) {
         return fileUploadRepository
             .findByReferenceTypeAndReferenceIdAndIsDeletedFalseOrderByCreatedAtDesc(referenceType, referenceId)
@@ -207,25 +159,16 @@ public class FileUploadService {
             .toList();
     }
 
-    /**
-     * Lấy avatar hiện tại của user
-     */
     public Optional<FileUploadResponse> getCurrentAvatar(Long userId) {
         return fileUploadRepository.findCurrentAvatarByUserId(userId)
             .map(this::mapToResponse);
     }
 
-    /**
-     * Lấy cover image hiện tại của user
-     */
     public Optional<FileUploadResponse> getCurrentCover(Long userId) {
         return fileUploadRepository.findCurrentCoverByUserId(userId)
             .map(this::mapToResponse);
     }
 
-    /**
-     * Lấy attachments của một message
-     */
     public List<FileUploadResponse> getMessageAttachments(Long messageId) {
         return fileUploadRepository.findByMessageId(messageId)
             .stream()
@@ -233,17 +176,12 @@ public class FileUploadService {
             .toList();
     }
 
-    /**
-     * Lấy evidence của một dispute
-     */
     public List<FileUploadResponse> getDisputeEvidence(Long disputeId) {
         return fileUploadRepository.findByDisputeId(disputeId)
             .stream()
             .map(this::mapToResponse)
             .toList();
     }
-
-    // ===== PRIVATE HELPER METHODS =====
 
     private FileUploadResponse uploadToCloudinary(MultipartFile file, EFileType fileType,
                                                    EFileUsage usage, Long uploaderId,
@@ -252,10 +190,8 @@ public class FileUploadService {
             User uploader = userRepository.findById(uploaderId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Tạo folder path theo usage
             String folder = "workhub/" + usage.name().toLowerCase();
 
-            // Upload options
             Map<String, Object> options = ObjectUtils.asMap(
                 "folder", folder,
                 "resource_type", resourceType,
@@ -263,11 +199,9 @@ public class FileUploadService {
                 "overwrite", false
             );
 
-            // Upload to Cloudinary
             @SuppressWarnings("unchecked")
             Map<String, Object> result = cloudinary.uploader().upload(file.getBytes(), options);
 
-            // Extract result
             String publicId = (String) result.get("public_id");
             String url = (String) result.get("url");
             String secureUrl = (String) result.get("secure_url");
@@ -276,7 +210,6 @@ public class FileUploadService {
             Number width = (Number) result.get("width");
             Number height = (Number) result.get("height");
 
-            // Create entity
             FileUpload fileUpload = FileUpload.builder()
                 .publicId(publicId)
                 .url(url)
