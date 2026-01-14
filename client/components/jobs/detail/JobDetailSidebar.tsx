@@ -131,7 +131,7 @@ export default function JobDetailSidebar({
                   <p className="text-sm text-orange-700">Hạn nộp sản phẩm</p>
                   <p className="font-medium text-orange-900">{formatDate(job.workSubmissionDeadline)}</p>
                   <p className="text-xs text-orange-600 mt-1">
-                    ⚠️ Quá hạn sẽ bị hủy và công việc mở lại
+                    Quá hạn sẽ bị hủy và công việc mở lại
                   </p>
                 </div>
               </div>
@@ -143,7 +143,7 @@ export default function JobDetailSidebar({
                   <p className="text-sm text-orange-700">Hạn duyệt sản phẩm</p>
                   <p className="font-medium text-orange-900">{formatDate(job.workReviewDeadline)}</p>
                   <p className="text-xs text-orange-600 mt-1">
-                    ⚠️ Quá hạn sẽ tự động duyệt và thanh toán
+                    Quá hạn sẽ tự động duyệt và thanh toán
                   </p>
                 </div>
               </div>

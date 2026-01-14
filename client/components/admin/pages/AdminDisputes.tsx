@@ -328,7 +328,7 @@ export default function AdminDisputes() {
               {/* Employer complaint */}
               <div className="bg-red-50 p-4 rounded-lg">
                 <h4 className="font-medium text-red-800 mb-2">
-                  📋 Khiếu nại từ Employer: {selectedDispute.employer.fullName}
+                  Khiếu nại từ Employer: {selectedDispute.employer.fullName}
                 </h4>
                 <p className="text-sm text-red-700 whitespace-pre-wrap">{selectedDispute.employerDescription}</p>
                 {selectedDispute.employerEvidenceUrl && (
@@ -338,7 +338,7 @@ export default function AdminDisputes() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 mt-2 text-sm text-red-600 hover:underline"
                   >
-                    📎 Xem bằng chứng
+                    Xem bằng chứng
                   </a>
                 )}
               </div>
@@ -347,7 +347,7 @@ export default function AdminDisputes() {
               {selectedDispute.freelancerDescription ? (
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h4 className="font-medium text-blue-800 mb-2">
-                    💬 Phản hồi từ Freelancer: {selectedDispute.freelancer.fullName}
+                    Phản hồi từ Freelancer: {selectedDispute.freelancer.fullName}
                   </h4>
                   <p className="text-sm text-blue-700 whitespace-pre-wrap">{selectedDispute.freelancerDescription}</p>
                   {selectedDispute.freelancerEvidenceUrl && (
@@ -357,14 +357,14 @@ export default function AdminDisputes() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
                     >
-                      📎 Xem bằng chứng
+                      Xem bằng chứng
                     </a>
                   )}
                 </div>
               ) : selectedDispute.freelancerDeadline ? (
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <h4 className="font-medium text-yellow-800 mb-1">
-                    ⏳ Chờ freelancer phản hồi
+                    Chờ freelancer phản hồi
                   </h4>
                   <p className="text-sm text-yellow-700">
                     Hạn: {formatDateTime(selectedDispute.freelancerDeadline)}
@@ -382,7 +382,7 @@ export default function AdminDisputes() {
               {selectedDispute.adminNote && (
                 <div className="bg-purple-50 p-4 rounded-lg">
                   <h4 className="font-medium text-purple-800 mb-2">
-                    ⚖️ Quyết định của Admin
+                    Quyết định của Admin
                   </h4>
                   <p className="text-sm text-purple-700">{selectedDispute.adminNote}</p>
                   {selectedDispute.resolvedBy && (

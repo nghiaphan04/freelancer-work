@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import Icon from "@/components/ui/Icon";
+import { ImageUploadButton } from "@/components/ui/file-upload";
 import { User } from "@/types/user";
-import { api } from "@/lib/api";
 import { toast } from "sonner";
 
 interface ProfileCardProps {
@@ -24,15 +24,8 @@ interface ProfileCardProps {
   isLoading?: boolean;
 }
 
-const MAX_IMAGE_SIZE = 200 * 1024;
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-
 export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     fullName: user.fullName || "",
     title: user.title || "",
@@ -59,87 +52,22 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
     }
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error("Chỉ hỗ trợ định dạng: JPG, PNG, GIF, WebP");
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      toast.error("Ảnh không được vượt quá 200KB");
-      return;
-    }
-
-    setUploadingAvatar(true);
-    try {
-      const response = await api.uploadImage(file, "AVATAR");
-      if (response.status === "SUCCESS" && response.data) {
-        const success = await onUpdate({ avatarUrl: response.data.secureUrl });
-        if (success) {
-          toast.success("Cập nhật ảnh đại diện thành công");
-        }
-      } else {
-        toast.error(response.message || "Upload thất bại");
-      }
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi upload");
-    } finally {
-      setUploadingAvatar(false);
-      if (avatarInputRef.current) avatarInputRef.current.value = "";
+  const handleAvatarUpload = async (url: string) => {
+    const success = await onUpdate({ avatarUrl: url });
+    if (success) {
+      toast.success("Cập nhật ảnh đại diện thành công");
     }
   };
 
-  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      toast.error("Chỉ hỗ trợ định dạng: JPG, PNG, GIF, WebP");
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      toast.error("Ảnh không được vượt quá 200KB");
-      return;
-    }
-
-    setUploadingCover(true);
-    try {
-      const response = await api.uploadImage(file, "COVER_IMAGE");
-      if (response.status === "SUCCESS" && response.data) {
-        const success = await onUpdate({ coverImageUrl: response.data.secureUrl });
-        if (success) {
-          toast.success("Cập nhật ảnh bìa thành công");
-        }
-      } else {
-        toast.error(response.message || "Upload thất bại");
-      }
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi upload");
-    } finally {
-      setUploadingCover(false);
-      if (coverInputRef.current) coverInputRef.current.value = "";
+  const handleCoverUpload = async (url: string) => {
+    const success = await onUpdate({ coverImageUrl: url });
+    if (success) {
+      toast.success("Cập nhật ảnh bìa thành công");
     }
   };
 
   return (
     <>
-      <input
-        ref={avatarInputRef}
-        type="file"
-        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-        className="hidden"
-        onChange={handleAvatarChange}
-      />
-      <input
-        ref={coverInputRef}
-        type="file"
-        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-        className="hidden"
-        onChange={handleCoverChange}
-      />
-      
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="h-32 sm:h-48 relative">
           <Image
@@ -148,17 +76,13 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
             fill
             className="object-cover"
           />
-          <button 
-            onClick={() => coverInputRef.current?.click()}
-            disabled={uploadingCover}
+          <ImageUploadButton
+            onUpload={handleCoverUpload}
+            usage="COVER_IMAGE"
             className="absolute top-2 right-2 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
           >
-            {uploadingCover ? (
-              <Icon name="sync" size={18} className="text-gray-600 animate-spin" />
-            ) : (
-              <Icon name="photo_camera" size={18} className="text-gray-600" />
-            )}
-          </button>
+            <Icon name="photo_camera" size={18} className="text-gray-600" />
+          </ImageUploadButton>
         </div>
 
         <div className="px-4 sm:px-6 pb-4 sm:pb-6">
@@ -169,20 +93,15 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
                 {user.fullName?.charAt(0)?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
-            <button 
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={uploadingAvatar}
+            <ImageUploadButton
+              onUpload={handleAvatarUpload}
+              usage="AVATAR"
               className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 border border-gray-200 disabled:opacity-50"
             >
-              {uploadingAvatar ? (
-                <Icon name="sync" size={14} className="text-gray-600 animate-spin" />
-              ) : (
-                <Icon name="photo_camera" size={14} className="text-gray-600" />
-              )}
-            </button>
+              <Icon name="photo_camera" size={14} className="text-gray-600" />
+            </ImageUploadButton>
           </div>
 
-          {/* Name & Info */}
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{user.fullName}</h1>
@@ -205,7 +124,6 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               )}
             </div>
 
-            {/* Trust Score */}
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-1">
                 <Icon name="verified" size={16} className="text-green-600" />
@@ -221,7 +139,6 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               </div>
             </div>
 
-            {/* Title, Location, Company - hiển thị hoặc placeholder */}
             {(user.title || user.location || user.company) ? (
               <div className="mt-2 space-y-1">
                 {user.title && <p className="text-gray-700">{user.title}</p>}
@@ -242,7 +159,6 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               </div>
             ) : null}
 
-            {/* Placeholder buttons - responsive */}
             {(!user.title || !user.location || !user.company) && (
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mt-3">
                 {!user.title && (
@@ -276,7 +192,6 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
             )}
           </div>
 
-          {/* Action Buttons - responsive */}
           <div className="flex flex-col sm:flex-row gap-2 mt-4">
             <Button className="bg-[#00b14f] hover:bg-[#009643] rounded-full w-full sm:w-auto">
               {user.isOpenToWork ? "Đang tìm việc" : "Sẵn sàng nhận việc"}
@@ -292,7 +207,6 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
         </div>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

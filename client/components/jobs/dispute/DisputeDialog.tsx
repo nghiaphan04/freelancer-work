@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Icon from "@/components/ui/Icon";
+import { FileUpload } from "@/components/ui/file-upload";
 
 interface CreateDisputeDialogProps {
   open: boolean;
@@ -23,7 +24,6 @@ interface CreateDisputeDialogProps {
   onSuccess?: () => void;
 }
 
-// Dialog cho Employer tạo khiếu nại
 export function CreateDisputeDialog({
   open,
   onOpenChange,
@@ -41,7 +41,7 @@ export function CreateDisputeDialog({
       return;
     }
     if (!evidenceUrl.trim()) {
-      toast.error("Vui lòng cung cấp link bằng chứng (PDF)");
+      toast.error("Vui lòng upload file bằng chứng (PDF)");
       return;
     }
 
@@ -91,24 +91,17 @@ export function CreateDisputeDialog({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Link bằng chứng (PDF) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="url"
-              value={evidenceUrl}
-              onChange={(e) => setEvidenceUrl(e.target.value)}
-              placeholder="https://drive.google.com/file/d/xxx/evidence.pdf"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b14f]"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Upload file PDF lên Google Drive hoặc dịch vụ lưu trữ và dán link ở đây
-            </p>
-          </div>
+          <FileUpload
+            value={evidenceUrl}
+            onChange={(url) => setEvidenceUrl(url)}
+            usage="DISPUTE_EVIDENCE"
+            label="Bằng chứng (PDF)"
+            required
+            disabled={isSubmitting}
+          />
 
           <div className="bg-yellow-50 p-3 rounded-lg text-sm text-yellow-700">
-            <p className="font-medium mb-1">⚠️ Lưu ý:</p>
+            <p className="font-medium mb-1">Lưu ý:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Công việc sẽ bị khóa cho đến khi admin giải quyết</li>
               <li>Tiền escrow sẽ được giữ lại</li>
@@ -141,7 +134,6 @@ interface DisputeResponseDialogProps {
   onSuccess?: () => void;
 }
 
-// Dialog cho Freelancer phản hồi khiếu nại
 export function DisputeResponseDialog({
   open,
   onOpenChange,
@@ -158,7 +150,7 @@ export function DisputeResponseDialog({
       return;
     }
     if (!evidenceUrl.trim()) {
-      toast.error("Vui lòng cung cấp link bằng chứng (PDF)");
+      toast.error("Vui lòng upload file bằng chứng (PDF)");
       return;
     }
 
@@ -198,7 +190,6 @@ export function DisputeResponseDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Status */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Trạng thái:</span>
             <span className={`px-2 py-1 rounded-full text-xs ${
@@ -208,10 +199,9 @@ export function DisputeResponseDialog({
             </span>
           </div>
 
-          {/* Employer complaint */}
           <div className="bg-red-50 p-4 rounded-lg">
             <h4 className="font-medium text-red-800 mb-2">
-              📋 Khiếu nại từ: {dispute.employer.fullName}
+              Khiếu nại từ: {dispute.employer.fullName}
             </h4>
             <p className="text-sm text-red-700 whitespace-pre-wrap">{dispute.employerDescription}</p>
             {dispute.employerEvidenceUrl && (
@@ -221,25 +211,24 @@ export function DisputeResponseDialog({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 mt-2 text-sm text-red-600 hover:underline"
               >
-                📎 Xem bằng chứng
+                <Icon name="picture_as_pdf" size={16} />
+                Xem bằng chứng
               </a>
             )}
           </div>
 
-          {/* Deadline warning */}
           {dispute.freelancerDeadline && canRespond && (
             <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-700">
               <p className="font-medium">
-                ⏳ Hạn phản hồi: {formatDateTime(dispute.freelancerDeadline)}
+                Hạn phản hồi: {formatDateTime(dispute.freelancerDeadline)}
               </p>
             </div>
           )}
 
-          {/* Already responded */}
           {dispute.freelancerDescription && (
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-800 mb-2">
-                💬 Phản hồi của bạn
+                Phản hồi của bạn
               </h4>
               <p className="text-sm text-blue-700 whitespace-pre-wrap">{dispute.freelancerDescription}</p>
               {dispute.freelancerEvidenceUrl && (
@@ -249,13 +238,13 @@ export function DisputeResponseDialog({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
                 >
-                  📎 Xem bằng chứng
+                  <Icon name="picture_as_pdf" size={16} />
+                  Xem bằng chứng
                 </a>
               )}
             </div>
           )}
 
-          {/* Response form */}
           {canRespond && !dispute.freelancerDescription && (
             <>
               <div>
@@ -271,33 +260,27 @@ export function DisputeResponseDialog({
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Link bằng chứng (PDF) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={evidenceUrl}
-                  onChange={(e) => setEvidenceUrl(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/xxx/response.pdf"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b14f]"
-                />
-              </div>
+              <FileUpload
+                value={evidenceUrl}
+                onChange={(url) => setEvidenceUrl(url)}
+                usage="DISPUTE_EVIDENCE"
+                label="Bằng chứng (PDF)"
+                required
+                disabled={isSubmitting}
+              />
             </>
           )}
 
-          {/* Cannot respond anymore */}
           {!canRespond && !dispute.freelancerDescription && (
             <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
               <p>Đã hết thời hạn phản hồi hoặc khiếu nại đang chờ admin quyết định.</p>
             </div>
           )}
 
-          {/* Admin decision */}
           {dispute.adminNote && (
             <div className="bg-purple-50 p-4 rounded-lg">
               <h4 className="font-medium text-purple-800 mb-2">
-                ⚖️ Quyết định của Admin
+                Quyết định của Admin
               </h4>
               <p className="text-sm text-purple-700">{dispute.adminNote}</p>
               {dispute.resolvedBy && (
@@ -334,7 +317,6 @@ interface ViewDisputeDialogProps {
   dispute: Dispute | null;
 }
 
-// Dialog xem thông tin khiếu nại (cho cả employer và freelancer)
 export function ViewDisputeDialog({
   open,
   onOpenChange,
@@ -356,7 +338,6 @@ export function ViewDisputeDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Status */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Trạng thái:</span>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -370,10 +351,9 @@ export function ViewDisputeDialog({
             </span>
           </div>
 
-          {/* Employer complaint */}
           <div className="bg-red-50 p-4 rounded-lg">
             <h4 className="font-medium text-red-800 mb-2">
-              📋 Khiếu nại từ Employer: {dispute.employer.fullName}
+              Khiếu nại từ Employer: {dispute.employer.fullName}
             </h4>
             <p className="text-sm text-red-700 whitespace-pre-wrap">{dispute.employerDescription}</p>
             {dispute.employerEvidenceUrl && (
@@ -383,16 +363,16 @@ export function ViewDisputeDialog({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 mt-2 text-sm text-red-600 hover:underline"
               >
-                📎 Xem bằng chứng
+                <Icon name="picture_as_pdf" size={16} />
+                Xem bằng chứng
               </a>
             )}
           </div>
 
-          {/* Freelancer response */}
           {dispute.freelancerDescription ? (
             <div className="bg-blue-50 p-4 rounded-lg">
               <h4 className="font-medium text-blue-800 mb-2">
-                💬 Phản hồi từ Freelancer: {dispute.freelancer.fullName}
+                Phản hồi từ Freelancer: {dispute.freelancer.fullName}
               </h4>
               <p className="text-sm text-blue-700 whitespace-pre-wrap">{dispute.freelancerDescription}</p>
               {dispute.freelancerEvidenceUrl && (
@@ -402,14 +382,15 @@ export function ViewDisputeDialog({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
                 >
-                  📎 Xem bằng chứng
+                  <Icon name="picture_as_pdf" size={16} />
+                  Xem bằng chứng
                 </a>
               )}
             </div>
           ) : dispute.freelancerDeadline ? (
             <div className="bg-yellow-50 p-4 rounded-lg">
               <h4 className="font-medium text-yellow-800 mb-1">
-                ⏳ Chờ freelancer phản hồi
+                Chờ freelancer phản hồi
               </h4>
               <p className="text-sm text-yellow-700">
                 Hạn: {formatDateTime(dispute.freelancerDeadline)}
@@ -423,11 +404,10 @@ export function ViewDisputeDialog({
             </div>
           )}
 
-          {/* Admin decision */}
           {dispute.adminNote && (
             <div className="bg-purple-50 p-4 rounded-lg">
               <h4 className="font-medium text-purple-800 mb-2">
-                ⚖️ Quyết định của Admin
+                Quyết định của Admin
               </h4>
               <p className="text-sm text-purple-700">{dispute.adminNote}</p>
               {dispute.resolvedBy && (

@@ -33,6 +33,9 @@ public class JobApplication {
     @Column(name = "cover_letter", columnDefinition = "TEXT")
     private String coverLetter;
 
+    @Column(name = "cv_url", length = 500)
+    private String cvUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -76,9 +79,10 @@ public class JobApplication {
         this.status = EApplicationStatus.WITHDRAWN;
     }
 
-    public void reapply(String coverLetter) {
+    public void reapply(String coverLetter, String cvUrl) {
         this.status = EApplicationStatus.PENDING;
         this.coverLetter = coverLetter;
+        this.cvUrl = cvUrl;
     }
 
     public boolean isWithdrawn() {

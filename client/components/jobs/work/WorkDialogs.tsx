@@ -14,8 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Icon from "@/components/ui/Icon";
+import { FileUpload } from "@/components/ui/file-upload";
 
-// ============ FREELANCER: Submit Work Dialog ============
 interface WorkSubmitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,7 +37,7 @@ export function WorkSubmitDialog({
 
   const handleSubmit = async () => {
     if (!url.trim()) {
-      toast.error("Vui lòng nhập link sản phẩm");
+      toast.error("Vui lòng upload file sản phẩm");
       return;
     }
 
@@ -74,21 +74,14 @@ export function WorkSubmitDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Link sản phẩm <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://drive.google.com/... hoặc https://github.com/..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b14f]"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Upload sản phẩm lên Google Drive, GitHub, Figma,... và dán link ở đây
-            </p>
-          </div>
+          <FileUpload
+            value={url}
+            onChange={(uploadedUrl) => setUrl(uploadedUrl)}
+            usage="WORK_SUBMISSION"
+            label="File sản phẩm (PDF)"
+            required
+            disabled={isSubmitting}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -104,7 +97,7 @@ export function WorkSubmitDialog({
           </div>
 
           <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
-            <p className="font-medium mb-1">📋 Lưu ý:</p>
+            <p className="font-medium mb-1">Lưu ý:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Employer sẽ có 3 ngày để duyệt sản phẩm</li>
               <li>Nếu không duyệt, hệ thống sẽ tự động thanh toán cho bạn</li>
@@ -130,7 +123,6 @@ export function WorkSubmitDialog({
   );
 }
 
-// ============ EMPLOYER: Review Work Dialog ============
 interface WorkReviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -240,7 +232,6 @@ export function WorkReviewDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Work Submission Info */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Icon name="person" size={18} className="text-gray-500" />
@@ -275,7 +266,6 @@ export function WorkReviewDialog({
               </div>
             </div>
 
-            {/* Revision History */}
             {workSubmission.workRevisionNote && (
               <div className="bg-yellow-50 p-3 rounded-lg">
                 <p className="text-sm text-yellow-700">
@@ -284,7 +274,6 @@ export function WorkReviewDialog({
               </div>
             )}
 
-            {/* Revision Form */}
             {showRevisionForm ? (
               <div className="space-y-3">
                 <div>
@@ -322,7 +311,7 @@ export function WorkReviewDialog({
               </div>
             ) : (
               <div className="bg-green-50 p-3 rounded-lg text-sm text-green-700">
-                <p className="font-medium mb-1">✅ Khi duyệt sản phẩm:</p>
+                <p className="font-medium mb-1">Khi duyệt sản phẩm:</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Tiền escrow sẽ được chuyển cho freelancer</li>
                   <li>Cả hai sẽ được +1 điểm uy tín</li>

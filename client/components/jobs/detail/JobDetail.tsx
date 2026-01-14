@@ -86,7 +86,7 @@ export default function JobDetail() {
     }
   };
 
-  const handleApply = async () => {
+  const handleApply = async (cvUrl?: string) => {
     if (!user) {
       toast.error("Vui lòng đăng nhập để ứng tuyển");
       router.push("/login");
@@ -95,10 +95,14 @@ export default function JobDetail() {
 
     setIsApplying(true);
     try {
-      const response = await api.applyJob(jobId, { coverLetter: coverLetter.trim() || undefined });
+      const response = await api.applyJob(jobId, { 
+        coverLetter: coverLetter.trim() || undefined,
+        cvUrl: cvUrl || undefined
+      });
       if (response.status === "SUCCESS") {
         toast.success(response.message || "Ứng tuyển thành công!");
         setShowApplyDialog(false);
+        setCoverLetter("");
         setMyApplication(response.data);
         if (job) {
           setJob({ ...job, applicationCount: job.applicationCount + 1 });

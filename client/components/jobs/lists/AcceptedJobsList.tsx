@@ -612,7 +612,7 @@ export default function AcceptedJobsList() {
                         {job.status === "IN_PROGRESS" && job.workSubmissionDeadline && (
                           <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg mb-2">
                             <Icon name="timer" size={16} />
-                            <span>⚠️ Hạn nộp sản phẩm: {new Date(job.workSubmissionDeadline).toLocaleDateString("vi-VN")}</span>
+                            <span>Hạn nộp sản phẩm: {new Date(job.workSubmissionDeadline).toLocaleDateString("vi-VN")}</span>
                           </div>
                         )}
                         {job.status === "IN_PROGRESS" && job.workReviewDeadline && (

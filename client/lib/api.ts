@@ -124,7 +124,7 @@ export const api = {
     request<void>(`/api/jobs/${id}`, { method: "DELETE" }),
 
   // Job Applications
-  applyJob: (jobId: number, data: { coverLetter?: string }) =>
+  applyJob: (jobId: number, data: { coverLetter?: string; cvUrl?: string }) =>
     request<JobApplication>(`/api/jobs/${jobId}/apply`, { method: "POST", body: JSON.stringify(data) }),
 
   getMyApplicationForJob: (jobId: number) =>
@@ -692,6 +692,7 @@ export interface JobApplication {
     untrustScore?: number;    // Điểm không uy tín (KUT)
   };
   coverLetter?: string;
+  cvUrl?: string;
   status: ApplicationStatus;
   // Work submission fields
   workStatus?: WorkStatus;

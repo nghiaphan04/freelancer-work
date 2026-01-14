@@ -73,15 +73,14 @@ public class JobApplicationService {
 
         JobApplication saved;
         if (existingApplication != null && existingApplication.isWithdrawn()) {
-            // Re-apply: cập nhật đơn cũ
-            existingApplication.reapply(req != null ? req.getCoverLetter() : null);
+            existingApplication.reapply(req != null ? req.getCoverLetter() : null, req != null ? req.getCvUrl() : null);
             saved = jobApplicationRepository.save(existingApplication);
         } else {
-            // Apply mới
             JobApplication application = JobApplication.builder()
                     .job(job)
                     .freelancer(user)
                     .coverLetter(req != null ? req.getCoverLetter() : null)
+                    .cvUrl(req != null ? req.getCvUrl() : null)
                     .status(EApplicationStatus.PENDING)
                     .build();
             saved = jobApplicationRepository.save(application);
@@ -294,6 +293,7 @@ public class JobApplicationService {
                 .jobTitle(job.getTitle())
                 .freelancer(freelancerResponse)
                 .coverLetter(application.getCoverLetter())
+                .cvUrl(application.getCvUrl())
                 .status(application.getStatus())
                 .workStatus(application.getWorkStatus())
                 .workStatusLabel(JobApplicationResponse.getWorkStatusLabel(application.getWorkStatus()))
