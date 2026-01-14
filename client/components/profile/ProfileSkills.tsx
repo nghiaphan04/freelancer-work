@@ -31,7 +31,7 @@ export default function ProfileSkills({ skills = [], onUpdate, isLoading }: Prof
 
   const handleAddSkill = () => {
     const trimmed = newSkill.trim();
-    if (trimmed && !editedSkills.includes(trimmed)) {
+    if (trimmed && !editedSkills.includes(trimmed) && editedSkills.length < 20) {
       setEditedSkills([...editedSkills, trimmed]);
       setNewSkill("");
     }
@@ -62,7 +62,7 @@ export default function ProfileSkills({ skills = [], onUpdate, isLoading }: Prof
           <h2 className="text-lg font-semibold text-gray-900">Kỹ năng</h2>
           <button
             onClick={handleOpenEdit}
-            className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full"
+            className="text-gray-500 hover:text-[#00b14f]"
           >
             <Icon name={skills.length > 0 ? "edit" : "add"} size={18} />
           </button>
@@ -73,7 +73,7 @@ export default function ProfileSkills({ skills = [], onUpdate, isLoading }: Prof
             {skills.map((skill) => (
               <span
                 key={skill}
-                className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                className="px-3 py-1 bg-[#00b14f]/10 text-[#00b14f] rounded-full text-sm"
               >
                 {skill}
               </span>
@@ -91,8 +91,8 @@ export default function ProfileSkills({ skills = [], onUpdate, isLoading }: Prof
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={isEditOpen} onOpenChange={(open) => !isLoading && setIsEditOpen(open)}>
+        <DialogContent className="sm:max-w-[500px]" onPointerDownOutside={(e) => isLoading && e.preventDefault()} onEscapeKeyDown={(e) => isLoading && e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Chỉnh sửa kỹ năng</DialogTitle>
           </DialogHeader>
@@ -105,29 +105,30 @@ export default function ProfileSkills({ skills = [], onUpdate, isLoading }: Prof
                 onKeyDown={handleKeyDown}
                 placeholder="Nhập kỹ năng mới..."
                 className="flex-1"
+                disabled={isLoading}
               />
               <Button
                 type="button"
+                variant="outline"
                 onClick={handleAddSkill}
-                disabled={!newSkill.trim()}
-                className="bg-[#00b14f] hover:bg-[#009643]"
+                disabled={isLoading || !newSkill.trim() || editedSkills.length >= 20}
               >
                 Thêm
               </Button>
             </div>
 
-            {/* Skills list */}
             {editedSkills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {editedSkills.map((skill) => (
                   <span
                     key={skill}
-                    className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm flex items-center gap-1 group"
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-[#00b14f]/10 text-[#00b14f] rounded-full text-sm"
                   >
                     {skill}
                     <button
                       onClick={() => handleRemoveSkill(skill)}
-                      className="ml-1 text-gray-400 hover:text-red-500"
+                      className="hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isLoading}
                     >
                       <Icon name="close" size={14} />
                     </button>
@@ -139,9 +140,10 @@ export default function ProfileSkills({ skills = [], onUpdate, isLoading }: Prof
                 Chưa có kỹ năng nào. Thêm kỹ năng của bạn ở trên.
               </p>
             )}
+            <p className="text-xs text-gray-400 mt-2">Tối đa 20 kỹ năng</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isLoading}>
               Hủy
             </Button>
             <Button

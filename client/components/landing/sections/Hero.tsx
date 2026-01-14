@@ -99,7 +99,7 @@ export default function Hero() {
         {/* Mobile Job Categories Panel */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white rounded-xl shadow-lg mb-4 overflow-hidden">
-            <div className="max-h-[400px] overflow-y-auto">
+            <div className="max-h-[400px] overflow-y-auto scrollbar-thin">
               {jobCategories.map((category) => (
                 <div key={category.id} className="border-b border-gray-100 last:border-b-0">
                   <button

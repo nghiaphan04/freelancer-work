@@ -178,7 +178,7 @@ export function DisputeResponseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin rounded-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon name="gavel" size={20} className="text-orange-500" />
@@ -326,7 +326,7 @@ export function ViewDisputeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin rounded-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon name="gavel" size={20} className="text-orange-500" />

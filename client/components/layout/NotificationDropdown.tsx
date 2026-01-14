@@ -100,7 +100,7 @@ export default function NotificationDropdown() {
         </div>
 
         {/* Content */}
-        <div className="max-h-[400px] overflow-y-auto">
+        <div className="max-h-[400px] overflow-y-auto scrollbar-thin">
           {isLoading ? (
             <div className="p-4 space-y-3">
               {[1, 2, 3].map((i) => (

@@ -16,7 +16,6 @@ public class JobApplicationResponse {
     private String jobTitle;
     private FreelancerResponse freelancer;
     private String coverLetter;
-    private String cvUrl;
     private EApplicationStatus status;
     
     // Work submission fields

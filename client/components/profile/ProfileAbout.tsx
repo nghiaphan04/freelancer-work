@@ -39,7 +39,7 @@ export default function ProfileAbout({ bio, onUpdate, isLoading }: ProfileAboutP
         {!isEditing && (
           <button
             onClick={handleEdit}
-            className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full"
+            className="text-gray-500 hover:text-[#00b14f]"
           >
             <Icon name={bio ? "edit" : "add"} size={18} />
           </button>

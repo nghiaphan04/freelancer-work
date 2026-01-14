@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FileUpload } from "@/components/ui/file-upload";
 
 interface JobApplyDialogProps {
   open: boolean;
@@ -21,7 +19,7 @@ interface JobApplyDialogProps {
   jobTitle: string;
   coverLetter: string;
   onCoverLetterChange: (value: string) => void;
-  onSubmit: (cvUrl?: string) => void;
+  onSubmit: () => void;
   isLoading: boolean;
 }
 
@@ -34,15 +32,8 @@ export default function JobApplyDialog({
   onSubmit,
   isLoading,
 }: JobApplyDialogProps) {
-  const [cvUrl, setCvUrl] = useState("");
-
-  const handleSubmit = () => {
-    onSubmit(cvUrl || undefined);
-  };
-
   const handleClose = () => {
     if (!isLoading) {
-      setCvUrl("");
       onOpenChange(false);
     }
   };
@@ -57,15 +48,7 @@ export default function JobApplyDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-4">
-          <FileUpload
-            value={cvUrl}
-            onChange={(url) => setCvUrl(url)}
-            usage="APPLICATION_CV"
-            label="CV/Hồ sơ (PDF - không bắt buộc)"
-            disabled={isLoading}
-          />
-
+        <div className="py-4">
           <div>
             <Label htmlFor="coverLetter" className="text-sm text-gray-700">
               Thư giới thiệu (không bắt buộc)
@@ -85,7 +68,7 @@ export default function JobApplyDialog({
           <Button variant="outline" onClick={handleClose} disabled={isLoading}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading} className="bg-[#00b14f] hover:bg-[#009643]">
+          <Button onClick={onSubmit} disabled={isLoading} className="bg-[#00b14f] hover:bg-[#009643]">
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

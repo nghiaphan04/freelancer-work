@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -26,22 +27,32 @@ interface ProfileCardProps {
 
 export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [roleInput, setRoleInput] = useState("");
   const [formData, setFormData] = useState({
-    fullName: user.fullName || "",
-    title: user.title || "",
-    location: user.location || "",
-    company: user.company || "",
-    phoneNumber: user.phoneNumber || "",
+    fullName: user.fullName || "Nguyễn Văn A",
+    title: user.title || "Senior Software Engineer",
+    location: user.location || "Hồ Chí Minh, Việt Nam",
+    company: user.company || "ABC Technology",
+    phoneNumber: user.phoneNumber || "0901234567",
+    isOpenToWork: user.isOpenToWork ?? true,
+    openToWorkRoles: user.openToWorkRoles?.length ? user.openToWorkRoles : ["Frontend Developer", "Fullstack Developer"],
+    bankAccountNumber: user.bankAccountNumber || "1234567890",
+    bankName: user.bankName || "Vietcombank",
   });
 
   const handleOpenEdit = () => {
     setFormData({
-      fullName: user.fullName || "",
-      title: user.title || "",
-      location: user.location || "",
-      company: user.company || "",
-      phoneNumber: user.phoneNumber || "",
+      fullName: user.fullName || "Nguyễn Văn A",
+      title: user.title || "Senior Software Engineer",
+      location: user.location || "Hồ Chí Minh, Việt Nam",
+      company: user.company || "ABC Technology",
+      phoneNumber: user.phoneNumber || "0901234567",
+      isOpenToWork: user.isOpenToWork ?? true,
+      openToWorkRoles: user.openToWorkRoles?.length ? user.openToWorkRoles : ["Frontend Developer", "Fullstack Developer"],
+      bankAccountNumber: user.bankAccountNumber || "1234567890",
+      bankName: user.bankName || "Vietcombank",
     });
+    setRoleInput("");
     setIsEditOpen(true);
   };
 
@@ -53,6 +64,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
   };
 
   const handleAvatarUpload = async (url: string) => {
+    if (!url || url === user.avatarUrl) return;
     const success = await onUpdate({ avatarUrl: url });
     if (success) {
       toast.success("Cập nhật ảnh đại diện thành công");
@@ -60,10 +72,23 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
   };
 
   const handleCoverUpload = async (url: string) => {
+    if (!url || url === user.coverImageUrl) return;
     const success = await onUpdate({ coverImageUrl: url });
     if (success) {
       toast.success("Cập nhật ảnh bìa thành công");
     }
+  };
+
+  const addRole = () => {
+    const role = roleInput.trim();
+    if (role && formData.openToWorkRoles.length < 10 && !formData.openToWorkRoles.includes(role)) {
+      setFormData(prev => ({ ...prev, openToWorkRoles: [...prev.openToWorkRoles, role] }));
+      setRoleInput("");
+    }
+  };
+
+  const removeRole = (role: string) => {
+    setFormData(prev => ({ ...prev, openToWorkRoles: prev.openToWorkRoles.filter(r => r !== role) }));
   };
 
   return (
@@ -107,9 +132,9 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{user.fullName}</h1>
               <button
                 onClick={handleOpenEdit}
-                className="p-1 hover:bg-gray-100 rounded-full"
+                className="text-gray-500 hover:text-[#00b14f]"
               >
-                <Icon name="edit" size={18} className="text-gray-500" />
+                <Icon name="edit" size={18} />
               </button>
               {user.isVerified ? (
                 <span className="text-sm text-[#00b14f] border border-[#00b14f] rounded-full px-3 py-0.5 flex items-center gap-1">
@@ -176,7 +201,7 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
                     className="text-gray-400 text-sm hover:text-[#00b14f] flex items-center gap-1"
                   >
                     <Icon name="add" size={16} />
-                    Thêm địa điểm
+                    Them dia diem
                   </button>
                 )}
                 {!user.company && (
@@ -193,8 +218,11 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 mt-4">
-            <Button className="bg-[#00b14f] hover:bg-[#009643] rounded-full w-full sm:w-auto">
-              {user.isOpenToWork ? "Đang tìm việc" : "Sẵn sàng nhận việc"}
+            <Button 
+              className={`rounded-full w-full sm:w-auto ${user.isOpenToWork ? "bg-[#00b14f] hover:bg-[#009643]" : "bg-gray-500 hover:bg-gray-600"}`}
+              onClick={handleOpenEdit}
+            >
+              {user.isOpenToWork ? "Đang tìm việc" : "Chưa sẵn sàng"}
             </Button>
             <Button
               variant="outline"
@@ -207,70 +235,140 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
         </div>
       </div>
 
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={isEditOpen} onOpenChange={(open) => !isLoading && setIsEditOpen(open)}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto scrollbar-thin rounded-lg" onPointerDownOutside={(e) => isLoading && e.preventDefault()} onEscapeKeyDown={(e) => isLoading && e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>Chỉnh sửa thông tin cơ bản</DialogTitle>
+            <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="fullName">Họ và tên</Label>
-              <Input
-                id="fullName"
-                value={formData.fullName}
-                onChange={(e) =>
-                  setFormData({ ...formData, fullName: e.target.value })
-                }
-                placeholder="Nhập họ và tên"
-              />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="fullName">Họ và tên</Label>
+                <Input
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  placeholder="Nhập họ và tên"
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phoneNumber">Số điện thoại</Label>
+                <Input
+                  id="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  placeholder="VD: 0901234567"
+                  disabled={isLoading}
+                />
+              </div>
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="title">Chức danh</Label>
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="VD: Senior Software Engineer"
+                disabled={isLoading}
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="company">Công ty</Label>
-              <Input
-                id="company"
-                value={formData.company}
-                onChange={(e) =>
-                  setFormData({ ...formData, company: e.target.value })
-                }
-                placeholder="VD: ABC Technology"
-              />
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="company">Công ty</Label>
+                <Input
+                  id="company"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="VD: ABC Technology"
+                  disabled={isLoading}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="location">Địa điểm</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="VD: Hồ Chí Minh, Việt Nam"
+                  disabled={isLoading}
+                />
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="location">Địa điểm</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                placeholder="VD: Hồ Chí Minh, Việt Nam"
-              />
+
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <Label>Sẵn sàng nhận việc</Label>
+                  <p className="text-sm text-gray-500">Hiển thị trạng thái tìm việc trên hồ sơ</p>
+                </div>
+                <Switch
+                  checked={formData.isOpenToWork}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isOpenToWork: checked })}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {formData.isOpenToWork && (
+                <div className="grid gap-2">
+                  <Label>Vị trí mong muốn</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={roleInput}
+                      onChange={(e) => setRoleInput(e.target.value)}
+                      placeholder="VD: Frontend Developer"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addRole(); } }}
+                      disabled={isLoading}
+                    />
+                    <Button type="button" variant="outline" onClick={addRole} disabled={isLoading}>Thêm</Button>
+                  </div>
+                  {formData.openToWorkRoles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.openToWorkRoles.map((role) => (
+                        <span key={role} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                          {role}
+                          <button type="button" onClick={() => removeRole(role)} className="hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isLoading}>
+                            <Icon name="close" size={14} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="phoneNumber">Số điện thoại</Label>
-              <Input
-                id="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, phoneNumber: e.target.value })
-                }
-                placeholder="VD: 0901234567"
-              />
+
+            <div className="border-t pt-4">
+              <Label className="text-base font-medium">Thông tin ngân hàng</Label>
+              <p className="text-sm text-gray-500 mb-3">Để nhận thanh toán từ các công việc</p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="bankName">Tên ngân hàng</Label>
+                  <Input
+                    id="bankName"
+                    value={formData.bankName}
+                    onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                    placeholder="VD: Vietcombank"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="bankAccountNumber">So tai khoan</Label>
+                  <Input
+                    id="bankAccountNumber"
+                    value={formData.bankAccountNumber}
+                    onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value })}
+                    placeholder="VD: 1234567890"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isLoading}>
               Hủy
             </Button>
             <Button

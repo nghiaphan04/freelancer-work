@@ -675,7 +675,7 @@ export default function AcceptedJobsList() {
 
       {/* History Dialog */}
       <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin rounded-lg">
           <DialogHeader>
             <DialogTitle>Lịch sử hoạt động</DialogTitle>
             <DialogDescription>
