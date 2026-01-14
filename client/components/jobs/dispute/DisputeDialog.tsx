@@ -85,7 +85,7 @@ export function CreateDisputeDialog({
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Mô tả chi tiết sai phạm của freelancer..."
+              placeholder="Mô tả chi tiết sai phạm của người làm..."
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b14f]"
             />
@@ -100,12 +100,15 @@ export function CreateDisputeDialog({
             disabled={isSubmitting}
           />
 
-          <div className="bg-yellow-50 p-3 rounded-lg text-sm text-yellow-700">
-            <p className="font-medium mb-1">Lưu ý:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Công việc sẽ bị khóa cho đến khi admin giải quyết</li>
-              <li>Tiền escrow sẽ được giữ lại</li>
-              <li>Freelancer sẽ được thông báo và có cơ hội phản hồi</li>
+          <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-600">
+            <p className="font-medium mb-1 flex items-center gap-1">
+              <Icon name="info" size={16} />
+              Lưu ý:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-5">
+              <li>Công việc sẽ bị khóa cho đến khi quản trị viên giải quyết</li>
+              <li>Tiền ký quỹ sẽ được giữ lại</li>
+              <li>Người làm sẽ được thông báo và có cơ hội phản hồi</li>
             </ul>
           </div>
         </div>
@@ -117,7 +120,7 @@ export function CreateDisputeDialog({
           <Button 
             onClick={handleSubmit} 
             disabled={isSubmitting}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-gray-600 hover:bg-gray-700"
           >
             {isSubmitting ? "Đang xử lý..." : "Gửi khiếu nại"}
           </Button>
@@ -181,7 +184,7 @@ export function DisputeResponseDialog({
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin rounded-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Icon name="gavel" size={20} className="text-orange-500" />
+            <Icon name="gavel" size={20} className="text-gray-500" />
             Thông tin khiếu nại
           </DialogTitle>
           <DialogDescription>
@@ -199,26 +202,28 @@ export function DisputeResponseDialog({
             </span>
           </div>
 
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h4 className="font-medium text-red-800 mb-2">
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h4 className="font-medium text-gray-800 mb-2">
               Khiếu nại từ: {dispute.employer.fullName}
             </h4>
-            <p className="text-sm text-red-700 whitespace-pre-wrap">{dispute.employerDescription}</p>
+            <p className="text-sm text-gray-600 whitespace-pre-wrap">{dispute.employerDescription}</p>
             {dispute.employerEvidenceUrl && (
               <a
                 href={dispute.employerEvidenceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 mt-2 text-sm text-red-600 hover:underline"
+                download
+                className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
               >
-                <Icon name="picture_as_pdf" size={16} />
-                Xem bằng chứng
+                <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
+                <Icon name="download" size={18} className="text-gray-500 shrink-0" />
               </a>
             )}
           </div>
 
           {dispute.freelancerDeadline && canRespond && (
-            <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-700">
+            <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600 border border-gray-200">
               <p className="font-medium">
                 Hạn phản hồi: {formatDateTime(dispute.freelancerDeadline)}
               </p>
@@ -226,20 +231,22 @@ export function DisputeResponseDialog({
           )}
 
           {dispute.freelancerDescription && (
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-800 mb-2">
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-800 mb-2">
                 Phản hồi của bạn
               </h4>
-              <p className="text-sm text-blue-700 whitespace-pre-wrap">{dispute.freelancerDescription}</p>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">{dispute.freelancerDescription}</p>
               {dispute.freelancerEvidenceUrl && (
                 <a
                   href={dispute.freelancerEvidenceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
+                  download
+                  className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
                 >
-                  <Icon name="picture_as_pdf" size={16} />
-                  Xem bằng chứng
+                  <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                  <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
+                  <Icon name="download" size={18} className="text-gray-500 shrink-0" />
                 </a>
               )}
             </div>
@@ -273,18 +280,18 @@ export function DisputeResponseDialog({
 
           {!canRespond && !dispute.freelancerDescription && (
             <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
-              <p>Đã hết thời hạn phản hồi hoặc khiếu nại đang chờ admin quyết định.</p>
+              <p>Đã hết thời hạn phản hồi hoặc khiếu nại đang chờ quản trị viên quyết định.</p>
             </div>
           )}
 
           {dispute.adminNote && (
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <h4 className="font-medium text-purple-800 mb-2">
-                Quyết định của Admin
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-800 mb-2">
+                Quyết định của quản trị viên
               </h4>
-              <p className="text-sm text-purple-700">{dispute.adminNote}</p>
+              <p className="text-sm text-gray-600">{dispute.adminNote}</p>
               {dispute.resolvedBy && (
-                <p className="text-xs text-purple-600 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                   Người xử lý: {dispute.resolvedBy.fullName} - {formatDateTime(dispute.resolvedAt!)}
                 </p>
               )}
@@ -329,7 +336,7 @@ export function ViewDisputeDialog({
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin rounded-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Icon name="gavel" size={20} className="text-orange-500" />
+            <Icon name="gavel" size={20} className="text-gray-500" />
             Chi tiết khiếu nại
           </DialogTitle>
           <DialogDescription>
@@ -340,78 +347,76 @@ export function ViewDisputeDialog({
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Trạng thái:</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              dispute.status === "PENDING_FREELANCER_RESPONSE" ? "bg-orange-100 text-orange-700" :
-              dispute.status === "PENDING_ADMIN_DECISION" ? "bg-blue-100 text-blue-700" :
-              dispute.status === "EMPLOYER_WON" ? "bg-green-100 text-green-700" :
-              dispute.status === "FREELANCER_WON" ? "bg-green-100 text-green-700" :
-              "bg-gray-100 text-gray-700"
-            }`}>
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
               {dispute.statusLabel}
             </span>
           </div>
 
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h4 className="font-medium text-red-800 mb-2">
-              Khiếu nại từ Employer: {dispute.employer.fullName}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h4 className="font-medium text-gray-800 mb-2">
+              Khiếu nại từ bên thuê: {dispute.employer.fullName}
             </h4>
-            <p className="text-sm text-red-700 whitespace-pre-wrap">{dispute.employerDescription}</p>
+            <p className="text-sm text-gray-600 whitespace-pre-wrap">{dispute.employerDescription}</p>
             {dispute.employerEvidenceUrl && (
               <a
                 href={dispute.employerEvidenceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 mt-2 text-sm text-red-600 hover:underline"
+                download
+                className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
               >
-                <Icon name="picture_as_pdf" size={16} />
-                Xem bằng chứng
+                <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
+                <Icon name="download" size={18} className="text-gray-500 shrink-0" />
               </a>
             )}
           </div>
 
           {dispute.freelancerDescription ? (
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-medium text-blue-800 mb-2">
-                Phản hồi từ Freelancer: {dispute.freelancer.fullName}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-800 mb-2">
+                Phản hồi từ người làm: {dispute.freelancer.fullName}
               </h4>
-              <p className="text-sm text-blue-700 whitespace-pre-wrap">{dispute.freelancerDescription}</p>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">{dispute.freelancerDescription}</p>
               {dispute.freelancerEvidenceUrl && (
                 <a
                   href={dispute.freelancerEvidenceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
+                  download
+                  className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
                 >
-                  <Icon name="picture_as_pdf" size={16} />
-                  Xem bằng chứng
+                  <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                  <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
+                  <Icon name="download" size={18} className="text-gray-500 shrink-0" />
                 </a>
               )}
             </div>
           ) : dispute.freelancerDeadline ? (
-            <div className="bg-yellow-50 p-4 rounded-lg">
-              <h4 className="font-medium text-yellow-800 mb-1">
-                Chờ freelancer phản hồi
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-800 mb-1">
+                Chờ người làm phản hồi
               </h4>
-              <p className="text-sm text-yellow-700">
+              <p className="text-sm text-gray-600">
                 Hạn: {formatDateTime(dispute.freelancerDeadline)}
               </p>
             </div>
           ) : (
-            <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
               <p className="text-sm text-gray-600">
-                Chưa yêu cầu freelancer phản hồi
+                Chưa yêu cầu người làm phản hồi
               </p>
             </div>
           )}
 
           {dispute.adminNote && (
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <h4 className="font-medium text-purple-800 mb-2">
-                Quyết định của Admin
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-800 mb-2">
+                Quyết định của quản trị viên
               </h4>
-              <p className="text-sm text-purple-700">{dispute.adminNote}</p>
+              <p className="text-sm text-gray-600">{dispute.adminNote}</p>
               {dispute.resolvedBy && (
-                <p className="text-xs text-purple-600 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                   Người xử lý: {dispute.resolvedBy.fullName} - {formatDateTime(dispute.resolvedAt!)}
                 </p>
               )}

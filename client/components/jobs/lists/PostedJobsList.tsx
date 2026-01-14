@@ -25,11 +25,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const FILTER_TABS: { key: JobStatus | "all" | "history"; label: string }[] = [
+const FILTER_TABS: { key: JobStatus | "all" | "history" | "review"; label: string }[] = [
   { key: "all", label: "Tất cả" },
   { key: "DRAFT", label: "Bản nháp" },
   { key: "OPEN", label: "Đang tuyển" },
   { key: "IN_PROGRESS", label: "Đang thực hiện" },
+  { key: "review", label: "Chờ nghiệm thu" },
   { key: "DISPUTED", label: "Tranh chấp" },
   { key: "COMPLETED", label: "Hoàn thành" },
   { key: "history", label: "Lịch sử" },
@@ -39,8 +40,9 @@ export default function PostedJobsList() {
   const router = useRouter();
   const { user, isAuthenticated, isHydrated } = useAuth();
   const { jobs, page, isLoading, error, fetchJobs } = usePostedJobs();
-  const [filter, setFilter] = useState<JobStatus | "all" | "history">("all");
+  const [filter, setFilter] = useState<JobStatus | "all" | "history" | "review">("all");
   const isHistoryTab = filter === "history";
+  const isReviewTab = filter === "review";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -75,6 +77,9 @@ export default function PostedJobsList() {
     if (isHydrated && isAuthenticated && hasAccess) {
       if (filter === "history") {
         // Tab lịch sử: lấy job IN_PROGRESS và COMPLETED
+        fetchJobs({ status: "IN_PROGRESS" as JobStatus });
+      } else if (filter === "review") {
+        // Tab chờ nghiệm thu: lấy job IN_PROGRESS có workReviewDeadline
         fetchJobs({ status: "IN_PROGRESS" as JobStatus });
       } else if (filter === "all") {
         fetchJobs({});
@@ -200,14 +205,71 @@ export default function PostedJobsList() {
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <p className="text-red-600 text-sm">{error}</p>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+          <p className="text-gray-600 text-sm">{error}</p>
         </div>
       )}
 
       {/* Loading State */}
       {isLoading ? (
         <JobsLoading />
+      ) : isReviewTab ? (
+        /* Review Tab Content - Jobs waiting for review */
+        <div className="space-y-3">
+          {(() => {
+            const reviewJobs = jobs.filter(j => j.workReviewDeadline);
+            return reviewJobs.length === 0 ? (
+              <JobsEmptyState 
+                icon="rate_review" 
+                message="Không có sản phẩm nào chờ nghiệm thu"
+              />
+            ) : (
+              reviewJobs.map((job) => (
+                <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="text-xs text-gray-400">#{job.id}</span>
+                        <Link href={`/jobs/${job.id}`} className="text-lg font-semibold text-gray-900 hover:text-[#00b14f]">
+                          {job.title}
+                        </Link>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${JOB_STATUS_CONFIG[job.status]?.color}`}>
+                          {JOB_STATUS_CONFIG[job.status]?.label}
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mb-3">{formatBudget(job.budget, job.currency)}</p>
+
+                      {job.workReviewDeadline && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg mb-3">
+                          <Icon name="timer" size={16} />
+                          <span>Hạn nghiệm thu: {formatDate(job.workReviewDeadline)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-row sm:flex-col gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        className="flex-1 sm:flex-none bg-[#00b14f] hover:bg-[#009643]"
+                        onClick={() => handleReviewWork(job)}
+                      >
+                        <Icon name="rate_review" size={16} />
+                        <span className="ml-1">Duyệt sản phẩm</span>
+                      </Button>
+                      <Link href={`/jobs/${job.id}`}>
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Icon name="visibility" size={16} />
+                          <span className="ml-1">Chi tiết</span>
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))
+            );
+          })()}
+        </div>
       ) : isHistoryTab ? (
         /* History Tab Content */
         <div className="space-y-3">
@@ -308,7 +370,7 @@ export default function PostedJobsList() {
                     )}
 
                     {job.status === "DRAFT" && (
-                      <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+                      <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                         <Icon name="info" size={16} />
                         <span>Thanh toán để công việc được hiển thị công khai</span>
                       </div>
@@ -316,15 +378,15 @@ export default function PostedJobsList() {
 
                     {/* Deadline warnings for IN_PROGRESS jobs */}
                     {job.status === "IN_PROGRESS" && job.workReviewDeadline && (
-                      <div className="mt-3 flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
+                      <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                         <Icon name="timer" size={16} />
                         <span>Hạn duyệt sản phẩm: {formatDate(job.workReviewDeadline)}</span>
                       </div>
                     )}
                     {job.status === "IN_PROGRESS" && job.workSubmissionDeadline && (
-                      <div className="mt-3 flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                      <div className="mt-3 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
                         <Icon name="upload_file" size={16} />
-                        <span>Chờ freelancer nộp bài (hạn: {formatDate(job.workSubmissionDeadline)})</span>
+                        <span>Chờ người làm nộp bài (hạn: {formatDate(job.workSubmissionDeadline)})</span>
                       </div>
                     )}
 
@@ -341,7 +403,7 @@ export default function PostedJobsList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 sm:flex-none text-blue-600 border-blue-200 hover:bg-blue-50"
+                        className="flex-1 sm:flex-none text-gray-600 border-gray-200 hover:bg-gray-50"
                         onClick={() => handleHistoryClick(job.id)}
                       >
                         <Icon name="history" size={16} />
@@ -362,7 +424,7 @@ export default function PostedJobsList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 sm:flex-none text-red-600 border-red-200 hover:bg-red-50"
+                        className="flex-1 sm:flex-none text-gray-600 border-gray-200 hover:bg-gray-50"
                         onClick={() => handleCreateDispute(job)}
                       >
                         <Icon name="report_problem" size={16} />
@@ -373,7 +435,7 @@ export default function PostedJobsList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 sm:flex-none text-orange-600 border-orange-200 hover:bg-orange-50"
+                        className="flex-1 sm:flex-none text-gray-600 border-gray-200 hover:bg-gray-50"
                         onClick={() => handleViewDispute(job.id)}
                       >
                         <Icon name="gavel" size={16} />
@@ -396,7 +458,7 @@ export default function PostedJobsList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 sm:flex-none text-red-600 border-red-200 hover:bg-red-50"
+                        className="flex-1 sm:flex-none text-gray-600 border-gray-200 hover:bg-gray-50"
                         onClick={() => handleDeleteClick(job)}
                       >
                         <Icon name="delete" size={16} />
@@ -460,10 +522,10 @@ export default function PostedJobsList() {
           {jobToDelete && (
             <div className="py-4">
               <p className="font-medium text-gray-900 mb-2">#{jobToDelete.id} - {jobToDelete.title}</p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                 <div className="flex items-start gap-2">
-                  <Icon name="info" size={20} className="text-blue-600 mt-0.5" />
-                  <p className="text-sm text-blue-700">
+                  <Icon name="info" size={20} className="text-gray-500 mt-0.5" />
+                  <p className="text-sm text-gray-600">
                     Khi xóa, tiền sẽ được hoàn lại vào số dư tài khoản của bạn.
                   </p>
                 </div>
@@ -482,7 +544,7 @@ export default function PostedJobsList() {
             <Button
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-gray-600 hover:bg-gray-700 text-white"
             >
               {isDeleting ? (
                 <>
@@ -543,7 +605,12 @@ export default function PostedJobsList() {
           jobId={selectedJobForReview.id}
           jobTitle={selectedJobForReview.title}
           onSuccess={() => {
-            fetchJobs(filter === "all" || filter === "history" ? {} : { status: filter as JobStatus });
+            // Refresh jobs after review
+            if (filter === "all" || filter === "history" || filter === "review") {
+              fetchJobs(filter === "review" ? { status: "IN_PROGRESS" as JobStatus } : {});
+            } else {
+              fetchJobs({ status: filter as JobStatus });
+            }
           }}
         />
       )}

@@ -26,7 +26,7 @@ export default function PostJobForm() {
 
   const [formData, setFormData] = useState<CreateJobRequest>({
     title: "Thiết kế website bán hàng thời trang",
-    description: "Cần tìm freelancer thiết kế website bán hàng thời trang với giao diện hiện đại, responsive trên mọi thiết bị. Website cần tích hợp giỏ hàng, thanh toán online và quản lý đơn hàng.",
+    description: "Cần tìm người làm thiết kế website bán hàng thời trang với giao diện hiện đại, responsive trên mọi thiết bị. Website cần tích hợp giỏ hàng, thanh toán online và quản lý đơn hàng.",
     context: "Chúng tôi là startup thời trang mới thành lập, cần một website chuyên nghiệp để bán hàng online. Hiện tại đang bán qua các kênh social media nhưng muốn có website riêng.",
     requirements: "- Có kinh nghiệm thiết kế website e-commerce\n- Thành thạo React/Next.js và TailwindCSS\n- Hiểu về UX/UI cho e-commerce\n- Có portfolio các dự án tương tự",
     deliverables: "- Source code hoàn chỉnh\n- Hướng dẫn deploy và sử dụng\n- Hỗ trợ fix bug trong 30 ngày",
@@ -117,7 +117,7 @@ export default function PostJobForm() {
           Quay lại
         </Link>
         <h1 className="text-2xl font-bold text-gray-900">Đăng việc mới</h1>
-        <p className="text-gray-500 mt-1">Điền thông tin để tìm kiếm freelancer phù hợp</p>
+        <p className="text-gray-500 mt-1">Điền thông tin để tìm kiếm người làm phù hợp</p>
       </div>
 
       <fieldset disabled={isSubmitting} className="space-y-3">

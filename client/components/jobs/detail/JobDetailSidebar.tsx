@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const APPLICATION_STATUS_CONFIG = {
-  PENDING: { label: "Đang chờ duyệt", color: "text-yellow-600" },
-  ACCEPTED: { label: "Đã được chấp nhận", color: "text-green-600" },
-  REJECTED: { label: "Đã bị từ chối", color: "text-red-600" },
+  PENDING: { label: "Đang chờ duyệt", color: "text-gray-600" },
+  ACCEPTED: { label: "Đã được chấp nhận", color: "text-gray-600" },
+  REJECTED: { label: "Đã bị từ chối", color: "text-gray-600" },
   WITHDRAWN: { label: "Đã rút đơn", color: "text-gray-600" },
 };
 
@@ -51,7 +51,7 @@ export default function JobDetailSidebar({
             <p className="font-medium text-gray-900 flex items-center gap-1">
               {job.employer.fullName}
               {job.employer.isVerified && (
-                <Icon name="verified" size={16} className="text-blue-500" />
+                <Icon name="verified" size={16} className="text-[#00b14f]" />
               )}
             </p>
             {job.employer.title && (
@@ -118,19 +118,19 @@ export default function JobDetailSidebar({
 
       {/* Deadline Card - TH2: Work Submission/Review Deadlines */}
       {(job.status === "IN_PROGRESS" || job.status === "DISPUTED") && (job.workSubmissionDeadline || job.workReviewDeadline) && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-orange-800 mb-4 flex items-center gap-2">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Icon name="timer" size={20} />
             Hạn chót quan trọng
           </h2>
           <div className="space-y-3">
             {job.workSubmissionDeadline && (
               <div className="flex items-start gap-3">
-                <Icon name="upload_file" size={20} className="text-orange-600 mt-0.5" />
+                <Icon name="upload_file" size={20} className="text-gray-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-orange-700">Hạn nộp sản phẩm</p>
-                  <p className="font-medium text-orange-900">{formatDate(job.workSubmissionDeadline)}</p>
-                  <p className="text-xs text-orange-600 mt-1">
+                  <p className="text-sm text-gray-600">Hạn nộp sản phẩm</p>
+                  <p className="font-medium text-gray-800">{formatDate(job.workSubmissionDeadline)}</p>
+                  <p className="text-xs text-gray-500 mt-1">
                     Quá hạn sẽ bị hủy và công việc mở lại
                   </p>
                 </div>
@@ -138,11 +138,11 @@ export default function JobDetailSidebar({
             )}
             {job.workReviewDeadline && (
               <div className="flex items-start gap-3">
-                <Icon name="rate_review" size={20} className="text-orange-600 mt-0.5" />
+                <Icon name="rate_review" size={20} className="text-gray-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-orange-700">Hạn duyệt sản phẩm</p>
-                  <p className="font-medium text-orange-900">{formatDate(job.workReviewDeadline)}</p>
-                  <p className="text-xs text-orange-600 mt-1">
+                  <p className="text-sm text-gray-600">Hạn duyệt sản phẩm</p>
+                  <p className="font-medium text-gray-800">{formatDate(job.workReviewDeadline)}</p>
+                  <p className="text-xs text-gray-500 mt-1">
                     Quá hạn sẽ tự động duyệt và thanh toán
                   </p>
                 </div>

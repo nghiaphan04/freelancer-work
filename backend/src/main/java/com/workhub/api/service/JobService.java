@@ -130,6 +130,7 @@ public class JobService {
 
     /**
      * Lấy danh sách jobs đang làm của freelancer (jobs có application ACCEPTED)
+     * Bao gồm thông tin work submission
      */
     public ApiResponse<Page<JobResponse>> getFreelancerWorkingJobs(Long freelancerId, EJobStatus status,
                                                                     int page, int size, String sortBy, String sortDir) {
@@ -145,7 +146,8 @@ public class JobService {
             jobs = jobRepository.findByAcceptedFreelancerId(freelancerId, pageable);
         }
 
-        Page<JobResponse> response = jobs.map(this::buildJobResponse);
+        // Build response với work submission info
+        Page<JobResponse> response = jobs.map(job -> buildJobResponseWithWorkInfo(job, freelancerId));
         return ApiResponse.success("Thành công", response);
     }
 
@@ -385,5 +387,23 @@ public class JobService {
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())
                 .build();
+    }
+
+    /**
+     * Build response với work submission info (cho freelancer's working jobs)
+     */
+    public JobResponse buildJobResponseWithWorkInfo(Job job, Long freelancerId) {
+        JobResponse response = buildJobResponse(job);
+        
+        // Lấy application của freelancer cho job này
+        jobApplicationRepository.findByJobIdAndFreelancerId(job.getId(), freelancerId)
+                .ifPresent(application -> {
+                    response.setWorkStatus(application.getWorkStatus());
+                    response.setWorkSubmissionUrl(application.getWorkSubmissionUrl());
+                    response.setWorkSubmissionNote(application.getWorkSubmissionNote());
+                    response.setWorkSubmittedAt(application.getWorkSubmittedAt());
+                });
+        
+        return response;
     }
 }

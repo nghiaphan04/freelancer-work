@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/dialog";
 
 const STATUS_CONFIG: Record<ApplicationStatus, { label: string; color: string }> = {
-  PENDING: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-700" },
-  ACCEPTED: { label: "Đã chấp nhận", color: "bg-green-100 text-green-700" },
-  REJECTED: { label: "Đã từ chối", color: "bg-red-100 text-red-700" },
+  PENDING: { label: "Chờ duyệt", color: "bg-gray-100 text-gray-600" },
+  ACCEPTED: { label: "Đã chấp nhận", color: "bg-gray-100 text-gray-600" },
+  REJECTED: { label: "Đã từ chối", color: "bg-gray-100 text-gray-600" },
   WITHDRAWN: { label: "Đã rút", color: "bg-gray-100 text-gray-600" },
 };
 
@@ -316,7 +316,7 @@ export default function JobApplicationsTable() {
             <Button
               onClick={executeAction}
               disabled={!!processingId}
-              className={confirmAction === "accept" ? "bg-[#00b14f] hover:bg-[#009643]" : "bg-red-600 hover:bg-red-700"}
+              className={confirmAction === "accept" ? "bg-[#00b14f] hover:bg-[#009643]" : "bg-gray-600 hover:bg-gray-700"}
             >
               {processingId ? (
                 <>

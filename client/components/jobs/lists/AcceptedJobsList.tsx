@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAcceptedJobs } from "@/hooks/useAcceptedJobs";
-import { JOB_STATUS_CONFIG } from "@/types/job";
+import { JOB_STATUS_CONFIG, WorkStatus } from "@/types/job";
 import { api, JobApplication, ApplicationStatus, SavedJob, Dispute } from "@/lib/api";
 import JobsLoading from "../shared/JobsLoading";
 import JobsEmptyState from "../shared/JobsEmptyState";
@@ -27,10 +27,18 @@ import {
 import { toast } from "sonner";
 
 const APPLICATION_STATUS_CONFIG: Record<ApplicationStatus, { label: string; color: string }> = {
-  PENDING: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-700" },
-  ACCEPTED: { label: "Đã chấp nhận", color: "bg-green-100 text-green-700" },
-  REJECTED: { label: "Bị từ chối", color: "bg-red-100 text-red-700" },
-  WITHDRAWN: { label: "Đã rút", color: "bg-gray-100 text-gray-700" },
+  PENDING: { label: "Chờ duyệt", color: "bg-gray-100 text-gray-600" },
+  ACCEPTED: { label: "Đã chấp nhận", color: "bg-gray-100 text-gray-600" },
+  REJECTED: { label: "Bị từ chối", color: "bg-gray-100 text-gray-600" },
+  WITHDRAWN: { label: "Đã rút", color: "bg-gray-100 text-gray-600" },
+};
+
+const WORK_STATUS_CONFIG: Record<WorkStatus, { label: string; color: string; icon: string }> = {
+  NOT_STARTED: { label: "Chưa bắt đầu", color: "bg-gray-100 text-gray-600", icon: "hourglass_empty" },
+  IN_PROGRESS: { label: "Đang làm", color: "bg-gray-100 text-gray-600", icon: "pending" },
+  SUBMITTED: { label: "Đã nộp - Chờ duyệt", color: "bg-gray-100 text-gray-600", icon: "upload_file" },
+  REVISION_REQUESTED: { label: "Cần chỉnh sửa", color: "bg-gray-100 text-gray-600", icon: "edit_note" },
+  APPROVED: { label: "Đã duyệt", color: "bg-gray-100 text-gray-600", icon: "check_circle" },
 };
 
 export default function AcceptedJobsList() {
@@ -66,6 +74,7 @@ export default function AcceptedJobsList() {
   const isAppliedTab = filter === "applied";
   const isSavedTab = filter === "saved";
   const isHistoryTab = filter === "history";
+  const isSubmittedTab = filter === "submitted";
 
   const filteredApplications = applications.filter((app) =>
     searchKeyword.trim() === "" || app.jobTitle.toLowerCase().includes(searchKeyword.toLowerCase())
@@ -96,12 +105,15 @@ export default function AcceptedJobsList() {
       } else if (isHistoryTab) {
         // Tab lịch sử: lấy job IN_PROGRESS và COMPLETED
         fetchJobs("IN_PROGRESS");
+      } else if (isSubmittedTab) {
+        // Tab đã nộp: lấy jobs IN_PROGRESS có workStatus là SUBMITTED hoặc APPROVED
+        fetchJobs("IN_PROGRESS");
       } else {
         fetchJobs(filter);
         fetchStats();
       }
     }
-  }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs, fetchStats, isAppliedTab, isSavedTab, isHistoryTab]);
+  }, [isHydrated, isAuthenticated, hasAccess, filter, fetchJobs, fetchStats, isAppliedTab, isSavedTab, isHistoryTab, isSubmittedTab]);
 
   const fetchApplications = async () => {
     setApplicationsLoading(true);
@@ -244,6 +256,7 @@ export default function AcceptedJobsList() {
           {[
             { key: "all", label: "Tất cả" },
             { key: "IN_PROGRESS", label: "Đang làm" },
+            { key: "submitted", label: "Đã nộp" },
             { key: "DISPUTED", label: "Tranh chấp" },
             { key: "COMPLETED", label: "Hoàn thành" },
             { key: "applied", label: "Đã ứng tuyển" },
@@ -385,7 +398,7 @@ export default function AcceptedJobsList() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                          className="w-full text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-600"
                           onClick={() => handleUnsaveJob(savedJob.jobId)}
                         >
                           <Icon name="bookmark_remove" size={16} />
@@ -526,7 +539,7 @@ export default function AcceptedJobsList() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                            className="w-full text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-600"
                             onClick={() => handleWithdrawClick(app)}
                           >
                             <Icon name="undo" size={16} />
@@ -548,9 +561,7 @@ export default function AcceptedJobsList() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <div className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Icon name="pending_actions" size={20} className="text-blue-600" />
-                  </div>
+                  <Icon name="pending_actions" size={24} className="text-gray-600" />
                   <div>
                     <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
                     <p className="text-xs text-gray-500">Đang làm</p>
@@ -559,9 +570,7 @@ export default function AcceptedJobsList() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Icon name="gavel" size={20} className="text-orange-600" />
-                  </div>
+                  <Icon name="gavel" size={24} className="text-gray-600" />
                   <div>
                     <p className="text-2xl font-bold text-gray-900">{stats.disputed}</p>
                     <p className="text-xs text-gray-500">Tranh chấp</p>
@@ -570,9 +579,7 @@ export default function AcceptedJobsList() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <Icon name="check_circle" size={20} className="text-green-600" />
-                  </div>
+                  <Icon name="check_circle" size={24} className="text-green-600" />
                   <div>
                     <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
                     <p className="text-xs text-gray-500">Hoàn thành</p>
@@ -581,9 +588,7 @@ export default function AcceptedJobsList() {
               </div>
               <div className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#00b14f]/10 flex items-center justify-center">
-                    <Icon name="payments" size={20} className="text-[#00b14f]" />
-                  </div>
+                  <Icon name="payments" size={24} className="text-[#00b14f]" />
                   <div>
                     <p className="text-lg font-bold text-gray-900">{formatCurrency(stats.totalEarnings)}</p>
                     <p className="text-xs text-gray-500">Tổng thu nhập</p>
@@ -595,8 +600,8 @@ export default function AcceptedJobsList() {
 
           {/* Error State */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <p className="text-gray-600 text-sm">{error}</p>
             </div>
           )}
 
@@ -606,10 +611,24 @@ export default function AcceptedJobsList() {
           ) : (
             /* Job List */
             <div className="space-y-4">
-              {jobs.length === 0 ? (
-                <JobsEmptyState message="Không có công việc nào" />
-              ) : (
-                jobs.map((job) => (
+              {(() => {
+                // Filter jobs based on tab
+                let displayJobs = jobs;
+                
+                if (isSubmittedTab) {
+                  // Tab "Đã nộp": chỉ hiện jobs đã nộp hoặc đã duyệt
+                  displayJobs = jobs.filter(job => job.workStatus === "SUBMITTED" || job.workStatus === "APPROVED");
+                }
+                // Tab "Đang làm" (IN_PROGRESS): hiện tất cả jobs IN_PROGRESS, button sẽ thay đổi theo workStatus
+                
+                return displayJobs.length === 0 ? (
+                  <JobsEmptyState message={
+                    isSubmittedTab 
+                      ? "Chưa có sản phẩm nào được nộp" 
+                      : "Không có công việc nào"
+                  } />
+                ) : (
+                  displayJobs.map((job) => (
                   <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                       {/* Employer Info */}
@@ -655,18 +674,41 @@ export default function AcceptedJobsList() {
                           )}
                         </div>
 
+                        {/* Work Status Badge */}
+                        {job.status === "IN_PROGRESS" && job.workStatus && (
+                          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm mb-2 ${WORK_STATUS_CONFIG[job.workStatus]?.color || "bg-gray-100"}`}>
+                            <Icon name={WORK_STATUS_CONFIG[job.workStatus]?.icon || "info"} size={16} />
+                            <span className="font-medium">{WORK_STATUS_CONFIG[job.workStatus]?.label}</span>
+                          </div>
+                        )}
+
                         {/* Deadline warnings for IN_PROGRESS jobs */}
-                        {job.status === "IN_PROGRESS" && job.workSubmissionDeadline && (
-                          <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg mb-2">
+                        {job.status === "IN_PROGRESS" && job.workSubmissionDeadline && job.workStatus !== "SUBMITTED" && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg mb-2">
                             <Icon name="timer" size={16} />
                             <span>Hạn nộp sản phẩm: {new Date(job.workSubmissionDeadline).toLocaleDateString("vi-VN")}</span>
                           </div>
                         )}
                         {job.status === "IN_PROGRESS" && job.workReviewDeadline && (
-                          <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg mb-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg mb-2">
                             <Icon name="hourglass_top" size={16} />
-                            <span>Đang chờ employer duyệt (hạn: {new Date(job.workReviewDeadline).toLocaleDateString("vi-VN")})</span>
+                            <span>Đang chờ bên thuê duyệt (hạn: {new Date(job.workReviewDeadline).toLocaleDateString("vi-VN")})</span>
                           </div>
+                        )}
+
+                        {/* Download submitted work */}
+                        {job.workSubmissionUrl && (
+                          <a
+                            href={job.workSubmissionUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors mb-2"
+                          >
+                            <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                            <span className="flex-1 text-sm text-gray-700 truncate">Sản phẩm đã nộp</span>
+                            <Icon name="download" size={18} className="text-gray-500 shrink-0" />
+                          </a>
                         )}
                       </div>
 
@@ -682,7 +724,7 @@ export default function AcceptedJobsList() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            className="text-gray-600 border-gray-200 hover:bg-gray-50"
                             onClick={() => handleHistoryClick(job.id)}
                           >
                             <Icon name="history" size={16} />
@@ -690,20 +732,36 @@ export default function AcceptedJobsList() {
                           </Button>
                         )}
                         {job.status === "IN_PROGRESS" && (
-                          <Button 
-                            size="sm" 
-                            className="bg-[#00b14f] hover:bg-[#009643]"
-                            onClick={() => handleSubmitWork({ id: job.id, title: job.title })}
-                          >
-                            <Icon name="upload" size={16} />
-                            <span className="sm:hidden lg:inline ml-1">Nộp bài</span>
-                          </Button>
+                          job.workStatus === "SUBMITTED" ? (
+                            // Đã nộp - chờ duyệt, không cho nộp lại
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              disabled
+                              className="opacity-50 cursor-not-allowed"
+                            >
+                              <Icon name="hourglass_top" size={16} />
+                              <span className="sm:hidden lg:inline ml-1">Chờ duyệt</span>
+                            </Button>
+                          ) : job.workStatus === "APPROVED" ? null : (
+                            // Chưa nộp hoặc cần chỉnh sửa - cho phép nộp
+                            <Button 
+                              size="sm" 
+                              className="bg-[#00b14f] hover:bg-[#009643]"
+                              onClick={() => handleSubmitWork({ id: job.id, title: job.title })}
+                            >
+                              <Icon name="upload" size={16} />
+                              <span className="sm:hidden lg:inline ml-1">
+                                {job.workStatus === "REVISION_REQUESTED" ? "Nộp lại" : "Nộp bài"}
+                              </span>
+                            </Button>
+                          )
                         )}
                         {job.status === "DISPUTED" && (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                            className="text-gray-600 border-gray-200 hover:bg-gray-50"
                             onClick={() => handleViewDispute(job.id)}
                           >
                             <Icon name="gavel" size={16} />
@@ -713,8 +771,9 @@ export default function AcceptedJobsList() {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                  ))
+                );
+              })()}
             </div>
           )}
         </>
@@ -755,7 +814,10 @@ export default function AcceptedJobsList() {
           jobId={selectedJobForWork.id}
           jobTitle={selectedJobForWork.title}
           onSuccess={() => {
-            fetchJobs(filter);
+            // Refresh jobs after submission - always fetch IN_PROGRESS để lấy workStatus mới
+            fetchJobs("IN_PROGRESS");
+            fetchStats();
+            setSelectedJobForWork(null);
           }}
         />
       )}
@@ -773,9 +835,10 @@ export default function AcceptedJobsList() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
-            <p className="text-sm text-gray-500">
-              Lưu ý: Sau khi rút đơn, bạn có thể ứng tuyển lại nhưng sẽ mất thêm 1 credit.
-            </p>
+            <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-600 flex items-start gap-2">
+              <Icon name="info" size={18} className="shrink-0 mt-0.5" />
+              <span>Sau khi rút đơn, bạn có thể ứng tuyển lại nhưng sẽ mất thêm 1 credit.</span>
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setWithdrawDialogOpen(false)} disabled={withdrawLoading}>
@@ -784,7 +847,7 @@ export default function AcceptedJobsList() {
             <Button
               onClick={executeWithdraw}
               disabled={withdrawLoading}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-gray-600 hover:bg-gray-700"
             >
               {withdrawLoading ? (
                 <>

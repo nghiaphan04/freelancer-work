@@ -14,10 +14,10 @@ interface JobHistoryTimelineProps {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
-  ADMIN: { label: "Quản trị viên", color: "bg-purple-100 text-purple-700" },
-  EMPLOYER: { label: "Bên thuê", color: "bg-blue-100 text-blue-700" },
-  FREELANCER: { label: "Người nhận việc", color: "bg-green-100 text-green-700" },
-  USER: { label: "Người dùng", color: "bg-gray-100 text-gray-700" },
+  ADMIN: { label: "Quản trị viên", color: "bg-gray-100 text-gray-600" },
+  EMPLOYER: { label: "Bên thuê", color: "bg-gray-100 text-gray-600" },
+  FREELANCER: { label: "Người làm", color: "bg-gray-100 text-gray-600" },
+  USER: { label: "Người dùng", color: "bg-gray-100 text-gray-600" },
 };
 
 export default function JobHistoryTimeline({ jobId }: JobHistoryTimelineProps) {

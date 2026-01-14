@@ -3,6 +3,7 @@ package com.workhub.api.dto.response;
 import com.workhub.api.entity.EJobComplexity;
 import com.workhub.api.entity.EJobDuration;
 import com.workhub.api.entity.EJobStatus;
+import com.workhub.api.entity.EWorkStatus;
 import com.workhub.api.entity.EWorkType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,6 +44,12 @@ public class JobResponse {
     private EmployerResponse employer;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // Work submission info (for freelancer's view)
+    private EWorkStatus workStatus;
+    private String workSubmissionUrl;
+    private String workSubmissionNote;
+    private LocalDateTime workSubmittedAt;
 
     @Data
     @Builder

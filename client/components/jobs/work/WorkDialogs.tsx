@@ -45,7 +45,7 @@ export function WorkSubmitDialog({
     try {
       const response = await api.submitWork(jobId, { url, note });
       if (response.status === "SUCCESS") {
-        toast.success("Đã nộp sản phẩm thành công! Chờ employer duyệt.");
+        toast.success("Đã nộp sản phẩm thành công! Chờ bên thuê duyệt.");
         setUrl("");
         setNote("");
         onOpenChange(false);
@@ -61,8 +61,12 @@ export function WorkSubmitDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+    <Dialog open={open} onOpenChange={(open) => !isSubmitting && onOpenChange(open)}>
+      <DialogContent 
+        className="max-w-lg"
+        onPointerDownOutside={(e) => isSubmitting && e.preventDefault()}
+        onEscapeKeyDown={(e) => isSubmitting && e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon name="upload_file" size={20} className="text-[#00b14f]" />
@@ -92,30 +96,39 @@ export function WorkSubmitDialog({
               onChange={(e) => setNote(e.target.value)}
               placeholder="Mô tả những gì đã hoàn thành, hướng dẫn sử dụng..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b14f]"
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b14f] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
-          <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
-            <p className="font-medium mb-1">Lưu ý:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Employer sẽ có 3 ngày để duyệt sản phẩm</li>
+          <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-600">
+            <p className="font-medium mb-1 flex items-center gap-1">
+              <Icon name="info" size={16} />
+              Lưu ý:
+            </p>
+            <ul className="list-disc list-inside space-y-1 ml-5">
+              <li>Bên thuê sẽ có 3 ngày để duyệt sản phẩm</li>
               <li>Nếu không duyệt, hệ thống sẽ tự động thanh toán cho bạn</li>
-              <li>Cả hai sẽ được +1 điểm uy tín khi hoàn thành</li>
+              <li>Cả hai bên sẽ được +1 điểm uy tín khi hoàn thành</li>
             </ul>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Hủy
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={isSubmitting}
+            disabled={isSubmitting || !url.trim()}
             className="bg-[#00b14f] hover:bg-[#009643]"
           >
-            {isSubmitting ? "Đang nộp..." : "Nộp sản phẩm"}
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Đang nộp...
+              </>
+            ) : "Nộp sản phẩm"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -169,7 +182,7 @@ export function WorkReviewDialog({
     try {
       const response = await api.approveWork(jobId);
       if (response.status === "SUCCESS") {
-        toast.success("Đã duyệt sản phẩm và thanh toán cho freelancer!");
+        toast.success("Đã duyệt sản phẩm và thanh toán cho người làm!");
         onOpenChange(false);
         onSuccess?.();
       } else {
@@ -192,7 +205,7 @@ export function WorkReviewDialog({
     try {
       const response = await api.requestRevision(jobId, revisionNote);
       if (response.status === "SUCCESS") {
-        toast.success("Đã gửi yêu cầu chỉnh sửa cho freelancer!");
+        toast.success("Đã gửi yêu cầu chỉnh sửa cho người làm!");
         setRevisionNote("");
         setShowRevisionForm(false);
         onOpenChange(false);
@@ -208,11 +221,15 @@ export function WorkReviewDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+    <Dialog open={open} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
+      <DialogContent 
+        className="max-w-lg"
+        onPointerDownOutside={(e) => isProcessing && e.preventDefault()}
+        onEscapeKeyDown={(e) => isProcessing && e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Icon name="rate_review" size={20} className="text-blue-600" />
+            <Icon name="rate_review" size={20} className="text-gray-600" />
             Duyệt sản phẩm
           </DialogTitle>
           <DialogDescription>
@@ -228,7 +245,7 @@ export function WorkReviewDialog({
         ) : !workSubmission?.workSubmissionUrl ? (
           <div className="py-8 text-center">
             <Icon name="hourglass_empty" size={48} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500">Freelancer chưa nộp sản phẩm</p>
+            <p className="text-gray-500">Người làm chưa nộp sản phẩm</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -241,24 +258,26 @@ export function WorkReviewDialog({
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Link sản phẩm:</p>
+                  <p className="text-sm text-gray-500 mb-2">File sản phẩm:</p>
                   <a
                     href={workSubmission.workSubmissionUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline break-all flex items-center gap-1"
+                    download
+                    className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
                   >
-                    <Icon name="link" size={16} />
-                    {workSubmission.workSubmissionUrl}
+                    <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                    <span className="flex-1 text-sm text-gray-700">Sản phẩm đã nộp</span>
+                    <Icon name="download" size={18} className="text-gray-500 shrink-0" />
                   </a>
                 </div>
 
                 {workSubmission.workSubmissionNote && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Ghi chú:</p>
-                    <p className="text-gray-700 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-500 mb-1">Ghi chú từ người làm:</p>
+                    <p className="text-gray-700 whitespace-pre-wrap bg-white p-3 rounded border">
                       {workSubmission.workSubmissionNote}
                     </p>
                   </div>
@@ -267,8 +286,8 @@ export function WorkReviewDialog({
             </div>
 
             {workSubmission.workRevisionNote && (
-              <div className="bg-yellow-50 p-3 rounded-lg">
-                <p className="text-sm text-yellow-700">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-600">
                   <strong>Yêu cầu chỉnh sửa trước đó:</strong> {workSubmission.workRevisionNote}
                 </p>
               </div>
@@ -285,13 +304,15 @@ export function WorkReviewDialog({
                     onChange={(e) => setRevisionNote(e.target.value)}
                     placeholder="Mô tả những gì cần chỉnh sửa..."
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    disabled={isProcessing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={isProcessing}
                     onClick={() => {
                       setShowRevisionForm(false);
                       setRevisionNote("");
@@ -303,19 +324,27 @@ export function WorkReviewDialog({
                     size="sm"
                     onClick={handleRequestRevision}
                     disabled={isProcessing}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-gray-600 hover:bg-gray-700"
                   >
-                    {isProcessing ? "Đang gửi..." : "Gửi yêu cầu"}
+                    {isProcessing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Đang gửi...
+                      </>
+                    ) : "Gửi yêu cầu"}
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="bg-green-50 p-3 rounded-lg text-sm text-green-700">
-                <p className="font-medium mb-1">Khi duyệt sản phẩm:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Tiền escrow sẽ được chuyển cho freelancer</li>
-                  <li>Cả hai sẽ được +1 điểm uy tín</li>
-                  <li>Công việc sẽ hoàn thành</li>
+              <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-600">
+                <p className="font-medium mb-1 flex items-center gap-1">
+                  <Icon name="info" size={16} />
+                  Lưu ý khi duyệt sản phẩm:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-5">
+                  <li>Tiền ký quỹ sẽ được chuyển cho người làm</li>
+                  <li>Cả hai bên sẽ được +1 điểm uy tín</li>
+                  <li>Công việc sẽ được đánh dấu hoàn thành</li>
                 </ul>
               </div>
             )}
@@ -323,7 +352,7 @@ export function WorkReviewDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
             Đóng
           </Button>
           {workSubmission?.workSubmissionUrl && !showRevisionForm && (
@@ -332,7 +361,7 @@ export function WorkReviewDialog({
                 variant="outline"
                 onClick={() => setShowRevisionForm(true)}
                 disabled={isProcessing}
-                className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                className="text-gray-600 border-gray-200 hover:bg-gray-50"
               >
                 <Icon name="edit_note" size={16} />
                 Yêu cầu chỉnh sửa
@@ -342,7 +371,12 @@ export function WorkReviewDialog({
                 disabled={isProcessing}
                 className="bg-[#00b14f] hover:bg-[#009643]"
               >
-                {isProcessing ? "Đang xử lý..." : (
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Đang xử lý...
+                  </>
+                ) : (
                   <>
                     <Icon name="check_circle" size={16} />
                     Duyệt & Thanh toán

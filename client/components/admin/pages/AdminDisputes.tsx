@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import Icon from "@/components/ui/Icon";
 
 export default function AdminDisputes() {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
@@ -81,7 +82,7 @@ export default function AdminDisputes() {
     try {
       const response = await api.adminRequestDisputeResponse(selectedDispute.id, daysToRespond);
       if (response.status === "SUCCESS") {
-        toast.success(`Đã gửi yêu cầu phản hồi. Freelancer có ${daysToRespond} ngày để phản hồi.`);
+        toast.success(`Đã gửi yêu cầu phản hồi. Người làm có ${daysToRespond} ngày để phản hồi.`);
         setRequestResponseDialogOpen(false);
         fetchDisputes(page);
         fetchPendingCount();
@@ -104,7 +105,7 @@ export default function AdminDisputes() {
     try {
       const response = await api.adminResolveDispute(selectedDispute.id, employerWins, resolveNote);
       if (response.status === "SUCCESS") {
-        toast.success(`Đã giải quyết tranh chấp. ${employerWins ? "Employer" : "Freelancer"} thắng.`);
+        toast.success(`Đã giải quyết tranh chấp. ${employerWins ? "Bên thuê" : "Người làm"} thắng.`);
         setResolveDialogOpen(false);
         setResolveNote("");
         setEmployerWins(null);
@@ -158,29 +159,24 @@ export default function AdminDisputes() {
                     <p className="font-medium text-gray-900 line-clamp-2">{dispute.jobTitle}</p>
                     <p className="text-xs text-gray-500 mt-1">#{dispute.id} • Job #{dispute.jobId}</p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                    dispute.status === "PENDING_FREELANCER_RESPONSE" ? "bg-orange-100 text-orange-700" :
-                    dispute.status === "PENDING_ADMIN_DECISION" ? "bg-blue-100 text-blue-700" :
-                    dispute.status === "EMPLOYER_WON" ? "bg-green-100 text-green-700" :
-                    "bg-gray-100 text-gray-700"
-                  }`}>
+                  <span className="text-xs px-2 py-1 rounded-full whitespace-nowrap bg-gray-100 text-gray-700">
                     {dispute.statusLabel}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <p className="text-gray-500 text-xs">Employer</p>
+                    <p className="text-gray-500 text-xs">Bên thuê</p>
                     <p className="font-medium text-gray-900 truncate">{dispute.employer.fullName}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs">Freelancer</p>
+                    <p className="text-gray-500 text-xs">Người làm</p>
                     <p className="font-medium text-gray-900 truncate">{dispute.freelancer.fullName}</p>
                   </div>
                 </div>
 
                 {dispute.freelancerDeadline && (
-                  <p className="text-xs text-orange-600">
+                  <p className="text-xs text-gray-500">
                     Hạn phản hồi: {formatDateTime(dispute.freelancerDeadline)}
                   </p>
                 )}
@@ -190,14 +186,14 @@ export default function AdminDisputes() {
                 <div className="pt-2 border-t flex flex-wrap gap-2">
                   <button
                     onClick={() => handleViewDetail(dispute)}
-                    className="text-blue-600 hover:underline text-sm"
+                    className="text-gray-600 hover:underline text-sm"
                   >
                     Xem chi tiết
                   </button>
                   {dispute.status === "PENDING_FREELANCER_RESPONSE" && !dispute.freelancerDeadline && (
                     <button
                       onClick={() => openRequestDialog(dispute)}
-                      className="text-orange-600 hover:underline text-sm"
+                      className="text-gray-600 hover:underline text-sm"
                     >
                       Yêu cầu phản hồi
                     </button>
@@ -206,7 +202,7 @@ export default function AdminDisputes() {
                     (dispute.status === "PENDING_FREELANCER_RESPONSE" && dispute.freelancerDeadline)) && (
                     <button
                       onClick={() => openResolveDialog(dispute)}
-                      className="text-green-600 hover:underline text-sm"
+                      className="text-[#00b14f] hover:underline text-sm"
                     >
                       Quyết định
                     </button>
@@ -223,8 +219,8 @@ export default function AdminDisputes() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Công việc</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Employer</th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Freelancer</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bên thuê</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Người làm</th>
                     <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Hạn phản hồi</th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ngày tạo</th>
@@ -246,8 +242,6 @@ export default function AdminDisputes() {
                       </td>
                       <td className="px-3 py-2 text-center">
                         <span className={`text-xs px-2 py-1 rounded-full ${
-                          dispute.status === "PENDING_FREELANCER_RESPONSE" ? "bg-orange-100 text-orange-700" :
-                          dispute.status === "PENDING_ADMIN_DECISION" ? "bg-blue-100 text-blue-700" :
                           "bg-gray-100 text-gray-700"
                         }`}>
                           {dispute.statusLabel}
@@ -261,14 +255,14 @@ export default function AdminDisputes() {
                         <div className="flex items-center justify-center gap-2 text-sm">
                           <button
                             onClick={() => handleViewDetail(dispute)}
-                            className="text-blue-600 hover:underline"
+                            className="text-gray-600 hover:underline"
                           >
                             Chi tiết
                           </button>
                           {dispute.status === "PENDING_FREELANCER_RESPONSE" && !dispute.freelancerDeadline && (
                             <button
                               onClick={() => openRequestDialog(dispute)}
-                              className="text-orange-600 hover:underline"
+                              className="text-gray-600 hover:underline"
                             >
                               Yêu cầu
                             </button>
@@ -277,7 +271,7 @@ export default function AdminDisputes() {
                             (dispute.status === "PENDING_FREELANCER_RESPONSE" && dispute.freelancerDeadline)) && (
                             <button
                               onClick={() => openResolveDialog(dispute)}
-                              className="text-green-600 hover:underline"
+                              className="text-[#00b14f] hover:underline"
                             >
                               Quyết định
                             </button>
@@ -325,68 +319,74 @@ export default function AdminDisputes() {
                 </span>
               </div>
 
-              {/* Employer complaint */}
-              <div className="bg-red-50 p-4 rounded-lg">
-                <h4 className="font-medium text-red-800 mb-2">
-                  Khiếu nại từ Employer: {selectedDispute.employer.fullName}
+              {/* Bên thuê khiếu nại */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="font-medium text-gray-800 mb-2">
+                  Khiếu nại từ bên thuê: {selectedDispute.employer.fullName}
                 </h4>
-                <p className="text-sm text-red-700 whitespace-pre-wrap">{selectedDispute.employerDescription}</p>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedDispute.employerDescription}</p>
                 {selectedDispute.employerEvidenceUrl && (
                   <a
                     href={selectedDispute.employerEvidenceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 mt-2 text-sm text-red-600 hover:underline"
+                    download
+                    className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
                   >
-                    Xem bằng chứng
+                    <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                    <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
+                    <Icon name="download" size={18} className="text-gray-500 shrink-0" />
                   </a>
                 )}
               </div>
 
-              {/* Freelancer response */}
+              {/* Người làm phản hồi */}
               {selectedDispute.freelancerDescription ? (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">
-                    Phản hồi từ Freelancer: {selectedDispute.freelancer.fullName}
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h4 className="font-medium text-gray-800 mb-2">
+                    Phản hồi từ người làm: {selectedDispute.freelancer.fullName}
                   </h4>
-                  <p className="text-sm text-blue-700 whitespace-pre-wrap">{selectedDispute.freelancerDescription}</p>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedDispute.freelancerDescription}</p>
                   {selectedDispute.freelancerEvidenceUrl && (
                     <a
                       href={selectedDispute.freelancerEvidenceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline"
+                      download
+                      className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
                     >
-                      Xem bằng chứng
+                      <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+                      <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
+                      <Icon name="download" size={18} className="text-gray-500 shrink-0" />
                     </a>
                   )}
                 </div>
               ) : selectedDispute.freelancerDeadline ? (
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-yellow-800 mb-1">
-                    Chờ freelancer phản hồi
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h4 className="font-medium text-gray-800 mb-1">
+                    Chờ người làm phản hồi
                   </h4>
-                  <p className="text-sm text-yellow-700">
+                  <p className="text-sm text-gray-600">
                     Hạn: {formatDateTime(selectedDispute.freelancerDeadline)}
                   </p>
                 </div>
               ) : (
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                   <p className="text-sm text-gray-600">
-                    Chưa yêu cầu freelancer phản hồi
+                    Chưa yêu cầu người làm phản hồi
                   </p>
                 </div>
               )}
 
               {/* Admin decision */}
               {selectedDispute.adminNote && (
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-purple-800 mb-2">
-                    Quyết định của Admin
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h4 className="font-medium text-gray-800 mb-2">
+                    Quyết định của quản trị viên
                   </h4>
-                  <p className="text-sm text-purple-700">{selectedDispute.adminNote}</p>
+                  <p className="text-sm text-gray-600">{selectedDispute.adminNote}</p>
                   {selectedDispute.resolvedBy && (
-                    <p className="text-xs text-purple-600 mt-2">
+                    <p className="text-xs text-gray-500 mt-2">
                       Người xử lý: {selectedDispute.resolvedBy.fullName} - {formatDateTime(selectedDispute.resolvedAt!)}
                     </p>
                   )}
@@ -401,7 +401,7 @@ export default function AdminDisputes() {
       <Dialog open={requestResponseDialogOpen} onOpenChange={setRequestResponseDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Yêu cầu freelancer phản hồi</DialogTitle>
+            <DialogTitle>Yêu cầu người làm phản hồi</DialogTitle>
             <DialogDescription>
               Gửi yêu cầu để {selectedDispute?.freelancer.fullName} có thể gửi bằng chứng và giải thích
             </DialogDescription>
@@ -461,7 +461,7 @@ export default function AdminDisputes() {
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <p className="font-medium">Employer thắng</p>
+                  <p className="font-medium">Bên thuê thắng</p>
                   <p className="text-xs text-gray-500 mt-1">{selectedDispute?.employer.fullName}</p>
                 </button>
                 <button
@@ -472,7 +472,7 @@ export default function AdminDisputes() {
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <p className="font-medium">Freelancer thắng</p>
+                  <p className="font-medium">Người làm thắng</p>
                   <p className="text-xs text-gray-500 mt-1">{selectedDispute?.freelancer.fullName}</p>
                 </button>
               </div>
@@ -492,11 +492,14 @@ export default function AdminDisputes() {
             </div>
 
             {employerWins !== null && (
-              <div className="bg-yellow-50 p-3 rounded-lg text-sm text-yellow-700">
-                <p className="font-medium mb-1">Kết quả:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>{employerWins ? "Employer" : "Freelancer"} nhận tiền escrow</li>
-                  <li>{employerWins ? "Freelancer" : "Employer"} bị +1 KUT, -1 UT</li>
+              <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-600">
+                <p className="font-medium mb-1 flex items-center gap-1">
+                  <Icon name="info" size={16} />
+                  Kết quả:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-5">
+                  <li>{employerWins ? "Bên thuê" : "Người làm"} nhận tiền ký quỹ</li>
+                  <li>{employerWins ? "Người làm" : "Bên thuê"} bị +1 KUT, -1 UT</li>
                 </ul>
               </div>
             )}

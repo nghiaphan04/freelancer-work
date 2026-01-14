@@ -3,6 +3,7 @@ export type JobStatus = "DRAFT" | "PENDING_APPROVAL" | "OPEN" | "REJECTED" | "IN
 export type JobComplexity = "ENTRY" | "INTERMEDIATE" | "EXPERT";
 export type JobDuration = "SHORT_TERM" | "MEDIUM_TERM" | "LONG_TERM";
 export type WorkType = "PART_TIME" | "FULL_TIME";
+export type WorkStatus = "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "REVISION_REQUESTED" | "APPROVED";
 
 // Employer info in job response
 export interface JobEmployer {
@@ -43,6 +44,10 @@ export interface Job {
   employer: JobEmployer;
   createdAt: string;
   updatedAt: string;
+  workStatus?: WorkStatus;
+  workSubmissionUrl?: string;
+  workSubmissionNote?: string;
+  workSubmittedAt?: string;
 }
 
 // Request DTOs
@@ -92,21 +97,21 @@ export interface Page<T> {
 
 // UI Config
 export const JOB_STATUS_CONFIG = {
-  DRAFT: { label: "Bản nháp", color: "bg-gray-100 text-gray-700" },
-  PENDING_APPROVAL: { label: "Chờ duyệt", color: "bg-yellow-100 text-yellow-700" },
-  OPEN: { label: "Đang tuyển", color: "bg-green-100 text-green-700" },
-  REJECTED: { label: "Đã từ chối", color: "bg-red-100 text-red-700" },
-  IN_PROGRESS: { label: "Đang thực hiện", color: "bg-blue-100 text-blue-700" },
-  DISPUTED: { label: "Đang tranh chấp", color: "bg-orange-100 text-orange-700" },
-  COMPLETED: { label: "Hoàn thành", color: "bg-emerald-100 text-emerald-700" },
+  DRAFT: { label: "Bản nháp", color: "bg-gray-100 text-gray-600" },
+  PENDING_APPROVAL: { label: "Chờ duyệt", color: "bg-gray-100 text-gray-600" },
+  OPEN: { label: "Đang tuyển", color: "bg-gray-100 text-gray-600" },
+  REJECTED: { label: "Đã từ chối", color: "bg-gray-100 text-gray-600" },
+  IN_PROGRESS: { label: "Đang thực hiện", color: "bg-gray-100 text-gray-600" },
+  DISPUTED: { label: "Đang tranh chấp", color: "bg-gray-100 text-gray-600" },
+  COMPLETED: { label: "Hoàn thành", color: "bg-gray-100 text-gray-600" },
   CLOSED: { label: "Đã đóng", color: "bg-gray-100 text-gray-600" },
-  CANCELLED: { label: "Đã hủy", color: "bg-red-100 text-red-700" },
+  CANCELLED: { label: "Đã hủy", color: "bg-gray-100 text-gray-600" },
 } as const;
 
 export const JOB_COMPLEXITY_CONFIG = {
-  ENTRY: { label: "Người mới", color: "bg-green-100 text-green-700" },
-  INTERMEDIATE: { label: "Trung bình", color: "bg-yellow-100 text-yellow-700" },
-  EXPERT: { label: "Chuyên gia", color: "bg-purple-100 text-purple-700" },
+  ENTRY: { label: "Người mới", color: "bg-gray-100 text-gray-600" },
+  INTERMEDIATE: { label: "Trung bình", color: "bg-gray-100 text-gray-600" },
+  EXPERT: { label: "Chuyên gia", color: "bg-gray-100 text-gray-600" },
 } as const;
 
 export const JOB_DURATION_CONFIG = {
