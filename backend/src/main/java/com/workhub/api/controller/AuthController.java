@@ -31,16 +31,19 @@ public class AuthController {
     @Value("${app.cookie.secure:false}")
     private boolean cookieSecure;
     
+    @Value("${app.cookie.same-site:Lax}")
+    private String cookieSameSite;
+    
     private void setTokenCookies(HttpServletResponse response, AuthResponse auth) {
         response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("accessToken", auth.getAccessToken())
-                .httpOnly(true).secure(cookieSecure).path("/").maxAge(accessTokenExpiry / 1000).sameSite("Lax").build().toString());
+                .httpOnly(true).secure(cookieSecure).path("/").maxAge(accessTokenExpiry / 1000).sameSite(cookieSameSite).build().toString());
         response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", auth.getRefreshToken())
-                .httpOnly(true).secure(cookieSecure).path("/api/auth").maxAge(refreshTokenExpiry / 1000).sameSite("Lax").build().toString());
+                .httpOnly(true).secure(cookieSecure).path("/api/auth").maxAge(refreshTokenExpiry / 1000).sameSite(cookieSameSite).build().toString());
     }
     
     private void clearTokenCookies(HttpServletResponse response) {
-        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("accessToken", "").httpOnly(true).path("/").maxAge(0).build().toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", "").httpOnly(true).path("/api/auth").maxAge(0).build().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("accessToken", "").httpOnly(true).secure(cookieSecure).path("/").maxAge(0).sameSite(cookieSameSite).build().toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from("refreshToken", "").httpOnly(true).secure(cookieSecure).path("/api/auth").maxAge(0).sameSite(cookieSameSite).build().toString());
     }
 
     @PostMapping("/register")
