@@ -34,7 +34,8 @@ export interface Job {
   escrowAmount?: number;  // Số tiền đã giữ (budget + fee)
   currency: string;
   applicationDeadline?: string;
-  expectedStartDate?: string;
+  submissionDays?: number;
+  reviewDays?: number;
   status: JobStatus;
   rejectionReason?: string;  // Lý do từ chối (nếu REJECTED)
   workSubmissionDeadline?: string;  // Hạn nộp sản phẩm
@@ -64,7 +65,8 @@ export interface CreateJobRequest {
   budget?: number;
   currency?: string;
   applicationDeadline?: string;
-  expectedStartDate?: string;
+  submissionDays?: number;
+  reviewDays?: number;
 }
 
 export interface UpdateJobRequest {
@@ -80,7 +82,8 @@ export interface UpdateJobRequest {
   budget?: number;
   currency?: string;
   applicationDeadline?: string;
-  expectedStartDate?: string;
+  submissionDays?: number;
+  reviewDays?: number;
 }
 
 // Paginated response
@@ -174,6 +177,14 @@ export interface JobHistory {
   metadata?: string;
   user: JobHistoryUser;
   createdAt: string;
+  fileAttachment?: JobHistoryFileAttachment;
+}
+
+export interface JobHistoryFileAttachment {
+  id: number;
+  secureUrl: string;
+  originalFilename?: string;
+  readableSize?: string;
 }
 
 export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string; icon: string; color: string }> = {

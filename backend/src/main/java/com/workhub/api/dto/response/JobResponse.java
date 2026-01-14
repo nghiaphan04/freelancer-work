@@ -34,7 +34,8 @@ public class JobResponse {
     private BigDecimal escrowAmount;  // Số tiền đã giữ (budget + fee)
     private String currency;
     private LocalDateTime applicationDeadline;
-    private LocalDateTime expectedStartDate;
+    private Integer submissionDays;
+    private Integer reviewDays;
     private EJobStatus status;
     private String rejectionReason;  // Lý do từ chối (nếu bị reject)
     private LocalDateTime workSubmissionDeadline;  // Hạn nộp sản phẩm

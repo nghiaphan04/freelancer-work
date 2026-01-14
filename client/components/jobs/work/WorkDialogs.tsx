@@ -34,6 +34,16 @@ export function WorkSubmitDialog({
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fileId, setFileId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setUrl("");
+      setNote("");
+      setFileId(null);
+      setIsSubmitting(false);
+    }
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!url.trim()) {
@@ -43,11 +53,15 @@ export function WorkSubmitDialog({
 
     setIsSubmitting(true);
     try {
-      const response = await api.submitWork(jobId, { url, note });
+      const payload: { url: string; note?: string; fileId?: number } = { url };
+      if (note.trim()) payload.note = note;
+      if (fileId !== null) payload.fileId = fileId;
+      const response = await api.submitWork(jobId, payload);
       if (response.status === "SUCCESS") {
         toast.success("Đã nộp sản phẩm thành công! Chờ bên thuê duyệt.");
         setUrl("");
         setNote("");
+        setFileId(null);
         onOpenChange(false);
         onSuccess?.();
       } else {
@@ -80,7 +94,10 @@ export function WorkSubmitDialog({
         <div className="space-y-4">
           <FileUpload
             value={url}
-            onChange={(uploadedUrl) => setUrl(uploadedUrl)}
+            onChange={(uploadedUrl, _file, uploadedFileId) => {
+              setUrl(uploadedUrl);
+              setFileId(uploadedFileId ?? null);
+            }}
             usage="WORK_SUBMISSION"
             label="File sản phẩm (PDF)"
             required

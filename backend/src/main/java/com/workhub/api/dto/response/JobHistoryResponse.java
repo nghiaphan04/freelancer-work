@@ -16,6 +16,7 @@ public class JobHistoryResponse {
     private String description;
     private String metadata;
     private UserInfo user;
+    private FileAttachment fileAttachment;
     private LocalDateTime createdAt;
 
     @Data
@@ -25,6 +26,15 @@ public class JobHistoryResponse {
         private String fullName;
         private String avatarUrl;
         private String role;
+    }
+
+    @Data
+    @Builder
+    public static class FileAttachment {
+        private Long id;
+        private String secureUrl;
+        private String originalFilename;
+        private String readableSize;
     }
 
     public static String getActionLabel(EJobHistoryAction action) {

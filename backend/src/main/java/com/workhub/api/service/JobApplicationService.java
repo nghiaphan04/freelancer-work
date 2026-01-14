@@ -198,8 +198,10 @@ public class JobApplicationService {
         Job job = application.getJob();
         job.setStatus(EJobStatus.IN_PROGRESS);
         
-        // Set work submission deadline dựa vào duration của job
-        java.time.LocalDateTime submissionDeadline = calculateSubmissionDeadline(job.getDuration());
+        int submissionDays = job.getSubmissionDays() != null && job.getSubmissionDays() >= 1
+                ? job.getSubmissionDays()
+                : 1;
+        java.time.LocalDateTime submissionDeadline = java.time.LocalDateTime.now().plusDays(submissionDays);
         job.setWorkSubmissionDeadline(submissionDeadline);
         
         jobRepository.save(job);
@@ -304,18 +306,4 @@ public class JobApplicationService {
                 .build();
     }
 
-    /**
-     * Tính deadline nộp sản phẩm dựa vào duration của job
-     * - SHORT_TERM: 7 ngày
-     * - MEDIUM_TERM: 14 ngày  
-     * - LONG_TERM: 30 ngày
-     */
-    private LocalDateTime calculateSubmissionDeadline(EJobDuration duration) {
-        LocalDateTime now = LocalDateTime.now();
-        return switch (duration) {
-            case SHORT_TERM -> now.plusDays(7);
-            case MEDIUM_TERM -> now.plusDays(14);
-            case LONG_TERM -> now.plusDays(30);
-        };
-    }
 }

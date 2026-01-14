@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "disputes")
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -35,12 +36,18 @@ public class Dispute {
     @Column(name = "employer_evidence_url", length = 500)
     private String employerEvidenceUrl;  // Link file PDF bằng chứng
 
+    @Column(name = "employer_evidence_file_id")
+    private Long employerEvidenceFileId;
+
     @Column(name = "employer_description", columnDefinition = "TEXT", nullable = false)
     private String employerDescription;  // Mô tả sai phạm
 
     // Freelancer response
     @Column(name = "freelancer_evidence_url", length = 500)
     private String freelancerEvidenceUrl;  // Link file PDF phản hồi
+
+    @Column(name = "freelancer_evidence_file_id")
+    private Long freelancerEvidenceFileId;
 
     @Column(name = "freelancer_description", columnDefinition = "TEXT")
     private String freelancerDescription;  // Mô tả phản hồi

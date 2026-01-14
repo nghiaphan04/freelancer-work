@@ -57,6 +57,13 @@ public class JobService {
             throw new IllegalStateException("Không đủ số dư để đăng job. Cần " + total.toPlainString() + " VND (gồm phí 5%).");
         }
 
+        int submissionDays = req.getSubmissionDays() != null && req.getSubmissionDays() >= 1
+                ? req.getSubmissionDays()
+                : 1;
+        int reviewDays = req.getReviewDays() != null && req.getReviewDays() >= 2
+                ? req.getReviewDays()
+                : 2;
+
         Job job = Job.builder()
                 .title(req.getTitle())
                 .description(req.getDescription())
@@ -71,7 +78,8 @@ public class JobService {
                 .escrowAmount(total)  // Lưu số tiền đã giữ (budget + fee)
                 .currency(req.getCurrency() != null ? req.getCurrency() : "VND")
                 .applicationDeadline(req.getApplicationDeadline())
-                .expectedStartDate(req.getExpectedStartDate())
+                .submissionDays(submissionDays)
+                .reviewDays(reviewDays)
                 .status(EJobStatus.PENDING_APPROVAL)  // Chờ admin duyệt
                 .employer(employer)
                 .build();
@@ -216,7 +224,8 @@ public class JobService {
                 req.getBudget(),
                 req.getCurrency(),
                 req.getApplicationDeadline(),
-                req.getExpectedStartDate()
+                req.getSubmissionDays(),
+                req.getReviewDays()
         );
 
         Job updatedJob = jobRepository.save(job);
@@ -376,7 +385,8 @@ public class JobService {
                 .escrowAmount(job.getEscrowAmount())
                 .currency(job.getCurrency())
                 .applicationDeadline(job.getApplicationDeadline())
-                .expectedStartDate(job.getExpectedStartDate())
+                .submissionDays(job.getSubmissionDays())
+                .reviewDays(job.getReviewDays())
                 .status(job.getStatus())
                 .rejectionReason(job.getRejectionReason())
                 .workSubmissionDeadline(job.getWorkSubmissionDeadline())

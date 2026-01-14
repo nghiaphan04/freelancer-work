@@ -91,12 +91,13 @@ export default function JobHistoryTimeline({ jobId }: JobHistoryTimelineProps) {
         const roleConfig = ROLE_CONFIG[item.user.role] || ROLE_CONFIG.USER;
         const isLast = index === history.length - 1;
 
+        const fileAttachment = item.fileAttachment;
+
         return (
           <div key={item.id} className={`relative pl-8 sm:pl-10 ${isLast ? "" : "pb-4 sm:pb-5"}`}>
             {/* Timeline dot - responsive position */}
             <div className={`absolute left-1 sm:left-2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white border-2 flex items-center justify-center ${config.color.replace("text-", "border-")}`}>
-              <Icon name={config.icon} size={10} className={`${config.color} sm:hidden`} />
-              <Icon name={config.icon} size={12} className={`${config.color} hidden sm:block`} />
+              <Icon name={config.icon} size={12} className={config.color} />
             </div>
 
             {/* Content card */}
@@ -114,6 +115,27 @@ export default function JobHistoryTimeline({ jobId }: JobHistoryTimelineProps) {
               {/* Description */}
               {item.description && (
                 <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">{item.description}</p>
+              )}
+
+              {fileAttachment && (
+                <a
+                  href={fileAttachment.secureUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors mb-2"
+                >
+                  <Icon name="picture_as_pdf" size={18} className="text-red-500 shrink-0" />
+                  <div className="flex-1 text-sm text-gray-700 truncate">
+                    <span className="font-medium">{fileAttachment.originalFilename || "Tệp đã nộp"}</span>
+                    {fileAttachment.readableSize && (
+                      <span className="block text-xs text-gray-500">
+                        {fileAttachment.readableSize}
+                      </span>
+                    )}
+                  </div>
+                  <Icon name="download" size={16} className="text-gray-500 shrink-0" />
+                </a>
               )}
 
               {/* User info */}

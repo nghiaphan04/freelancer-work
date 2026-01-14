@@ -385,7 +385,12 @@ public class JobController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody SubmitWorkRequest request) {
 
-        return ResponseEntity.ok(jobWorkService.submitWork(id, userDetails.getId(), request.getUrl(), request.getNote()));
+        return ResponseEntity.ok(jobWorkService.submitWork(
+                id,
+                userDetails.getId(),
+                request.getUrl(),
+                request.getNote(),
+                request.getFileId()));
     }
 
     /**

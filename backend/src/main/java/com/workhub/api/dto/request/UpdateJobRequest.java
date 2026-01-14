@@ -45,5 +45,9 @@ public class UpdateJobRequest {
 
     private LocalDateTime applicationDeadline;
 
-    private LocalDateTime expectedStartDate;
+    @Min(value = 1, message = "Thời gian nộp sản phẩm tối thiểu 1 ngày")
+    private Integer submissionDays;
+
+    @Min(value = 2, message = "Thời gian nghiệm thu tối thiểu 2 ngày")
+    private Integer reviewDays;
 }

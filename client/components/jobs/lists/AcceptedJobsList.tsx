@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useAcceptedJobs } from "@/hooks/useAcceptedJobs";
-import { JOB_STATUS_CONFIG, WorkStatus } from "@/types/job";
+import { JOB_STATUS_CONFIG } from "@/types/job";
 import { api, JobApplication, ApplicationStatus, SavedJob, Dispute } from "@/lib/api";
 import JobsLoading from "../shared/JobsLoading";
 import JobsEmptyState from "../shared/JobsEmptyState";
@@ -14,6 +14,7 @@ import JobsPageHeader from "../shared/JobsPageHeader";
 import JobHistoryTimeline from "../shared/JobHistoryTimeline";
 import { DisputeResponseDialog } from "../dispute/DisputeDialog";
 import { WorkSubmitDialog } from "../work/WorkDialogs";
+import FreelancerJobCard from "./accepted/FreelancerJobCard";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,14 +34,6 @@ const APPLICATION_STATUS_CONFIG: Record<ApplicationStatus, { label: string; colo
   WITHDRAWN: { label: "Đã rút", color: "bg-gray-100 text-gray-600" },
 };
 
-const WORK_STATUS_CONFIG: Record<WorkStatus, { label: string; color: string; icon: string }> = {
-  NOT_STARTED: { label: "Chưa bắt đầu", color: "bg-gray-100 text-gray-600", icon: "hourglass_empty" },
-  IN_PROGRESS: { label: "Đang làm", color: "bg-gray-100 text-gray-600", icon: "pending" },
-  SUBMITTED: { label: "Đã nộp - Chờ duyệt", color: "bg-gray-100 text-gray-600", icon: "upload_file" },
-  REVISION_REQUESTED: { label: "Cần chỉnh sửa", color: "bg-gray-100 text-gray-600", icon: "edit_note" },
-  APPROVED: { label: "Đã duyệt", color: "bg-gray-100 text-gray-600", icon: "check_circle" },
-};
-
 export default function AcceptedJobsList() {
   const router = useRouter();
   const { user, isAuthenticated, isHydrated } = useAuth();
@@ -54,7 +47,6 @@ export default function AcceptedJobsList() {
 
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [savedJobsLoading, setSavedJobsLoading] = useState(false);
-  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyJobId, setHistoryJobId] = useState<number | null>(null);
   
   // Dispute states
@@ -162,11 +154,6 @@ export default function AcceptedJobsList() {
       return `${(amount / 1000000).toFixed(1)}M`;
     }
     return amount.toLocaleString("vi-VN");
-  };
-
-  const handleHistoryClick = (jobId: number) => {
-    setHistoryJobId(jobId);
-    setHistoryDialogOpen(true);
   };
 
   const handleViewDispute = async (jobId: number) => {
@@ -612,165 +599,29 @@ export default function AcceptedJobsList() {
             /* Job List */
             <div className="space-y-4">
               {(() => {
-                // Filter jobs based on tab
-                let displayJobs = jobs;
-                
-                if (isSubmittedTab) {
-                  // Tab "Đã nộp": chỉ hiện jobs đã nộp hoặc đã duyệt
-                  displayJobs = jobs.filter(job => job.workStatus === "SUBMITTED" || job.workStatus === "APPROVED");
-                }
-                // Tab "Đang làm" (IN_PROGRESS): hiện tất cả jobs IN_PROGRESS, button sẽ thay đổi theo workStatus
-                
+                const displayJobs = isSubmittedTab
+                  ? jobs.filter(
+                      (job) =>
+                        job.workStatus === "SUBMITTED" ||
+                        job.workStatus === "APPROVED" ||
+                        Boolean(job.workSubmissionUrl)
+                    )
+                  : jobs;
+
                 return displayJobs.length === 0 ? (
-                  <JobsEmptyState message={
-                    isSubmittedTab 
-                      ? "Chưa có sản phẩm nào được nộp" 
-                      : "Không có công việc nào"
-                  } />
+                  <JobsEmptyState
+                    message={
+                      isSubmittedTab ? "Chưa có sản phẩm nào được nộp" : "Không có công việc nào"
+                    }
+                  />
                 ) : (
                   displayJobs.map((job) => (
-                  <div key={job.id} className="bg-white rounded-lg shadow p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                      {/* Employer Info */}
-                      {job.employer && (
-                        <Avatar className="w-12 h-12 shrink-0 hidden sm:flex">
-                          <AvatarImage src={job.employer.avatarUrl} alt={job.employer.fullName} />
-                          <AvatarFallback className="bg-[#00b14f] text-white">
-                            {job.employer.fullName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900 hover:text-[#00b14f] cursor-pointer truncate">
-                            {job.title}
-                          </h3>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${JOB_STATUS_CONFIG[job.status]?.color || "bg-gray-100 text-gray-700"}`}>
-                            {JOB_STATUS_CONFIG[job.status]?.label || job.status}
-                          </span>
-                        </div>
-
-                        {job.employer && (
-                          <p className="text-sm text-gray-600 mb-2">{job.employer.fullName}</p>
-                        )}
-                        
-                        <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-3">
-                          <span className="flex items-center gap-1">
-                            <Icon name="payments" size={16} />
-                            {job.budget ? `${job.budget.toLocaleString("vi-VN")} ${job.currency}` : "Thương lượng"}
-                          </span>
-                          {job.expectedStartDate && (
-                            <span className="flex items-center gap-1">
-                              <Icon name="event" size={16} />
-                              Bắt đầu: {new Date(job.expectedStartDate).toLocaleDateString("vi-VN")}
-                            </span>
-                          )}
-                          {job.applicationDeadline && (
-                            <span className="flex items-center gap-1">
-                              <Icon name="schedule" size={16} />
-                              Hạn: {new Date(job.applicationDeadline).toLocaleDateString("vi-VN")}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Work Status Badge */}
-                        {job.status === "IN_PROGRESS" && job.workStatus && (
-                          <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm mb-2 ${WORK_STATUS_CONFIG[job.workStatus]?.color || "bg-gray-100"}`}>
-                            <Icon name={WORK_STATUS_CONFIG[job.workStatus]?.icon || "info"} size={16} />
-                            <span className="font-medium">{WORK_STATUS_CONFIG[job.workStatus]?.label}</span>
-                          </div>
-                        )}
-
-                        {/* Deadline warnings for IN_PROGRESS jobs */}
-                        {job.status === "IN_PROGRESS" && job.workSubmissionDeadline && job.workStatus !== "SUBMITTED" && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg mb-2">
-                            <Icon name="timer" size={16} />
-                            <span>Hạn nộp sản phẩm: {new Date(job.workSubmissionDeadline).toLocaleDateString("vi-VN")}</span>
-                          </div>
-                        )}
-                        {job.status === "IN_PROGRESS" && job.workReviewDeadline && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg mb-2">
-                            <Icon name="hourglass_top" size={16} />
-                            <span>Đang chờ bên thuê duyệt (hạn: {new Date(job.workReviewDeadline).toLocaleDateString("vi-VN")})</span>
-                          </div>
-                        )}
-
-                        {/* Download submitted work */}
-                        {job.workSubmissionUrl && (
-                          <a
-                            href={job.workSubmissionUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download
-                            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors mb-2"
-                          >
-                            <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
-                            <span className="flex-1 text-sm text-gray-700 truncate">Sản phẩm đã nộp</span>
-                            <Icon name="download" size={18} className="text-gray-500 shrink-0" />
-                          </a>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex flex-row sm:flex-col gap-2 shrink-0">
-                        <Link href={`/jobs/${job.id}`}>
-                          <Button variant="outline" size="sm" className="w-full">
-                            <Icon name="visibility" size={16} />
-                            <span className="sm:hidden lg:inline ml-1">Chi tiết</span>
-                          </Button>
-                        </Link>
-                        {(job.status === "IN_PROGRESS" || job.status === "COMPLETED" || job.status === "DISPUTED") && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                            onClick={() => handleHistoryClick(job.id)}
-                          >
-                            <Icon name="history" size={16} />
-                            <span className="sm:hidden lg:inline ml-1">Lịch sử</span>
-                          </Button>
-                        )}
-                        {job.status === "IN_PROGRESS" && (
-                          job.workStatus === "SUBMITTED" ? (
-                            // Đã nộp - chờ duyệt, không cho nộp lại
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              disabled
-                              className="opacity-50 cursor-not-allowed"
-                            >
-                              <Icon name="hourglass_top" size={16} />
-                              <span className="sm:hidden lg:inline ml-1">Chờ duyệt</span>
-                            </Button>
-                          ) : job.workStatus === "APPROVED" ? null : (
-                            // Chưa nộp hoặc cần chỉnh sửa - cho phép nộp
-                            <Button 
-                              size="sm" 
-                              className="bg-[#00b14f] hover:bg-[#009643]"
-                              onClick={() => handleSubmitWork({ id: job.id, title: job.title })}
-                            >
-                              <Icon name="upload" size={16} />
-                              <span className="sm:hidden lg:inline ml-1">
-                                {job.workStatus === "REVISION_REQUESTED" ? "Nộp lại" : "Nộp bài"}
-                              </span>
-                            </Button>
-                          )
-                        )}
-                        {job.status === "DISPUTED" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                            onClick={() => handleViewDispute(job.id)}
-                          >
-                            <Icon name="gavel" size={16} />
-                            <span className="sm:hidden lg:inline ml-1">Tranh chấp</span>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    <FreelancerJobCard
+                      key={job.id}
+                      job={job}
+                      onSubmitWork={handleSubmitWork}
+                      onViewDispute={handleViewDispute}
+                    />
                   ))
                 );
               })()}
@@ -778,21 +629,6 @@ export default function AcceptedJobsList() {
           )}
         </>
       )}
-
-      {/* History Dialog */}
-      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto scrollbar-thin rounded-lg">
-          <DialogHeader>
-            <DialogTitle>Lịch sử hoạt động</DialogTitle>
-            <DialogDescription>
-              Xem các hoạt động liên quan đến công việc này
-            </DialogDescription>
-          </DialogHeader>
-          {historyJobId && (
-            <JobHistoryTimeline jobId={historyJobId} />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Dispute Response Dialog */}
       {currentDispute && (

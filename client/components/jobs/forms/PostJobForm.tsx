@@ -37,7 +37,8 @@ export default function PostJobForm() {
     budget: 15000000,
     currency: "VND",
     applicationDeadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-    expectedStartDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    submissionDays: 7,
+    reviewDays: 3,
   });
 
   const handleChange = (
@@ -46,7 +47,12 @@ export default function PostJobForm() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "budget" ? (value ? Number(value) : undefined) : value,
+      [name]:
+        name === "budget" || name === "submissionDays" || name === "reviewDays"
+          ? value
+            ? Number(value)
+            : undefined
+          : value,
     }));
   };
 
@@ -79,6 +85,14 @@ export default function PostJobForm() {
       toast.error("Vui lòng nhập mô tả công việc");
       return;
     }
+    if (!formData.submissionDays || formData.submissionDays < 1) {
+      toast.error("Thời gian nộp sản phẩm tối thiểu 1 ngày");
+      return;
+    }
+    if (!formData.reviewDays || formData.reviewDays < 2) {
+      toast.error("Thời gian nghiệm thu tối thiểu 2 ngày");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -86,9 +100,6 @@ export default function PostJobForm() {
         ...formData,
         applicationDeadline: formData.applicationDeadline
           ? new Date(formData.applicationDeadline).toISOString()
-          : undefined,
-        expectedStartDate: formData.expectedStartDate
-          ? new Date(formData.expectedStartDate).toISOString()
           : undefined,
       });
 
@@ -304,12 +315,30 @@ export default function PostJobForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu dự kiến</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Thời gian nộp sản phẩm (ngày, tối thiểu 1)
+                </label>
                 <Input
-                  type="datetime-local"
-                  name="expectedStartDate"
-                  value={formData.expectedStartDate || ""}
+                  type="number"
+                  name="submissionDays"
+                  value={formData.submissionDays ?? ""}
                   onChange={handleChange}
+                  min={1}
+                  placeholder="VD: 7"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Thời gian nghiệm thu (ngày, tối thiểu 2)
+                </label>
+                <Input
+                  type="number"
+                  name="reviewDays"
+                  value={formData.reviewDays ?? ""}
+                  onChange={handleChange}
+                  min={2}
+                  placeholder="VD: 3"
                 />
               </div>
             </div>

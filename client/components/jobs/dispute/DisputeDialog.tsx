@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { api, Dispute, DISPUTE_STATUS_CONFIG } from "@/lib/api";
+import { api, Dispute, DISPUTE_STATUS_CONFIG, DisputeFileAttachment } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,73 @@ import {
 } from "@/components/ui/dialog";
 import Icon from "@/components/ui/Icon";
 import { FileUpload } from "@/components/ui/file-upload";
+
+type EvidenceMeta = {
+  url: string;
+  fileId?: number;
+  name?: string;
+  size?: number;
+};
+
+const formatFileSize = (bytes?: number) => {
+  if (bytes === undefined) return "";
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+};
+
+const EvidenceCard = ({
+  url,
+  name,
+  size,
+  label,
+  onRemove,
+}: {
+  url: string;
+  name?: string;
+  size?: string;
+  label?: string;
+  onRemove?: () => void;
+}) => (
+  <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors">
+    <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
+    <div className="flex-1 text-sm text-gray-700 truncate">
+      <span className="font-medium">{name || label || "Tệp đính kèm"}</span>
+      {size && <span className="block text-xs text-gray-500">{size}</span>}
+    </div>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      download
+      className="text-gray-500 hover:text-gray-700"
+    >
+      <Icon name="download" size={18} />
+    </a>
+    {onRemove && (
+      <button onClick={onRemove} className="text-gray-500 hover:text-gray-700">
+        <Icon name="close" size={18} />
+      </button>
+    )}
+  </div>
+);
+
+const renderEvidenceCard = (
+  attachment?: DisputeFileAttachment,
+  fallbackUrl?: string,
+  label?: string
+) => {
+  const url = attachment?.secureUrl || fallbackUrl;
+  if (!url) return null;
+  return (
+    <EvidenceCard
+      url={url}
+      name={attachment?.originalFilename || label}
+      size={attachment?.readableSize}
+      label={label}
+    />
+  );
+};
 
 interface CreateDisputeDialogProps {
   open: boolean;
@@ -32,7 +99,7 @@ export function CreateDisputeDialog({
   onSuccess,
 }: CreateDisputeDialogProps) {
   const [description, setDescription] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceMeta | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -40,18 +107,23 @@ export function CreateDisputeDialog({
       toast.error("Vui lòng nhập mô tả sai phạm");
       return;
     }
-    if (!evidenceUrl.trim()) {
+    if (!selectedEvidence?.url?.trim()) {
       toast.error("Vui lòng upload file bằng chứng (PDF)");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await api.createDispute(jobId, description, evidenceUrl);
+      const response = await api.createDispute(
+        jobId,
+        description,
+        selectedEvidence?.url ?? "",
+        selectedEvidence?.fileId
+      );
       if (response.status === "SUCCESS") {
         toast.success("Đã tạo khiếu nại thành công. Chờ admin xử lý.");
         setDescription("");
-        setEvidenceUrl("");
+        setSelectedEvidence(null);
         onOpenChange(false);
         onSuccess?.();
       } else {
@@ -92,13 +164,34 @@ export function CreateDisputeDialog({
           </div>
 
           <FileUpload
-            value={evidenceUrl}
-            onChange={(url) => setEvidenceUrl(url)}
+            value={selectedEvidence?.url || ""}
+            onChange={(url, file, fileId) => {
+              if (!url) {
+                setSelectedEvidence(null);
+                return;
+              }
+              setSelectedEvidence({
+                url,
+                fileId,
+                name: file?.name,
+                size: file?.size,
+              });
+            }}
             usage="DISPUTE_EVIDENCE"
             label="Bằng chứng (PDF)"
             required
             disabled={isSubmitting}
           />
+
+          {selectedEvidence && (
+            <EvidenceCard
+              url={selectedEvidence.url}
+              name={selectedEvidence.name}
+              size={formatFileSize(selectedEvidence.size)}
+              label="Bằng chứng đã chọn"
+              onRemove={() => setSelectedEvidence(null)}
+            />
+          )}
 
           <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-600">
             <p className="font-medium mb-1 flex items-center gap-1">
@@ -144,7 +237,7 @@ export function DisputeResponseDialog({
   onSuccess,
 }: DisputeResponseDialogProps) {
   const [description, setDescription] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceMeta | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -152,18 +245,23 @@ export function DisputeResponseDialog({
       toast.error("Vui lòng nhập nội dung phản hồi");
       return;
     }
-    if (!evidenceUrl.trim()) {
+    if (!selectedEvidence?.url?.trim()) {
       toast.error("Vui lòng upload file bằng chứng (PDF)");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await api.submitDisputeResponse(dispute.id, description, evidenceUrl);
+      const response = await api.submitDisputeResponse(
+        dispute.id,
+        description,
+        selectedEvidence?.url ?? "",
+        selectedEvidence?.fileId
+      );
       if (response.status === "SUCCESS") {
         toast.success("Đã gửi phản hồi thành công. Chờ admin quyết định.");
         setDescription("");
-        setEvidenceUrl("");
+        setSelectedEvidence(null);
         onOpenChange(false);
         onSuccess?.();
       } else {
@@ -207,19 +305,7 @@ export function DisputeResponseDialog({
               Khiếu nại từ: {dispute.employer.fullName}
             </h4>
             <p className="text-sm text-gray-600 whitespace-pre-wrap">{dispute.employerDescription}</p>
-            {dispute.employerEvidenceUrl && (
-              <a
-                href={dispute.employerEvidenceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
-              >
-                <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
-                <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
-                <Icon name="download" size={18} className="text-gray-500 shrink-0" />
-              </a>
-            )}
+            {renderEvidenceCard(dispute.employerEvidenceFile, dispute.employerEvidenceUrl, "Bằng chứng bên thuê")}
           </div>
 
           {dispute.freelancerDeadline && canRespond && (
@@ -236,19 +322,7 @@ export function DisputeResponseDialog({
                 Phản hồi của bạn
               </h4>
               <p className="text-sm text-gray-600 whitespace-pre-wrap">{dispute.freelancerDescription}</p>
-              {dispute.freelancerEvidenceUrl && (
-                <a
-                  href={dispute.freelancerEvidenceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="flex items-center gap-2 mt-3 px-3 py-2 border border-gray-300 rounded-md bg-[#00b14f]/5 hover:bg-[#00b14f]/10 transition-colors"
-                >
-                  <Icon name="picture_as_pdf" size={20} className="text-red-500 shrink-0" />
-                  <span className="flex-1 text-sm text-gray-700">Bằng chứng đính kèm</span>
-                  <Icon name="download" size={18} className="text-gray-500 shrink-0" />
-                </a>
-              )}
+              {renderEvidenceCard(dispute.freelancerEvidenceFile, dispute.freelancerEvidenceUrl, "Bằng chứng phản hồi")}
             </div>
           )}
 
@@ -267,14 +341,35 @@ export function DisputeResponseDialog({
                 />
               </div>
 
-              <FileUpload
-                value={evidenceUrl}
-                onChange={(url) => setEvidenceUrl(url)}
+          <FileUpload
+            value={selectedEvidence?.url || ""}
+            onChange={(url, file, fileId) => {
+              if (!url) {
+                setSelectedEvidence(null);
+                return;
+              }
+              setSelectedEvidence({
+                url,
+                fileId,
+                name: file?.name,
+                size: file?.size,
+              });
+            }}
                 usage="DISPUTE_EVIDENCE"
                 label="Bằng chứng (PDF)"
                 required
                 disabled={isSubmitting}
               />
+
+          {selectedEvidence && (
+            <EvidenceCard
+              url={selectedEvidence.url}
+              name={selectedEvidence.name}
+              size={formatFileSize(selectedEvidence.size)}
+              label="Bằng chứng đã chọn"
+              onRemove={() => setSelectedEvidence(null)}
+            />
+          )}
             </>
           )}
 

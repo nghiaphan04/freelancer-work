@@ -45,7 +45,8 @@ export default function EditJobForm() {
     budget: undefined,
     currency: "VND",
     applicationDeadline: "",
-    expectedStartDate: "",
+    submissionDays: 1,
+    reviewDays: 2,
   });
 
   useEffect(() => {
@@ -83,9 +84,8 @@ export default function EditJobForm() {
             applicationDeadline: jobData.applicationDeadline 
               ? new Date(jobData.applicationDeadline).toISOString().slice(0, 16) 
               : "",
-            expectedStartDate: jobData.expectedStartDate 
-              ? new Date(jobData.expectedStartDate).toISOString().slice(0, 16) 
-              : "",
+            submissionDays: jobData.submissionDays ?? 1,
+            reviewDays: jobData.reviewDays ?? 2,
           });
         } else {
           setError(response.message || "Không tìm thấy công việc");
@@ -108,7 +108,12 @@ export default function EditJobForm() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "budget" ? (value ? Number(value) : undefined) : value,
+      [name]:
+        name === "budget" || name === "submissionDays" || name === "reviewDays"
+          ? value
+            ? Number(value)
+            : undefined
+          : value,
     }));
   };
 
@@ -141,6 +146,14 @@ export default function EditJobForm() {
       toast.error("Vui lòng nhập mô tả công việc");
       return;
     }
+    if (!formData.submissionDays || formData.submissionDays < 1) {
+      toast.error("Thời gian nộp sản phẩm tối thiểu 1 ngày");
+      return;
+    }
+    if (!formData.reviewDays || formData.reviewDays < 2) {
+      toast.error("Thời gian nghiệm thu tối thiểu 2 ngày");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -148,9 +161,6 @@ export default function EditJobForm() {
         ...formData,
         applicationDeadline: formData.applicationDeadline
           ? new Date(formData.applicationDeadline).toISOString()
-          : undefined,
-        expectedStartDate: formData.expectedStartDate
-          ? new Date(formData.expectedStartDate).toISOString()
           : undefined,
       });
 
@@ -386,12 +396,30 @@ export default function EditJobForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ngày bắt đầu dự kiến</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Thời gian nộp sản phẩm (ngày, tối thiểu 1)
+                </label>
                 <Input
-                  type="datetime-local"
-                  name="expectedStartDate"
-                  value={formData.expectedStartDate || ""}
+                  type="number"
+                  name="submissionDays"
+                  value={formData.submissionDays ?? ""}
                   onChange={handleChange}
+                  min={1}
+                  placeholder="VD: 7"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Thời gian nghiệm thu (ngày, tối thiểu 2)
+                </label>
+                <Input
+                  type="number"
+                  name="reviewDays"
+                  value={formData.reviewDays ?? ""}
+                  onChange={handleChange}
+                  min={2}
+                  placeholder="VD: 3"
                 />
               </div>
             </div>

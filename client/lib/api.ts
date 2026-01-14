@@ -322,20 +322,30 @@ export const api = {
     }),
 
   // Disputes - Employer
-  createDispute: (jobId: number, description: string, evidenceUrl: string) =>
+  createDispute: (
+    jobId: number,
+    description: string,
+    evidenceUrl: string,
+    fileId?: number
+  ) =>
     request<Dispute>(`/api/jobs/${jobId}/disputes`, {
       method: "POST",
-      body: JSON.stringify({ description, evidenceUrl }),
+      body: JSON.stringify({ description, evidenceUrl, fileId }),
     }),
 
   getDispute: (jobId: number) =>
     request<Dispute | null>(`/api/jobs/${jobId}/disputes`),
 
   // Disputes - Freelancer
-  submitDisputeResponse: (disputeId: number, description: string, evidenceUrl: string) =>
+  submitDisputeResponse: (
+    disputeId: number,
+    description: string,
+    evidenceUrl: string,
+    fileId?: number
+  ) =>
     request<Dispute>(`/api/disputes/${disputeId}/respond`, {
       method: "PUT",
-      body: JSON.stringify({ description, evidenceUrl }),
+      body: JSON.stringify({ description, evidenceUrl, fileId }),
     }),
 
   // Notifications
@@ -757,6 +767,13 @@ export const DISPUTE_STATUS_CONFIG: Record<DisputeStatus, { label: string; color
   CANCELLED: { label: "Đã hủy", color: "text-gray-600" },
 };
 
+export interface DisputeFileAttachment {
+  id: number;
+  secureUrl: string;
+  originalFilename?: string;
+  readableSize?: string;
+}
+
 export interface DisputeUser {
   id: number;
   fullName: string;
@@ -769,9 +786,11 @@ export interface Dispute {
   jobTitle: string;
   employer: DisputeUser;
   employerEvidenceUrl: string;
+  employerEvidenceFile?: DisputeFileAttachment;
   employerDescription: string;
   freelancer: DisputeUser;
   freelancerEvidenceUrl?: string;
+  freelancerEvidenceFile?: DisputeFileAttachment;
   freelancerDescription?: string;
   freelancerDeadline?: string;
   status: DisputeStatus;

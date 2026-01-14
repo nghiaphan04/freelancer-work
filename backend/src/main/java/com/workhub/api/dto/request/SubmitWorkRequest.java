@@ -9,4 +9,6 @@ public class SubmitWorkRequest {
     private String url;
     
     private String note;
+
+    private Long fileId;
 }

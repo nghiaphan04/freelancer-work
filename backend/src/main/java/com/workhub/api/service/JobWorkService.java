@@ -26,12 +26,13 @@ public class JobWorkService {
     private final UserService userService;
     private final JobHistoryService jobHistoryService;
     private final NotificationService notificationService;
+    private final FileUploadService fileUploadService;
 
     /**
      * Freelancer nộp sản phẩm
      */
     @Transactional
-    public ApiResponse<JobApplicationResponse> submitWork(Long jobId, Long userId, String url, String note) {
+    public ApiResponse<JobApplicationResponse> submitWork(Long jobId, Long userId, String url, String note, Long fileId) {
         JobApplication application = jobApplicationRepository.findFirstByJobIdAndStatus(jobId, EApplicationStatus.ACCEPTED)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn ứng tuyển được chấp nhận"));
 
@@ -52,16 +53,23 @@ public class JobWorkService {
         application.submitWork(url, note);
         jobApplicationRepository.save(application);
 
-        // Set review deadline (3 ngày để employer review)
+        int reviewDays = job.getReviewDays() != null && job.getReviewDays() >= 2
+                ? job.getReviewDays()
+                : 2;
         // Clear submission deadline và set review deadline
         job.setWorkSubmissionDeadline(null);
-        job.setWorkReviewDeadline(java.time.LocalDateTime.now().plusDays(3));
+        job.setWorkReviewDeadline(java.time.LocalDateTime.now().plusDays(reviewDays));
         jobRepository.save(job);
+
+        if (fileId != null) {
+            fileUploadService.assignFileToReference(fileId, "JOB_WORK_SUBMISSION", job.getId());
+        }
 
         // Ghi lịch sử
         User freelancer = userService.getById(userId);
-        jobHistoryService.logHistory(job, freelancer, EJobHistoryAction.WORK_SUBMITTED,
-                "Đã nộp sản phẩm: " + url);
+        String description = "Đã nộp sản phẩm";
+        String metadata = fileId != null ? fileId.toString() : null;
+        jobHistoryService.logHistory(job, freelancer, EJobHistoryAction.WORK_SUBMITTED, description, metadata);
 
         // Thông báo cho employer
         notificationService.notifyWorkSubmitted(job.getEmployer(), job, freelancer);

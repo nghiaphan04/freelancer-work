@@ -16,7 +16,7 @@ type FileUsage =
 
 interface FileUploadProps {
   value?: string;
-  onChange: (url: string, file?: File | null) => void;
+  onChange: (url: string, file?: File | null, fileId?: number) => void;
   usage: FileUsage;
   label?: string;
   required?: boolean;
@@ -61,9 +61,9 @@ export function FileUpload({
     setIsUploading(true);
     try {
       const response = await api.uploadDocument(selectedFile, usage);
-      if (response.status === "SUCCESS" && response.data) {
-        setFile(selectedFile);
-        onChange(response.data.secureUrl, selectedFile);
+        if (response.status === "SUCCESS" && response.data) {
+          setFile(selectedFile);
+          onChange(response.data.secureUrl, selectedFile, response.data.id);
       } else {
         toast.error(response.message || "Upload thất bại");
       }
@@ -77,7 +77,7 @@ export function FileUpload({
 
   const handleRemove = () => {
     setFile(null);
-    onChange("", null);
+    onChange("", null, undefined);
   };
 
   return (

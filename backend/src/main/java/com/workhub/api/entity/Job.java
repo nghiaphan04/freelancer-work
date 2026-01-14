@@ -80,6 +80,14 @@ public class Job {
     @Column(name = "expected_start_date")
     private LocalDateTime expectedStartDate;    // Ngày dự kiến bắt đầu
 
+    @Column(name = "submission_days")
+    @Builder.Default
+    private Integer submissionDays = 1; // Số ngày nộp sản phẩm (từ lúc duyệt freelancer)
+
+    @Column(name = "review_days")
+    @Builder.Default
+    private Integer reviewDays = 2; // Số ngày employer phải review sau khi nộp
+
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -121,7 +129,8 @@ public class Job {
                        String requirements, String deliverables, Set<String> skills,
                        EJobComplexity complexity, EJobDuration duration, EWorkType workType,
                        BigDecimal budget, String currency,
-                       LocalDateTime applicationDeadline, LocalDateTime expectedStartDate) {
+                       LocalDateTime applicationDeadline,
+                       Integer submissionDays, Integer reviewDays) {
         if (title != null && !title.isBlank()) {
             this.title = title;
         }
@@ -150,7 +159,12 @@ public class Job {
             this.currency = currency;
         }
         this.applicationDeadline = applicationDeadline;
-        this.expectedStartDate = expectedStartDate;
+        if (submissionDays != null && submissionDays >= 1) {
+            this.submissionDays = submissionDays;
+        }
+        if (reviewDays != null && reviewDays >= 2) {
+            this.reviewDays = reviewDays;
+        }
     }
 
     public void publish() {

@@ -95,15 +95,6 @@ export default function JobDetailSidebar({
               </div>
             </div>
           )}
-          {job.expectedStartDate && (
-            <div className="flex items-start gap-3">
-              <Icon name="play_circle" size={20} className="text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-gray-500">Dự kiến bắt đầu</p>
-                <p className="font-medium text-gray-900">{formatDate(job.expectedStartDate)}</p>
-              </div>
-            </div>
-          )}
           <div className="flex items-start gap-3">
             <Icon name="hourglass_empty" size={20} className="text-gray-400 mt-0.5" />
             <div>

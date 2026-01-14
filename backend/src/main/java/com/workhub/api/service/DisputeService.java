@@ -5,6 +5,7 @@ import com.workhub.api.dto.request.DisputeResponseRequest;
 import com.workhub.api.dto.request.ResolveDisputeRequest;
 import com.workhub.api.dto.response.ApiResponse;
 import com.workhub.api.dto.response.DisputeResponse;
+import com.workhub.api.dto.response.FileUploadResponse;
 import com.workhub.api.entity.*;
 import com.workhub.api.exception.UnauthorizedAccessException;
 import com.workhub.api.repository.DisputeRepository;
@@ -35,6 +36,7 @@ public class DisputeService {
     private final UserService userService;
     private final NotificationService notificationService;
     private final JobHistoryService jobHistoryService;
+    private final FileUploadService fileUploadService;
 
     /**
      * Employer tạo khiếu nại (trong thời gian review sản phẩm)
@@ -80,6 +82,7 @@ public class DisputeService {
                 .employer(employer)
                 .freelancer(freelancer)
                 .employerEvidenceUrl(req.getEvidenceUrl())
+                .employerEvidenceFileId(req.getFileId())
                 .employerDescription(req.getDescription())
                 .status(EDisputeStatus.PENDING_FREELANCER_RESPONSE)
                 .build();
@@ -89,6 +92,9 @@ public class DisputeService {
         jobRepository.save(job);
 
         Dispute saved = disputeRepository.save(dispute);
+        if (req.getFileId() != null) {
+            fileUploadService.assignFileToReference(req.getFileId(), "DISPUTE", saved.getId());
+        }
 
         // Ghi lịch sử
         jobHistoryService.logHistory(job, employer, EJobHistoryAction.DISPUTE_CREATED,
@@ -98,7 +104,7 @@ public class DisputeService {
         // Thông báo cho freelancer
         notificationService.notifyDisputeCreated(freelancer, job, employer);
 
-        return ApiResponse.success("Đã tạo khiếu nại thành công. Chờ admin xử lý.", DisputeResponse.fromEntity(saved));
+        return ApiResponse.success("Đã tạo khiếu nại thành công. Chờ admin xử lý.", buildResponse(saved));
     }
 
     /**
@@ -125,7 +131,7 @@ public class DisputeService {
             return ApiResponse.success("Không có khiếu nại", null);
         }
 
-        return ApiResponse.success("Thành công", DisputeResponse.fromEntity(dispute));
+        return ApiResponse.success("Thành công", buildResponse(dispute));
     }
 
     /**
@@ -150,7 +156,7 @@ public class DisputeService {
 
         return ApiResponse.success(
                 "Đã gửi yêu cầu phản hồi. Freelancer có " + daysToRespond + " ngày để phản hồi.",
-                DisputeResponse.fromEntity(saved));
+                buildResponse(saved));
     }
 
     /**
@@ -173,7 +179,11 @@ public class DisputeService {
 
         // Submit response
         dispute.submitFreelancerResponse(req.getEvidenceUrl(), req.getDescription());
+        dispute.setFreelancerEvidenceFileId(req.getFileId());
         Dispute saved = disputeRepository.save(dispute);
+        if (req.getFileId() != null) {
+            fileUploadService.assignFileToReference(req.getFileId(), "DISPUTE", dispute.getId());
+        }
 
         // Ghi lịch sử
         Job job = dispute.getJob();
@@ -184,7 +194,7 @@ public class DisputeService {
         // Thông báo cho admin và employer
         notificationService.notifyDisputeResponseSubmitted(dispute.getEmployer(), job, freelancer);
 
-        return ApiResponse.success("Đã gửi phản hồi thành công. Chờ admin quyết định.", DisputeResponse.fromEntity(saved));
+        return ApiResponse.success("Đã gửi phản hồi thành công. Chờ admin quyết định.", buildResponse(saved));
     }
 
     /**
@@ -256,7 +266,7 @@ public class DisputeService {
 
         return ApiResponse.success(
                 "Đã giải quyết tranh chấp. " + winner.getFullName() + " thắng.",
-                DisputeResponse.fromEntity(saved));
+                buildResponse(saved));
     }
 
     /**
@@ -271,7 +281,7 @@ public class DisputeService {
                 pendingStatuses,
                 PageRequest.of(page, size, Sort.by("createdAt").ascending())
         );
-        return ApiResponse.success("Thành công", disputes.map(DisputeResponse::fromEntity));
+        return ApiResponse.success("Thành công", disputes.map(this::buildResponse));
     }
 
     /**
@@ -311,5 +321,26 @@ public class DisputeService {
         if (!expiredDisputes.isEmpty()) {
             log.info("Processed {} expired freelancer response deadlines", expiredDisputes.size());
         }
+    }
+
+    private DisputeResponse buildResponse(Dispute dispute) {
+        return DisputeResponse.fromEntity(
+                dispute,
+                toAttachment(dispute.getEmployerEvidenceFileId()),
+                toAttachment(dispute.getFreelancerEvidenceFileId())
+        );
+    }
+
+    private DisputeResponse.FileAttachment toAttachment(Long fileId) {
+        if (fileId == null) {
+            return null;
+        }
+        FileUploadResponse file = fileUploadService.getFileById(fileId);
+        return DisputeResponse.FileAttachment.builder()
+                .id(file.getId())
+                .secureUrl(file.getSecureUrl())
+                .originalFilename(file.getOriginalFilename())
+                .readableSize(file.getReadableSize())
+                .build();
     }
 }
