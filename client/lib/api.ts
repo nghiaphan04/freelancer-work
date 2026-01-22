@@ -1,5 +1,6 @@
 import { User } from "@/types/user";
 import { Job, Page, CreateJobRequest, UpdateJobRequest, JobStatus, JobHistory } from "@/types/job";
+import { getAccessToken } from "@/constant/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -10,12 +11,19 @@ export interface ApiResponse<T> {
 }
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
+  const token = getAccessToken();
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...options?.headers,
+  };
+  
+  if (token) {
+    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+  }
+  
   const res = await fetch(`${API_URL}${endpoint}`, {
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    headers,
     ...options,
   });
   
