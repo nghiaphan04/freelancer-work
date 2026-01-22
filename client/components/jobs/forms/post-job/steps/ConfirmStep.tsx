@@ -2,9 +2,13 @@
 
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
-import { FormData } from "@/hooks/usePostJobForm";
+import { FormData, TimeUnit } from "@/hooks/usePostJobForm";
 import { ContractTerm } from "@/hooks/useContractTerms";
 import SystemTermsDisplay from "../sections/SystemTermsDisplay";
+
+function toMinutes(value: number, unit: TimeUnit): number {
+  return unit === "days" ? value * 24 * 60 : value;
+}
 
 interface ConfirmStepProps {
   formData: FormData;
@@ -29,6 +33,9 @@ export default function ConfirmStep({
 }: ConfirmStepProps) {
   const validTerms = contractTerms.filter(t => t.title.trim() || t.content.trim());
   const jobTermsCount = 1 + (formData.deliverables ? 1 : 0) + validTerms.length;
+  
+  const submissionMinutes = toMinutes(formData.submissionValue, formData.submissionUnit);
+  const reviewMinutes = toMinutes(formData.reviewValue, formData.reviewUnit);
 
   return (
     <div className="max-w-2xl mx-auto px-4">
@@ -101,8 +108,8 @@ export default function ConfirmStep({
                     <span className="font-semibold">Điều 1. Thời hạn thực hiện</span>
                     {": "}
                     <span className="text-gray-700">
-                      Bên B cam kết hoàn thành và bàn giao sản phẩm trong thời hạn {formData.submissionDays} phút kể từ ngày ký hợp đồng. 
-                      Bên A có trách nhiệm nghiệm thu sản phẩm trong thời hạn {formData.reviewDays} phút kể từ ngày nhận bàn giao.
+                      Bên B cam kết hoàn thành và bàn giao sản phẩm trong thời hạn {submissionMinutes} phút kể từ ngày ký hợp đồng. 
+                      Bên A có trách nhiệm nghiệm thu sản phẩm trong thời hạn {reviewMinutes} phút kể từ ngày nhận bàn giao.
                     </span>
                   </p>
                 </div>
@@ -145,8 +152,8 @@ export default function ConfirmStep({
                 </p>
                 <SystemTermsDisplay
                   budget={formData.budget}
-                  submissionDays={formData.submissionDays}
-                  reviewDays={formData.reviewDays}
+                  submissionDays={submissionMinutes}
+                  reviewDays={reviewMinutes}
                   platformFeePercent={platformFeePercent}
                   startIndex={jobTermsCount}
                 />
