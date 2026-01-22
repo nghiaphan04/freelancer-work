@@ -40,6 +40,11 @@ export function DisputeSignatureDialog({
 
   const roleLabel = userRole === "employer" ? "người thuê" : userRole === "freelancer" ? "người làm" : "quản trị viên";
 
+  const isEmployerWinner = dispute.employerWins || 
+    dispute.finalWinnerWallet === dispute.employer.walletAddress ||
+    dispute.status === "EMPLOYER_WON" || 
+    dispute.status === "EMPLOYER_CLAIMED";
+
   return (
     <Dialog open={open} onOpenChange={(o) => !isSubmitting && onOpenChange(o)}>
       <DialogContent className="max-w-lg">
@@ -57,7 +62,7 @@ export function DisputeSignatureDialog({
           <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
             <h4 className="font-medium text-purple-800 mb-2">Quyết định tranh chấp</h4>
             <p className="text-sm text-purple-700">
-              {dispute.employerWins 
+              {isEmployerWinner 
                 ? `Người thuê (${dispute.employer.fullName}) thắng tranh chấp`
                 : `Người làm (${dispute.freelancer.fullName}) thắng tranh chấp`
               }
@@ -68,32 +73,51 @@ export function DisputeSignatureDialog({
           </div>
 
           <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-800 mb-3">Trạng thái chữ ký</h4>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Người thuê ({dispute.employer.fullName})</span>
-                <span className={`text-sm font-medium ${dispute.employerSigned ? "text-green-600" : "text-gray-400"}`}>
-                  {dispute.employerSigned ? "✓ Đã ký" : "Chưa ký"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Người làm ({dispute.freelancer.fullName})</span>
-                <span className={`text-sm font-medium ${dispute.freelancerSigned ? "text-green-600" : "text-gray-400"}`}>
-                  {dispute.freelancerSigned ? "✓ Đã ký" : "Chưa ký"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Quản trị viên</span>
-                <span className={`text-sm font-medium ${dispute.adminSigned ? "text-green-600" : "text-gray-400"}`}>
-                  {dispute.adminSigned ? "✓ Đã ký" : "Chưa ký"}
-                </span>
-              </div>
+            <h4 className="font-medium text-gray-800 mb-3">Tiến độ voting</h4>
+            <div className="flex gap-2">
+              {[1, 2, 3].map((r) => {
+                const winnerWallet = r === 1 ? dispute.round1WinnerWallet :
+                                    r === 2 ? dispute.round2WinnerWallet :
+                                    dispute.round3WinnerWallet;
+                const isCompleted = !!winnerWallet;
+                const isCurrent = r === dispute.currentRound && !winnerWallet;
+                const isEmployerWin = winnerWallet === dispute.employer.walletAddress;
+                
+                return (
+                  <div
+                    key={r}
+                    className={`flex-1 p-2 rounded text-center ${
+                      isCompleted
+                        ? isEmployerWin
+                          ? "bg-blue-100 border border-blue-200"
+                          : "bg-green-100 border border-green-200"
+                        : isCurrent
+                          ? "bg-orange-100 border border-orange-200"
+                          : "bg-gray-100 border border-gray-200"
+                    }`}
+                  >
+                    <p className="text-xs font-medium text-gray-700">Round {r}</p>
+                    <p className={`text-xs mt-0.5 ${
+                      isCompleted
+                        ? isEmployerWin
+                          ? "text-blue-600"
+                          : "text-green-600"
+                        : isCurrent
+                          ? "text-orange-600"
+                          : "text-gray-400"
+                    }`}>
+                      {isCompleted
+                        ? isEmployerWin
+                          ? "Bên thuê"
+                          : "Người làm"
+                        : isCurrent
+                          ? "Đang vote"
+                          : "-"}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
-            {dispute.signatureDeadline && (
-              <p className="text-xs text-gray-500 mt-3">
-                Hạn ký: {formatDateTime(dispute.signatureDeadline)}
-              </p>
-            )}
           </div>
 
           {!isConnected && !alreadySigned && (
