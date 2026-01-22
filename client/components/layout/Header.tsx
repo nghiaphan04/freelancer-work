@@ -138,6 +138,8 @@ export default function Header() {
 
         if (result.success) {
           toast.success("Đăng nhập thành công!");
+          window.location.reload();
+          return;
         } else if (result.needName) {
           pendingSignDataRef.current = signResult;
           setShowNameDialog(true);
@@ -176,6 +178,8 @@ export default function Header() {
         setShowNameDialog(false);
         setInputName("");
         pendingSignDataRef.current = null;
+        window.location.reload();
+        return;
       } else {
         toast.error(result.error || "Đăng ký thất bại");
       }
