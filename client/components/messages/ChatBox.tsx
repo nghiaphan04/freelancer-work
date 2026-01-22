@@ -143,7 +143,7 @@ export default function ChatBox({
   const userProfileData: ChatUserSearchResult = {
     id: user.id,
     fullName: user.fullName,
-    email: user.email || "",
+    walletAddress: user.walletAddress,
     avatarUrl: user.avatarUrl,
     canSendRequest: blockedByMe,
     relationStatus: isBlocked ? "BLOCKED" : "ACCEPTED",
