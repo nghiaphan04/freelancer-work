@@ -13,4 +13,8 @@ public class CreateDisputeRequest {
     private String evidenceUrl;
 
     private Long fileId;
+    
+    private String walletAddress;
+    
+    private Long blockchainDisputeId;
 }

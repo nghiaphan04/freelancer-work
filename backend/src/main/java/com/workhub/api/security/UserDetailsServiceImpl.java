@@ -17,10 +17,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     
     @Override
     @Transactional
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-        
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        User user;
+        if (identifier != null && identifier.startsWith("0x")) {
+            user = userRepository.findByWalletAddress(identifier)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found with wallet: " + identifier));
+        } else {
+            user = userRepository.findByEmail(identifier)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + identifier));
+        }
         return UserDetailsImpl.build(user);
     }
 }

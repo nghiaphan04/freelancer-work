@@ -17,15 +17,13 @@ public class JobApplicationResponse {
     private FreelancerResponse freelancer;
     private String coverLetter;
     private EApplicationStatus status;
-    
-    // Work submission fields
     private EWorkStatus workStatus;
     private String workStatusLabel;
     private String workSubmissionUrl;
     private String workSubmissionNote;
     private LocalDateTime workSubmittedAt;
     private String workRevisionNote;
-    
+    private String walletAddress;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -35,11 +33,12 @@ public class JobApplicationResponse {
         private Long id;
         private String fullName;
         private String avatarUrl;
+        private String walletAddress;
         private String phoneNumber;
         private String bio;
         private Set<String> skills;
-        private Integer trustScore;      // Điểm uy tín (UT)
-        private Integer untrustScore;    // Điểm không uy tín (KUT)
+        private Integer trustScore;
+        private Integer untrustScore;
     }
 
     public static String getWorkStatusLabel(EWorkStatus workStatus) {

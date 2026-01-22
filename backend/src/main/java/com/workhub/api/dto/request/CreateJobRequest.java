@@ -48,9 +48,19 @@ public class CreateJobRequest {
     @Future(message = "Hạn nộp hồ sơ phải trong tương lai")
     private LocalDateTime applicationDeadline;
 
-    @Min(value = 1, message = "Thời gian nộp sản phẩm tối thiểu 1 ngày")
+    @Min(value = 1, message = "Thời gian nộp sản phẩm tối thiểu 1 phút")
     private Integer submissionDays;
 
-    @Min(value = 2, message = "Thời gian nghiệm thu tối thiểu 2 ngày")
+    @Min(value = 1, message = "Thời gian nghiệm thu tối thiểu 1 phút")
     private Integer reviewDays;
+
+    private Long escrowId;
+
+    @Size(max = 66, message = "Địa chỉ ví không hợp lệ")
+    private String walletAddress;
+
+    @Size(max = 66, message = "Transaction hash không hợp lệ")
+    private String txHash;
+
+    private Boolean saveAsDraft;
 }

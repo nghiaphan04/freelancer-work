@@ -107,4 +107,15 @@ public class AuthController {
         }
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/wallet-login")
+    public ResponseEntity<ApiResponse<AuthResponse>> walletLogin(
+            @Valid @RequestBody WalletLoginRequest req,
+            HttpServletResponse response) {
+        ApiResponse<AuthResponse> result = authService.walletLogin(req);
+        if (result.getData() != null) {
+            setTokenCookies(response, result.getData());
+        }
+        return ResponseEntity.ok(result);
+    }
 }

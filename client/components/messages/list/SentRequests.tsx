@@ -27,7 +27,8 @@ export default function SentRequests({ requests }: SentRequestsProps) {
         >
           <UserAvatar 
             src={req.otherUser.avatarUrl} 
-            name={req.otherUser.fullName} 
+            name={req.otherUser.fullName}
+            walletAddress={req.otherUser.walletAddress}
             size="lg" 
           />
           

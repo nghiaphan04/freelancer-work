@@ -31,7 +31,8 @@ export default function ChatHeader({
         
         <UserAvatar 
           src={user.avatarUrl} 
-          name={user.fullName} 
+          name={user.fullName}
+          walletAddress={user.walletAddress}
           size="md" 
         />
         

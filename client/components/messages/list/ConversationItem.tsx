@@ -50,6 +50,7 @@ export default function ConversationItem({
         <UserAvatar
           src={otherUser.avatarUrl}
           name={otherUser.fullName}
+          walletAddress={otherUser.walletAddress}
           online={isBlocked ? false : otherUser.online}
           size="xl"
           showOnlineStatus={!isBlocked}

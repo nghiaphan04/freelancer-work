@@ -32,12 +32,11 @@ public class FriendService {
     private final OnlineStatusService onlineStatusService;
 
     @Transactional(readOnly = true)
-    public List<UserSearchResponse> searchUsersByEmail(Long currentUserId, String email) {
-        List<User> users = userRepository.findByEmailContainingIgnoreCase(email);
+    public List<UserSearchResponse> searchUsersByName(Long currentUserId, String keyword) {
+        List<User> users = userRepository.searchByNameOrWalletExcludeAdmin(keyword);
 
         return users.stream()
                 .filter(u -> !u.getId().equals(currentUserId))
-                .filter(u -> !u.isAdmin())
                 .map(user -> {
                     User currentUser = userRepository.findById(currentUserId).orElse(null);
                     boolean canSendRequest = true;
@@ -69,9 +68,6 @@ public class FriendService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Gửi chat request (tin nhắn đầu tiên)
-     */
     @Transactional
     public ConversationResponse sendChatRequest(Long senderId, ChatRequestDto request) {
         User sender = userRepository.findById(senderId)
@@ -138,11 +134,9 @@ public class FriendService {
 
         chatMessageRepository.save(message);
 
-        log.info("Chat request saved: conversation {} from {} to {}", conversation.getId(), sender.getEmail(), receiver.getEmail());
-
         try {
             messagingTemplate.convertAndSendToUser(
-                    receiver.getEmail(),
+                    receiver.getIdentifier(),
                     "/queue/chat-requests",
                     ConversationResponse.fromEntity(conversation, receiver.getId())
             );
@@ -176,7 +170,7 @@ public class FriendService {
         conversation = conversationRepository.save(conversation);
 
         messagingTemplate.convertAndSendToUser(
-                conversation.getInitiator().getEmail(),
+                conversation.getInitiator().getIdentifier(),
                 "/queue/request-accepted",
                 ConversationResponse.fromEntity(conversation, conversation.getInitiator().getId())
         );
@@ -186,8 +180,6 @@ public class FriendService {
                 conversation.getReceiver(),
                 conversation.getId()
         );
-
-        log.info("Chat request {} accepted by {}", conversationId, userId);
 
         return ConversationResponse.fromEntity(conversation, userId);
     }
@@ -213,8 +205,6 @@ public class FriendService {
                 conversation.getReceiver(),
                 conversation.getId()
         );
-
-        log.info("Chat request {} rejected by {}", conversationId, userId);
     }
 
     @Transactional
@@ -231,8 +221,6 @@ public class FriendService {
         }
 
         conversationRepository.delete(conversation);
-
-        log.info("Chat request {} cancelled by {}", conversationId, userId);
     }
 
     @Transactional
@@ -252,20 +240,19 @@ public class FriendService {
         User blockedUser = conversation.getOtherUser(userId);
 
         messagingTemplate.convertAndSendToUser(
-                blockedUser.getEmail(),
+                blockedUser.getIdentifier(),
                 "/queue/conversations",
                 ConversationResponse.fromEntity(conversation, blockedUser.getId())
         );
 
         messagingTemplate.convertAndSendToUser(
-                blocker.getEmail(),
+                blocker.getIdentifier(),
                 "/queue/conversations",
                 ConversationResponse.fromEntity(conversation, blocker.getId())
         );
 
         notificationService.notifyChatBlocked(blockedUser, blocker);
 
-        log.info("User {} blocked conversation {}", userId, conversationId);
     }
 
     @Transactional
@@ -293,18 +280,16 @@ public class FriendService {
         User otherUser = conversation.getOtherUser(userId);
 
         messagingTemplate.convertAndSendToUser(
-                unblocker.getEmail(),
+                unblocker.getIdentifier(),
                 "/queue/conversations",
                 ConversationResponse.fromEntity(conversation, unblocker.getId())
         );
 
         messagingTemplate.convertAndSendToUser(
-                otherUser.getEmail(),
+                otherUser.getIdentifier(),
                 "/queue/conversations",
                 ConversationResponse.fromEntity(conversation, otherUser.getId())
         );
-
-        log.info("User {} unblocked conversation {}", userId, conversationId);
 
         return ConversationResponse.fromEntity(conversation, userId);
     }

@@ -1,6 +1,5 @@
 import { User } from "@/types/user";
 import { Job, Page, CreateJobRequest, UpdateJobRequest, JobStatus, JobHistory } from "@/types/job";
-import { BalanceDeposit, DepositStatus, BalanceStatistics } from "@/types/balance";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -22,6 +21,10 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<ApiR
   // Log for debugging
   if (!res.ok) {
     console.error(`API Error [${res.status}] ${endpoint}:`, data);
+    // Log validation errors if present
+    if (data.data && typeof data.data === 'object') {
+      console.error('Validation errors:', JSON.stringify(data.data, null, 2));
+    }
   }
   
   return data;
@@ -52,11 +55,21 @@ export const api = {
   googleAuth: (credential: string) =>
     request("/api/auth/google", { method: "POST", body: JSON.stringify({ credential }) }),
 
+  walletLogin: (data: { walletAddress: string; publicKey: string; signature: string; message: string; fullName?: string }) =>
+    request("/api/auth/wallet-login", { method: "POST", body: JSON.stringify(data) }),
+
   // Profile
   getProfile: () => request<User>("/api/users/me"),
 
   updateProfile: (data: Partial<User>) =>
     request<User>("/api/users/me", { method: "PUT", body: JSON.stringify(data) }),
+
+  // Wallet
+  updateWalletAddress: (walletAddress: string) =>
+    request<User>(`/api/users/me/wallet?walletAddress=${encodeURIComponent(walletAddress)}`, { method: "PUT" }),
+
+  getWalletAddress: () =>
+    request<string>("/api/users/me/wallet"),
 
   // Roles
   becomeEmployer: () => request<User>("/api/users/me/become-employer", { method: "POST" }),
@@ -134,12 +147,16 @@ export const api = {
   toggleJobStatus: (id: number) =>
     request<Job>(`/api/jobs/${id}/toggle-status`, { method: "PATCH" }),
 
-  // Xóa job
-  deleteJob: (id: number) =>
-    request<void>(`/api/jobs/${id}`, { method: "DELETE" }),
+  // Hủy job
+  deleteJob: (id: number, txHash?: string) =>
+    request<void>(`/api/jobs/${id}${txHash ? `?txHash=${txHash}` : ''}`, { method: "DELETE" }),
+
+  // Đăng lại job đã hủy
+  repostJob: (id: number, data: { saveAsDraft: boolean; escrowId?: number; walletAddress?: string; txHash?: string; contractHash?: string }) =>
+    request<Job>(`/api/jobs/${id}/repost`, { method: "POST", body: JSON.stringify(data) }),
 
   // Job Applications
-  applyJob: (jobId: number, data: { coverLetter?: string }) =>
+  applyJob: (jobId: number, data: { coverLetter?: string; walletAddress: string }) =>
     request<JobApplication>(`/api/jobs/${jobId}/apply`, { method: "POST", body: JSON.stringify(data) }),
 
   getMyApplicationForJob: (jobId: number) =>
@@ -155,11 +172,17 @@ export const api = {
   getJobApplications: (jobId: number) =>
     request<JobApplication[]>(`/api/jobs/${jobId}/applications`),
 
-  acceptApplication: (jobId: number, applicationId: number) =>
-    request<JobApplication>(`/api/jobs/applications/${applicationId}/accept`, { method: "PUT" }),
+  acceptApplication: (jobId: number, applicationId: number, txHash: string) =>
+    request<JobApplication>(`/api/jobs/applications/${applicationId}/accept?txHash=${encodeURIComponent(txHash)}`, { method: "PUT" }),
 
   rejectApplication: (jobId: number, applicationId: number) =>
     request<JobApplication>(`/api/jobs/applications/${applicationId}/reject`, { method: "PUT" }),
+
+  batchRejectApplications: (jobId: number, applicationIds: number[]) =>
+    request<{ successCount: number; failCount: number }>(`/api/jobs/${jobId}/applications/batch-reject`, {
+      method: "PUT",
+      body: JSON.stringify(applicationIds),
+    }),
 
   withdrawApplication: (applicationId: number) =>
     request<void>(`/api/jobs/applications/${applicationId}`, { method: "DELETE" }),
@@ -175,49 +198,47 @@ export const api = {
     return request<Page<JobHistory>>(`/api/jobs/${jobId}/history/paged${query.toString() ? `?${query}` : ""}`);
   },
 
+  // Job Contract
+  createJobContract: (jobId: number, data: CreateJobContractRequest) =>
+    request<JobContractResponse>(`/api/jobs/${jobId}/contract`, { method: "POST", body: JSON.stringify(data) }),
+
+  getJobContract: (jobId: number) =>
+    request<JobContractResponse>(`/api/jobs/${jobId}/contract`),
+
+  getJobContractHash: (jobId: number) =>
+    request<string>(`/api/jobs/${jobId}/contract/hash`),
+
+  signJobContract: (jobId: number, txHash: string) =>
+    request<JobContractResponse>(`/api/jobs/${jobId}/contract/sign?txHash=${encodeURIComponent(txHash)}`, { method: "POST" }),
+
+  // Freelancer từ chối hợp đồng
+  rejectContract: (jobId: number, txHash: string) =>
+    request<Job>(`/api/jobs/${jobId}/contract/reject?txHash=${encodeURIComponent(txHash)}`, { method: "POST" }),
+
+  // Employer hủy job trước khi freelancer ký
+  cancelBeforeSign: (jobId: number, txHash: string) =>
+    request<Job>(`/api/jobs/${jobId}/contract/cancel-before-sign?txHash=${encodeURIComponent(txHash)}`, { method: "POST" }),
+
+  // Backend ký hủy escrow (khi DB fail)
+  cancelEscrow: (escrowId: number) =>
+    request<string>(`/api/jobs/escrow/${escrowId}/cancel`, { method: "POST" }),
+
+  // Xóa freelancer nếu quá 1p30s không ký (FOR TESTING)
+  removeUnsignedFreelancer: (jobId: number, txHash: string) =>
+    request<Job>(`/api/jobs/${jobId}/contract/remove-unsigned?txHash=${encodeURIComponent(txHash)}`, { method: "POST" }),
+
   // Work Submission
-  submitWork: (jobId: number, data: { url: string; note?: string }) =>
+  submitWork: (jobId: number, data: { url: string; note?: string; fileId?: number; txHash?: string }) =>
     request<JobApplication>(`/api/jobs/${jobId}/work/submit`, { method: "POST", body: JSON.stringify(data) }),
 
-  approveWork: (jobId: number) =>
-    request<JobApplication>(`/api/jobs/${jobId}/work/approve`, { method: "PUT" }),
+  approveWork: (jobId: number, txHash: string) =>
+    request<JobApplication>(`/api/jobs/${jobId}/work/approve?txHash=${encodeURIComponent(txHash)}`, { method: "PUT" }),
 
-  requestRevision: (jobId: number, note: string) =>
-    request<JobApplication>(`/api/jobs/${jobId}/work/revision`, { method: "PUT", body: JSON.stringify({ note }) }),
+  requestRevision: (jobId: number, note: string, txHash: string) =>
+    request<JobApplication>(`/api/jobs/${jobId}/work/revision?txHash=${encodeURIComponent(txHash)}`, { method: "PUT", body: JSON.stringify({ note }) }),
 
   getWorkSubmission: (jobId: number) =>
     request<JobApplication | null>(`/api/jobs/${jobId}/work`),
-
-  // Balance - Nạp số dư
-  createDeposit: (amount: number) =>
-    request<BalanceDeposit>("/api/balance/deposit", { method: "POST", body: JSON.stringify({ amount }) }),
-
-  // Query trạng thái nạp tiền
-  queryDepositStatus: (appTransId: string) =>
-    request<BalanceDeposit>(`/api/balance/deposit/${appTransId}/status`),
-
-  // Lấy lịch sử nạp tiền của tôi
-  getMyDeposits: (params?: { status?: DepositStatus; page?: number; size?: number }) => {
-    const query = new URLSearchParams();
-    if (params?.status) query.append("status", params.status);
-    if (params?.page !== undefined) query.append("page", params.page.toString());
-    if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<BalanceDeposit>>(`/api/balance/my-deposits${query.toString() ? `?${query}` : ""}`);
-  },
-
-  // Credits - Mua credit bằng số dư
-  getCreditPackages: () => request<CreditPackage[]>("/api/credits/packages"),
-
-  purchaseCredits: (creditPackage: string) =>
-    request<CreditPurchase>("/api/credits/purchase", { method: "POST", body: JSON.stringify({ creditPackage }) }),
-
-  getMyCreditPurchases: (params?: { status?: string; page?: number; size?: number }) => {
-    const query = new URLSearchParams();
-    if (params?.status) query.append("status", params.status);
-    if (params?.page !== undefined) query.append("page", params.page.toString());
-    if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<CreditPurchase>>(`/api/credits/my-purchases${query.toString() ? `?${query}` : ""}`);
-  },
 
   // Saved Jobs (Công việc đã lưu)
   saveJob: (jobId: number) =>
@@ -259,55 +280,16 @@ export const api = {
   adminUpdateUserStatus: (id: number, enabled: boolean) =>
     request<User>(`/api/users/${id}/status`, { method: "PUT", body: JSON.stringify({ enabled }) }),
 
-  adminGrantCredits: (id: number, amount: number) =>
-    request<User>(`/api/users/${id}/credits`, { method: "POST", body: JSON.stringify({ amount }) }),
-
-  // Admin - Balance (Nạp tiền)
-  adminGetBalanceStatistics: () =>
-    request<BalanceStatistics>("/api/admin/balance/statistics"),
-
-  adminGetAllDeposits: (params?: { status?: DepositStatus; page?: number; size?: number }) => {
-    const query = new URLSearchParams();
-    if (params?.status) query.append("status", params.status);
-    if (params?.page !== undefined) query.append("page", params.page.toString());
-    if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<BalanceDeposit>>(`/api/admin/balance${query.toString() ? `?${query}` : ""}`);
-  },
-
-  // Admin - Job Approval (Kiểm duyệt job)
-  adminGetPendingJobs: (params?: { page?: number; size?: number }) => {
-    const query = new URLSearchParams();
-    if (params?.page !== undefined) query.append("page", params.page.toString());
-    if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<Job>>(`/api/jobs/admin/pending${query.toString() ? `?${query}` : ""}`);
-  },
-
-  adminGetJobsByStatus: (status: JobStatus, params?: { page?: number; size?: number }) => {
-    const query = new URLSearchParams();
-    if (params?.page !== undefined) query.append("page", params.page.toString());
-    if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<Job>>(`/api/jobs/admin/status/${status}${query.toString() ? `?${query}` : ""}`);
-  },
-
-  adminApproveJob: (jobId: number) =>
-    request<Job>(`/api/jobs/admin/${jobId}/approve`, { method: "PUT" }),
-
-  adminRejectJob: (jobId: number, reason: string) =>
-    request<Job>(`/api/jobs/admin/${jobId}/reject`, { method: "PUT", body: JSON.stringify({ reason }) }),
-
-  adminCountPendingJobs: () =>
-    request<number>("/api/jobs/admin/count/pending"),
-
   // Admin - Disputes (TH3)
   adminGetPendingDisputes: (params?: { page?: number; size?: number }) => {
     const query = new URLSearchParams();
     if (params?.page !== undefined) query.append("page", params.page.toString());
     if (params?.size !== undefined) query.append("size", params.size.toString());
-    return request<Page<Dispute>>(`/api/admin/disputes${query.toString() ? `?${query}` : ""}`);
+    return request<Page<Dispute>>(`/api/admin/disputes/pending${query.toString() ? `?${query}` : ""}`);
   },
 
   adminCountPendingDisputes: () =>
-    request<number>("/api/admin/disputes/count"),
+    request<number>("/api/admin/disputes/pending/count"),
 
   adminRequestDisputeResponse: (disputeId: number, daysToRespond?: number) =>
     request<Dispute>(`/api/admin/disputes/${disputeId}/request-response`, {
@@ -321,16 +303,50 @@ export const api = {
       body: JSON.stringify({ employerWins, note }),
     }),
 
+  // Admin - Multi-round Voting
+  adminGetMyPendingVotes: () =>
+    request<DisputeRound[]>("/api/admin/disputes/my-pending-votes"),
+
+  adminSubmitVote: (disputeId: number, _roundNumber: number, employerWins: boolean, txHash?: string) =>
+    request<Dispute>(`/api/admin/disputes/${disputeId}/vote`, {
+      method: "POST",
+      body: JSON.stringify({ employerWins, txHash }),
+    }),
+
+  getDisputeRounds: (disputeId: number) =>
+    request<DisputeRound[]>(`/api/disputes/${disputeId}/rounds`),
+
+  // Admin - Pending Blockchain Actions
+  getPendingBlockchainActions: (params?: { page?: number; size?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page !== undefined) query.append("page", params.page.toString());
+    if (params?.size !== undefined) query.append("size", params.size.toString());
+    return request<Page<Job>>(`/api/jobs/pending-blockchain-actions${query.toString() ? `?${query}` : ""}`);
+  },
+
+  completeFreelancerTimeout: (jobId: number, txHash: string) =>
+    request<Job>(`/api/jobs/${jobId}/complete-freelancer-timeout?txHash=${encodeURIComponent(txHash)}`, {
+      method: "POST",
+    }),
+
+  completeEmployerTimeout: (jobId: number, txHash: string) =>
+    request<Job>(`/api/jobs/${jobId}/complete-employer-timeout?txHash=${encodeURIComponent(txHash)}`, {
+      method: "POST",
+    }),
+
   // Disputes - Employer
   createDispute: (
     jobId: number,
     description: string,
     evidenceUrl: string,
-    fileId?: number
+    fileId?: number,
+    txHash?: string,
+    walletAddress?: string,
+    blockchainDisputeId?: number
   ) =>
-    request<Dispute>(`/api/jobs/${jobId}/disputes`, {
+    request<Dispute>(`/api/jobs/${jobId}/disputes${txHash ? `?txHash=${encodeURIComponent(txHash)}` : ''}`, {
       method: "POST",
-      body: JSON.stringify({ description, evidenceUrl, fileId }),
+      body: JSON.stringify({ description, evidenceUrl, fileId, walletAddress, blockchainDisputeId }),
     }),
 
   getDispute: (jobId: number) =>
@@ -346,6 +362,17 @@ export const api = {
     request<Dispute>(`/api/disputes/${disputeId}/respond`, {
       method: "PUT",
       body: JSON.stringify({ description, evidenceUrl, fileId }),
+    }),
+
+  // Disputes - Signature
+  signDispute: (disputeId: number, role: string, txHash: string) =>
+    request<Dispute>(`/api/disputes/${disputeId}/sign?role=${role}&txHash=${encodeURIComponent(txHash)}`, {
+      method: "POST",
+    }),
+
+  completeDisputeResolution: (disputeId: number, txHash: string) =>
+    request<Dispute>(`/api/admin/disputes/${disputeId}/complete-resolution?txHash=${encodeURIComponent(txHash)}`, {
+      method: "POST",
     }),
 
   // Notifications
@@ -369,8 +396,8 @@ export const api = {
     request<void>("/api/notifications/read-all", { method: "PATCH" }),
 
   // Withdrawal Requests
-  createFreelancerWithdrawal: (jobId: number, reason: string) =>
-    request<WithdrawalRequest>(`/api/jobs/${jobId}/withdrawal/freelancer`, {
+  createFreelancerWithdrawal: (jobId: number, reason: string, txHash?: string) =>
+    request<WithdrawalRequest>(`/api/jobs/${jobId}/withdrawal/freelancer${txHash ? `?txHash=${encodeURIComponent(txHash)}` : ''}`, {
       method: "POST",
       body: JSON.stringify({ reason }),
     }),
@@ -404,9 +431,9 @@ export const api = {
 
   // ==================== CHAT ====================
   
-  // Search users to add friend
-  chatSearchUsers: (email: string) =>
-    request<ChatUserSearchResult[]>(`/api/chat/users/search?email=${encodeURIComponent(email)}`),
+  // Search users to add friend by name
+  chatSearchUsers: (name: string) =>
+    request<ChatUserSearchResult[]>(`/api/chat/users/search?name=${encodeURIComponent(name)}`),
 
   // Send chat request (first message to add friend)
   sendChatRequest: (receiverId: number, message: string) =>
@@ -552,6 +579,42 @@ export interface FileUploadResponse {
   createdAt: string;
 }
 
+// Job Contract types
+export interface ContractTerm {
+  title: string;
+  content: string;
+}
+
+export interface CreateJobContractRequest {
+  budget: number;
+  currency?: string;
+  deadlineDays: number;
+  reviewDays: number;
+  requirements: string;
+  deliverables: string;
+  terms: ContractTerm[]; // Mảng các điều khoản tùy chỉnh
+  contractHash?: string; // Hash từ frontend để đảm bảo khớp với blockchain
+}
+
+export interface JobContractResponse {
+  id: number;
+  jobId: number;
+  budget: number;
+  currency: string;
+  deadlineDays: number;
+  reviewDays: number;
+  requirements: string;
+  deliverables: string;
+  terms: ContractTerm[]; // Mảng các điều khoản tùy chỉnh
+  contractHash: string;
+  employerSigned: boolean;
+  employerSignedAt?: string;
+  freelancerSigned: boolean;
+  freelancerSignedAt?: string;
+  freelancerSignatureTx?: string;
+  createdAt: string;
+}
+
 // Withdrawal Request types
 export type WithdrawalRequestType = "FREELANCER_WITHDRAW" | "EMPLOYER_CANCEL";
 export type WithdrawalRequestStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
@@ -610,14 +673,25 @@ export type NotificationType =
   | "WORK_REVISION_REQUESTED"
   | "PAYMENT_RELEASED"
   | "JOB_COMPLETED"
+  | "CONTRACT_SIGNING_TIMEOUT"
   | "WORK_SUBMISSION_TIMEOUT"
   | "WORK_REVIEW_TIMEOUT"
   | "JOB_REOPENED"
+  | "JOB_EXPIRED"
+  | "ADMIN_VOTE_TIMEOUT"
+  | "BLOCKCHAIN_FAILED"
   | "DISPUTE_CREATED"
   | "DISPUTE_RESPONSE_REQUESTED"
   | "DISPUTE_RESPONSE_SUBMITTED"
   | "DISPUTE_RESOLVED_WIN"
   | "DISPUTE_RESOLVED_LOSE"
+  | "ADMIN_SELECTED_FOR_DISPUTE"
+  | "SIGNATURE_REQUIRED"
+  | "SIGNATURES_COLLECTED"
+  | "PENDING_BLOCKCHAIN_ACTION"
+  | "DISPUTE_CAN_CLAIM"
+  | "CAN_REMOVE_FREELANCER"
+  | "CAN_CLAIM_PAYMENT"
   | "CHAT_REQUEST_RECEIVED"
   | "CHAT_REQUEST_ACCEPTED"
   | "CHAT_REQUEST_REJECTED"
@@ -641,7 +715,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; 
   APPLICATION_REJECTED: { icon: "cancel", color: "text-red-600" },
   NEW_APPLICATION: { icon: "person_add", color: "text-blue-600" },
   JOB_APPROVED: { icon: "verified", color: "text-green-600" },
-  JOB_REJECTED: { icon: "block", color: "text-red-600" },
+  JOB_REJECTED: { icon: "unpublished", color: "text-red-600" },
   WITHDRAWAL_REQUESTED: { icon: "exit_to_app", color: "text-orange-600" },
   WITHDRAWAL_APPROVED: { icon: "check_circle", color: "text-green-600" },
   WITHDRAWAL_REJECTED: { icon: "cancel", color: "text-red-600" },
@@ -651,47 +725,31 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, { icon: string; 
   WORK_REVISION_REQUESTED: { icon: "edit_note", color: "text-yellow-600" },
   PAYMENT_RELEASED: { icon: "payments", color: "text-emerald-600" },
   JOB_COMPLETED: { icon: "done_all", color: "text-green-600" },
+  CONTRACT_SIGNING_TIMEOUT: { icon: "timer_off", color: "text-red-600" },
   WORK_SUBMISSION_TIMEOUT: { icon: "timer_off", color: "text-red-600" },
   WORK_REVIEW_TIMEOUT: { icon: "schedule", color: "text-orange-600" },
   JOB_REOPENED: { icon: "refresh", color: "text-blue-600" },
+  JOB_EXPIRED: { icon: "event_busy", color: "text-gray-600" },
+  ADMIN_VOTE_TIMEOUT: { icon: "hourglass_disabled", color: "text-orange-600" },
+  BLOCKCHAIN_FAILED: { icon: "error", color: "text-red-600" },
   DISPUTE_CREATED: { icon: "report_problem", color: "text-red-600" },
   DISPUTE_RESPONSE_REQUESTED: { icon: "question_answer", color: "text-orange-600" },
   DISPUTE_RESPONSE_SUBMITTED: { icon: "reply", color: "text-blue-600" },
   DISPUTE_RESOLVED_WIN: { icon: "emoji_events", color: "text-green-600" },
   DISPUTE_RESOLVED_LOSE: { icon: "sentiment_dissatisfied", color: "text-red-600" },
+  ADMIN_SELECTED_FOR_DISPUTE: { icon: "gavel", color: "text-purple-600" },
+  SIGNATURE_REQUIRED: { icon: "draw", color: "text-orange-600" },
+  SIGNATURES_COLLECTED: { icon: "fact_check", color: "text-green-600" },
+  PENDING_BLOCKCHAIN_ACTION: { icon: "pending", color: "text-yellow-600" },
+  DISPUTE_CAN_CLAIM: { icon: "redeem", color: "text-green-600" },
+  CAN_REMOVE_FREELANCER: { icon: "person_remove", color: "text-orange-600" },
+  CAN_CLAIM_PAYMENT: { icon: "account_balance_wallet", color: "text-green-600" },
   CHAT_REQUEST_RECEIVED: { icon: "person_add", color: "text-blue-600" },
   CHAT_REQUEST_ACCEPTED: { icon: "how_to_reg", color: "text-green-600" },
   CHAT_REQUEST_REJECTED: { icon: "person_remove", color: "text-red-600" },
   CHAT_BLOCKED: { icon: "block", color: "text-red-600" },
   SYSTEM: { icon: "info", color: "text-gray-600" },
 };
-
-// Credit types
-export interface CreditPackage {
-  packageId: string;
-  credits: number;
-  price: number;
-  pricePerCredit: number;
-  originalPrice: number;
-  discountPercent: number;
-  description: string;
-}
-
-export interface CreditPurchase {
-  id: number;
-  appTransId: string;
-  userId: number;
-  userFullName?: string;
-  creditPackage: string;
-  creditsAmount: number;
-  totalAmount: number;
-  currency: string;
-  description?: string;
-  status: string;
-  creditsGranted: boolean;
-  paidAt?: string;
-  createdAt: string;
-}
 
 // Job Application types
 export type ApplicationStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "WITHDRAWN";
@@ -713,6 +771,7 @@ export interface JobApplication {
     id: number;
     fullName: string;
     avatarUrl?: string;
+    walletAddress?: string;
     phoneNumber?: string;
     bio?: string;
     skills?: string[];
@@ -721,7 +780,7 @@ export interface JobApplication {
   };
   coverLetter?: string;
   status: ApplicationStatus;
-  // Work submission fields
+  walletAddress?: string;
   workStatus?: WorkStatus;
   workStatusLabel?: string;
   workSubmissionUrl?: string;
@@ -747,6 +806,7 @@ export interface SavedJob {
     company?: string;
     location?: string;
     avatarUrl?: string;
+    walletAddress?: string;
   };
   savedAt: string;
 }
@@ -754,18 +814,59 @@ export interface SavedJob {
 // Dispute types (TH3)
 export type DisputeStatus = 
   | "PENDING_FREELANCER_RESPONSE" 
-  | "PENDING_ADMIN_DECISION" 
+  | "VOTING_ROUND_1"
+  | "VOTING_ROUND_2"
+  | "VOTING_ROUND_3"
+  | "EVIDENCE_TIMEOUT"
   | "EMPLOYER_WON" 
-  | "FREELANCER_WON" 
+  | "FREELANCER_WON"
+  | "EMPLOYER_CLAIMED"
+  | "FREELANCER_CLAIMED"
   | "CANCELLED";
 
 export const DISPUTE_STATUS_CONFIG: Record<DisputeStatus, { label: string; color: string }> = {
   PENDING_FREELANCER_RESPONSE: { label: "Chờ freelancer phản hồi", color: "text-orange-600" },
-  PENDING_ADMIN_DECISION: { label: "Chờ admin quyết định", color: "text-blue-600" },
+  VOTING_ROUND_1: { label: "Đang vote Round 1", color: "text-blue-600" },
+  VOTING_ROUND_2: { label: "Đang vote Round 2", color: "text-blue-600" },
+  VOTING_ROUND_3: { label: "Đang vote Round 3", color: "text-blue-600" },
+  EVIDENCE_TIMEOUT: { label: "Quá hạn gửi bằng chứng", color: "text-red-600" },
   EMPLOYER_WON: { label: "Employer thắng", color: "text-green-600" },
   FREELANCER_WON: { label: "Freelancer thắng", color: "text-green-600" },
+  EMPLOYER_CLAIMED: { label: "Employer đã nhận tiền", color: "text-emerald-600" },
+  FREELANCER_CLAIMED: { label: "Freelancer đã nhận tiền", color: "text-emerald-600" },
   CANCELLED: { label: "Đã hủy", color: "text-gray-600" },
 };
+
+// Dispute Round types
+export type DisputeRoundStatus = "PENDING_ADMIN" | "ADMIN_TIMEOUT" | "VOTED";
+
+export const DISPUTE_ROUND_STATUS_CONFIG: Record<DisputeRoundStatus, { label: string; color: string }> = {
+  PENDING_ADMIN: { label: "Chờ admin vote", color: "text-orange-600" },
+  ADMIN_TIMEOUT: { label: "Admin timeout", color: "text-red-600" },
+  VOTED: { label: "Đã vote", color: "text-green-600" },
+};
+
+export interface DisputeRound {
+  id: number;
+  disputeId: number;
+  blockchainDisputeId?: number;
+  roundNumber: number;
+  adminId?: number;
+  adminName?: string;
+  adminWallet?: string;
+  winnerWallet?: string;
+  winnerIsEmployer?: boolean;
+  votedAt?: string;
+  status: DisputeRoundStatus;
+  voteDeadline?: string;
+  reselectionCount: number;
+  jobId: number;
+  jobTitle: string;
+  employerWallet?: string;
+  freelancerWallet?: string;
+  employerName?: string;
+  freelancerName?: string;
+}
 
 export interface DisputeFileAttachment {
   id: number;
@@ -778,12 +879,14 @@ export interface DisputeUser {
   id: number;
   fullName: string;
   avatarUrl?: string;
+  walletAddress?: string;
 }
 
 export interface Dispute {
   id: number;
   jobId: number;
   jobTitle: string;
+  blockchainDisputeId?: number;
   employer: DisputeUser;
   employerEvidenceUrl: string;
   employerEvidenceFile?: DisputeFileAttachment;
@@ -792,7 +895,7 @@ export interface Dispute {
   freelancerEvidenceUrl?: string;
   freelancerEvidenceFile?: DisputeFileAttachment;
   freelancerDescription?: string;
-  freelancerDeadline?: string;
+  evidenceDeadline?: string;
   status: DisputeStatus;
   statusLabel: string;
   adminNote?: string;
@@ -800,6 +903,16 @@ export interface Dispute {
   resolvedAt?: string;
   createdAt: string;
   updatedAt: string;
+  // Multi-round voting
+  currentRound?: number;
+  round1WinnerWallet?: string;
+  round2WinnerWallet?: string;
+  round3WinnerWallet?: string;
+  finalWinnerWallet?: string;
+  employerWins?: boolean;
+  resolutionTxHash?: string;
+  escrowId?: number;
+  rounds?: DisputeRound[];
 }
 
 // ==================== CHAT TYPES ====================
@@ -812,6 +925,7 @@ export interface ChatUserInfo {
   id: number;
   fullName: string;
   email?: string;
+  walletAddress?: string;
   avatarUrl?: string;
   online?: boolean;
   lastActiveAt?: string;
@@ -820,9 +934,8 @@ export interface ChatUserInfo {
 export interface ChatUserSearchResult {
   id: number;
   fullName: string;
-  email: string;
+  walletAddress?: string;
   avatarUrl?: string;
-  bio?: string;
   canSendRequest: boolean;
   relationStatus?: "NONE" | "PENDING" | "ACCEPTED" | "BLOCKED" | "REJECTED";
   conversationId?: number;

@@ -41,7 +41,7 @@ export default function TextCard({
           {article.title}
         </h3>
         <div className="flex items-center gap-2 text-gray-500 text-xs mb-2">
-          <span>WorkHub</span>
+          <span>Freelancer</span>
           <span>•</span>
           <span>{article.date}</span>
         </div>

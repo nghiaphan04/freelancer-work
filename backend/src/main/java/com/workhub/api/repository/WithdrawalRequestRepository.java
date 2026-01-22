@@ -5,6 +5,7 @@ import com.workhub.api.entity.WithdrawalRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,4 +23,7 @@ public interface WithdrawalRequestRepository extends JpaRepository<WithdrawalReq
     boolean existsByJobIdAndStatus(Long jobId, EWithdrawalRequestStatus status);
 
     long countByStatus(EWithdrawalRequestStatus status);
+
+    @Modifying
+    void deleteByJobId(Long jobId);
 }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Job, JOB_COMPLEXITY_CONFIG, WORK_TYPE_CONFIG, JOB_DURATION_CONFIG } from "@/types/job";
+import { Job } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -38,10 +38,6 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
     if (diffDays === 0) return "Hôm nay";
     return `Còn ${diffDays} ngày`;
   };
-
-  const workTypeConfig = WORK_TYPE_CONFIG[job.workType];
-  const durationConfig = JOB_DURATION_CONFIG[job.duration];
-  const complexityConfig = JOB_COMPLEXITY_CONFIG[job.complexity];
 
   useEffect(() => {
     if (showPreview && cardRef.current) {
@@ -84,7 +80,7 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
                 alt={job.employer.company || job.employer.fullName} 
                 className="object-cover"
               />
-              <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#00b14f] to-[#009643] text-white text-lg font-semibold">
+              <AvatarFallback className="rounded-lg bg-[#00b14f] text-white text-lg font-semibold">
                 {(job.employer.company || job.employer.fullName)?.charAt(0)?.toUpperCase() || "C"}
               </AvatarFallback>
             </Avatar>
@@ -95,7 +91,7 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
             {/* Badges */}
             {job.viewCount > 100 && (
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white text-[10px] font-semibold rounded-full">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500 text-white text-[10px] font-semibold rounded-full">
                   <Icon name="local_fire_department" size={12} />
                   TOP
                 </span>
@@ -156,7 +152,7 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
             <div className="flex gap-3">
               <Avatar className="w-12 h-12 rounded-lg border border-gray-100 shrink-0">
                 <AvatarImage src={badgeImage} alt={job.employer.company || job.employer.fullName} />
-                <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#00b14f] to-[#009643] text-white font-semibold">
+                <AvatarFallback className="rounded-lg bg-[#00b14f] text-white font-semibold">
                   {(job.employer.company || job.employer.fullName)?.charAt(0)?.toUpperCase() || "C"}
                 </AvatarFallback>
               </Avatar>
@@ -175,10 +171,6 @@ export default function JobCardWithPreview({ job, onFavorite, isFavorite = false
               <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
                 <Icon name="location_on" size={14} />
                 {job.employer.location || "Remote"}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                <Icon name="work" size={14} />
-                {complexityConfig.label}
               </span>
               {job.applicationDeadline && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">

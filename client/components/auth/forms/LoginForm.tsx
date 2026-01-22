@@ -46,22 +46,18 @@ export default function LoginForm() {
       const response = await api.login(formData);
       if (response.status === "SUCCESS") {
         const responseData = response.data as { user: User; accessToken?: string };
+        
+        if (!responseData.user.roles?.includes("ROLE_ADMIN")) {
+          toast.error("Trang này chỉ dành cho Admin. Vui lòng đăng nhập bằng ví Aptos.");
+          return;
+        }
+        
         saveAuthData({ user: responseData.user, accessToken: responseData.accessToken });
         setUser(responseData.user);
         toast.success("Đăng nhập thành công!");
-        
-        if (responseData.user.roles?.includes("ROLE_ADMIN")) {
-          router.push("/admin");
-        } else {
-          router.push("/");
-        }
+        router.push("/admin");
       } else {
-        if (response.message?.includes("chưa xác thực")) {
-          toast.error("Email chưa được xác thực");
-          router.push(`/register?step=otp&email=${encodeURIComponent(formData.email)}`);
-        } else {
-          toast.error(response.message || "Đăng nhập thất bại");
-        }
+        toast.error(response.message || "Đăng nhập thất bại");
       }
     } catch { toast.error(AUTH_MESSAGES.ERROR_GENERIC); }
     finally { setIsLoading(false); }
@@ -70,9 +66,16 @@ export default function LoginForm() {
   return (
     <div className="w-full">
       <AuthFormHeader 
-        title="Chào mừng bạn đã quay trở lại" 
-        subtitle="Cùng xây dựng một hồ sơ nổi bật và nhận được các cơ hội sự nghiệp lý tưởng" 
+        title="Đăng nhập Admin" 
+        subtitle="Trang này chỉ dành cho quản trị viên. Người dùng vui lòng đăng nhập bằng ví Aptos." 
       />
+
+      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <p className="text-sm text-amber-700 flex items-center gap-2">
+          <Icon name="info" size={18} />
+          Nếu bạn là người dùng thường, hãy quay lại trang chủ và kết nối ví Aptos để đăng nhập.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="space-y-1">
@@ -108,7 +111,7 @@ export default function LoginForm() {
       </form>
 
       <p className="text-center mt-3 text-sm text-gray-600">
-        Bạn chưa có tài khoản? <Link href="/register" className={`text-[#00b14f] font-medium hover:underline ${isLoading ? "pointer-events-none opacity-50" : ""}`}>Đăng ký ngay</Link>
+        <Link href="/" className={`text-[#00b14f] font-medium hover:underline ${isLoading ? "pointer-events-none opacity-50" : ""}`}>Quay lại trang chủ</Link>
       </p>
     </div>
   );

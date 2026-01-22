@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Job, JOB_COMPLEXITY_CONFIG, WORK_TYPE_CONFIG } from "@/types/job";
+import { Job } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMemo } from "react";
@@ -24,9 +24,6 @@ export default function JobCard({ job, onFavorite, isFavorite = false }: JobCard
     return new Intl.NumberFormat("vi-VN").format(budget);
   };
 
-  const complexityConfig = JOB_COMPLEXITY_CONFIG[job.complexity];
-  const workTypeConfig = WORK_TYPE_CONFIG[job.workType];
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-[#00b14f]/30 transition-all duration-200 group">
       <div className="flex gap-3">
@@ -38,7 +35,7 @@ export default function JobCard({ job, onFavorite, isFavorite = false }: JobCard
               alt={job.employer.company || job.employer.fullName} 
               className="object-cover"
             />
-            <AvatarFallback className="rounded-lg bg-gradient-to-br from-[#00b14f] to-[#009643] text-white text-lg font-semibold">
+            <AvatarFallback className="rounded-lg bg-[#00b14f] text-white text-lg font-semibold">
               {(job.employer.company || job.employer.fullName)?.charAt(0)?.toUpperCase() || "C"}
             </AvatarFallback>
           </Avatar>
@@ -49,7 +46,7 @@ export default function JobCard({ job, onFavorite, isFavorite = false }: JobCard
           {/* Badges */}
           {job.viewCount > 100 && (
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-orange-500 to-orange-400 text-white text-[10px] font-semibold rounded-full">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-500 text-white text-[10px] font-semibold rounded-full">
                 <Icon name="local_fire_department" size={12} />
                 TOP
               </span>
@@ -78,11 +75,6 @@ export default function JobCard({ job, onFavorite, isFavorite = false }: JobCard
             {/* Location */}
             <span className="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
               {job.employer.location || "Remote"}
-            </span>
-
-            {/* Work Type - show only on larger screens */}
-            <span className="hidden sm:inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-              {workTypeConfig.label}
             </span>
           </div>
         </div>

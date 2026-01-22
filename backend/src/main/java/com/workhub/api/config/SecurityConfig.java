@@ -1,6 +1,5 @@
 package com.workhub.api.config;
 
-import com.workhub.api.security.RateLimitFilter;
 import com.workhub.api.security.UserDetailsServiceImpl;
 import com.workhub.api.security.jwt.AuthEntryPoint;
 import com.workhub.api.security.jwt.JwtAuthFilter;
@@ -39,7 +38,6 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthEntryPoint unauthorizedHandler;
     private final JwtAuthFilter jwtAuthFilter;
-    private final RateLimitFilter rateLimitFilter;
     
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
@@ -95,14 +93,11 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/search").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/jobs/by-skills").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/payments/callback").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/credits/callback").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/credits/packages").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
         
         http.authenticationProvider(authenticationProvider());
-        http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();

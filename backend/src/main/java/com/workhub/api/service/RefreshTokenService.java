@@ -19,7 +19,7 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     @Value("${app.jwt.refresh-expiration}")
-    private long refreshExpiration; // milliseconds
+    private long refreshExpiration;
 
     @Transactional
     public RefreshToken createRefreshToken(User user) {

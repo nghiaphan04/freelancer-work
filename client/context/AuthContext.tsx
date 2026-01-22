@@ -1,9 +1,11 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { getUser, clearAuthData } from "@/constant/auth";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { getUser, clearAuthData, saveAuthData } from "@/constant/auth";
 import { api } from "@/lib/api";
 import { User } from "@/types/user";
+
+type WalletLoginResult = { success: true } | { success: false; needName?: boolean; error?: string };
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +15,7 @@ interface AuthContextType {
   setIsLoading: (loading: boolean) => void;
   setUser: (user: User | null) => void;
   logout: () => void;
+  loginWithWallet: (walletAddress: string, publicKey: string, signature: string, message: string, fullName?: string) => Promise<WalletLoginResult>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,8 +35,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.logout();
     clearAuthData();
     setUser(null);
-    window.location.href = "/login";
+    window.location.href = "/";
   };
+
+  const loginWithWallet = useCallback(async (
+    walletAddress: string,
+    publicKey: string,
+    signature: string,
+    message: string,
+    fullName?: string
+  ): Promise<WalletLoginResult> => {
+    try {
+      const response = await api.walletLogin({ walletAddress, publicKey, signature, message, fullName });
+      
+      if (response.status === "NEED_NAME") {
+        return { success: false, needName: true };
+      }
+      
+      if (response.status === "SUCCESS" && response.data) {
+        const data = response.data as { user: User; accessToken: string };
+        saveAuthData({ user: data.user, accessToken: data.accessToken });
+        setUser(data.user);
+        return { success: true };
+      }
+      
+      return { success: false, error: response.message };
+    } catch (error) {
+      console.error("Wallet login failed:", error);
+      return { success: false, error: "Đăng nhập thất bại" };
+    }
+  }, []);
 
   return (
     <AuthContext.Provider value={{ 
@@ -43,7 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isHydrated,
       setIsLoading, 
       setUser,
-      logout 
+      logout,
+      loginWithWallet,
     }}>
       {children}
     </AuthContext.Provider>

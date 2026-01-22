@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/Icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WalletAvatar from "@/components/ui/WalletAvatar";
 import { Button } from "@/components/ui/button";
 import { ChatUserSearchResult } from "@/lib/api";
 
@@ -257,24 +258,38 @@ export default function UserProfileView({
         {/* Content */}
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <div className="flex flex-col items-center py-6 px-4">
-            <Avatar className="w-20 h-20 mb-3">
-              <AvatarImage src={user.avatarUrl} />
-              <AvatarFallback className="bg-gray-200 text-gray-600 text-2xl">
-                {user.fullName.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            {user.avatarUrl ? (
+              <Avatar className="w-20 h-20 mb-3">
+                <AvatarImage src={user.avatarUrl} />
+                <AvatarFallback className="bg-gray-200 text-gray-600 text-2xl">
+                  {user.fullName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            ) : user.walletAddress ? (
+              <WalletAvatar address={user.walletAddress} size={80} className="mb-3" />
+            ) : (
+              <Avatar className="w-20 h-20 mb-3">
+                <AvatarFallback className="bg-gray-200 text-gray-600 text-2xl">
+                  {user.fullName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            )}
 
             <h1 className="text-lg font-bold text-gray-900 mb-1 text-center">{user.fullName}</h1>
-            <p className="text-gray-500 mb-3 text-sm">{user.email}</p>
+            {user.walletAddress && (
+              <p className="text-gray-500 mb-1 text-xs font-mono">
+                {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+              </p>
+            )}
 
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex items-center gap-1">
-                <Icon name="verified" size={16} className="text-green-600" />
-                <span className="text-sm font-medium text-green-700">{user.trustScore ?? 0} UT</span>
+            <div className="flex items-center gap-4 mb-4 text-sm">
+              <div className="flex items-center gap-1 text-green-700">
+                <Icon name="verified" size={16} />
+                Tín nhiệm: {user.trustScore ?? 0}
               </div>
-              <div className="flex items-center gap-1">
-                <Icon name="dangerous" size={16} className="text-red-500" />
-                <span className="text-sm font-medium text-red-600">{user.untrustScore ?? 0} KUT</span>
+              <div className="flex items-center gap-1 text-red-600">
+                <Icon name="dangerous" size={16} />
+                Bất tín nhiệm: {user.untrustScore ?? 0}
               </div>
             </div>
 
@@ -332,24 +347,38 @@ export default function UserProfileView({
       {/* Mobile Content - vertical layout */}
       <div className="flex-1 overflow-y-auto md:hidden scrollbar-thin">
         <div className="flex flex-col items-center py-6 px-4">
-          <Avatar className="w-24 h-24 mb-4">
-            <AvatarImage src={user.avatarUrl} />
-            <AvatarFallback className="bg-gray-200 text-gray-600 text-3xl">
-              {user.fullName.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
+          {user.avatarUrl ? (
+            <Avatar className="w-24 h-24 mb-4">
+              <AvatarImage src={user.avatarUrl} />
+              <AvatarFallback className="bg-gray-200 text-gray-600 text-3xl">
+                {user.fullName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          ) : user.walletAddress ? (
+            <WalletAvatar address={user.walletAddress} size={96} className="mb-4" />
+          ) : (
+            <Avatar className="w-24 h-24 mb-4">
+              <AvatarFallback className="bg-gray-200 text-gray-600 text-3xl">
+                {user.fullName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          )}
 
           <h1 className="text-xl font-bold text-gray-900 mb-1 text-center">{user.fullName}</h1>
-          <p className="text-gray-500 mb-4 text-sm">{user.email}</p>
+          {user.walletAddress && (
+            <p className="text-gray-500 mb-2 text-xs font-mono">
+              {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+            </p>
+          )}
 
-          <div className="flex items-center gap-6 mb-5">
-            <div className="flex items-center gap-1.5">
-              <Icon name="verified" size={18} className="text-green-600" />
-              <span className="text-sm font-medium text-green-700">{user.trustScore ?? 0} UT</span>
+          <div className="flex items-center gap-6 mb-5 text-sm">
+            <div className="flex items-center gap-1.5 text-green-700">
+              <Icon name="verified" size={18} />
+              Tín nhiệm: {user.trustScore ?? 0}
             </div>
-            <div className="flex items-center gap-1.5">
-              <Icon name="dangerous" size={18} className="text-red-500" />
-              <span className="text-sm font-medium text-red-600">{user.untrustScore ?? 0} KUT</span>
+            <div className="flex items-center gap-1.5 text-red-600">
+              <Icon name="dangerous" size={18} />
+              Bất tín nhiệm: {user.untrustScore ?? 0}
             </div>
           </div>
 
@@ -380,24 +409,38 @@ export default function UserProfileView({
       <div className="hidden md:flex flex-1 p-6 gap-6 overflow-hidden">
         {/* Left side - Profile info */}
         <div className="flex flex-col items-center w-64 shrink-0 pt-2">
-          <Avatar className="w-24 h-24 mb-4">
-            <AvatarImage src={user.avatarUrl} />
-            <AvatarFallback className="bg-gray-200 text-gray-600 text-3xl">
-              {user.fullName.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
+          {user.avatarUrl ? (
+            <Avatar className="w-24 h-24 mb-4">
+              <AvatarImage src={user.avatarUrl} />
+              <AvatarFallback className="bg-gray-200 text-gray-600 text-3xl">
+                {user.fullName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          ) : user.walletAddress ? (
+            <WalletAvatar address={user.walletAddress} size={96} className="mb-4" />
+          ) : (
+            <Avatar className="w-24 h-24 mb-4">
+              <AvatarFallback className="bg-gray-200 text-gray-600 text-3xl">
+                {user.fullName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          )}
 
           <h1 className="text-lg font-bold text-gray-900 mb-1 text-center">{user.fullName}</h1>
-          <p className="text-gray-500 mb-3 text-sm">{user.email}</p>
+          {user.walletAddress && (
+            <p className="text-gray-500 mb-2 text-xs font-mono">
+              {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+            </p>
+          )}
 
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-1">
-              <Icon name="verified" size={16} className="text-green-600" />
-              <span className="text-sm font-medium text-green-700">{user.trustScore ?? 0} UT</span>
+          <div className="flex items-center gap-4 mb-4 text-sm">
+            <div className="flex items-center gap-1 text-green-700">
+              <Icon name="verified" size={16} />
+              Tín nhiệm: {user.trustScore ?? 0}
             </div>
-            <div className="flex items-center gap-1">
-              <Icon name="dangerous" size={16} className="text-red-500" />
-              <span className="text-sm font-medium text-red-600">{user.untrustScore ?? 0} KUT</span>
+            <div className="flex items-center gap-1 text-red-600">
+              <Icon name="dangerous" size={16} />
+              Bất tín nhiệm: {user.untrustScore ?? 0}
             </div>
           </div>
 

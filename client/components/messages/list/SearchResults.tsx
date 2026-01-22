@@ -42,7 +42,7 @@ export default function SearchResults({
             className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
           >
             <button onClick={() => onViewProfile(user)} className="shrink-0">
-              <UserAvatar src={user.avatarUrl} name={user.fullName} size="lg" />
+              <UserAvatar src={user.avatarUrl} name={user.fullName} walletAddress={user.walletAddress} size="lg" />
             </button>
             
             <button 
@@ -50,7 +50,11 @@ export default function SearchResults({
               className="flex-1 min-w-0 text-left"
             >
               <p className="font-medium text-sm text-gray-900 truncate">{user.fullName}</p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              {user.walletAddress && (
+                <p className="text-xs text-gray-500 truncate font-mono">
+                  {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                </p>
+              )}
             </button>
             
             <div className="shrink-0">

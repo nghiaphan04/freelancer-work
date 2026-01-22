@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { api, JobApplication } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ interface WorkSubmitDialogProps {
   onOpenChange: (open: boolean) => void;
   jobId: number;
   jobTitle: string;
+  escrowId?: number;
   onSuccess?: () => void;
 }
 
@@ -29,17 +31,19 @@ export function WorkSubmitDialog({
   onOpenChange,
   jobId,
   jobTitle,
+  escrowId,
   onSuccess,
 }: WorkSubmitDialogProps) {
+  const { isConnected, nopSanPham, getAptosExplorerUrl } = useWallet();
   const [url, setUrl] = useState("");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState("Sản phẩm đã hoàn thành theo yêu cầu.\n\nBao gồm:\n- Source code hoàn chỉnh\n- Tài liệu hướng dẫn cài đặt\n- File thiết kế gốc");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileId, setFileId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) {
       setUrl("");
-      setNote("");
+      setNote("Sản phẩm đã hoàn thành theo yêu cầu.\n\nBao gồm:\n- Source code hoàn chỉnh\n- Tài liệu hướng dẫn cài đặt\n- File thiết kế gốc");
       setFileId(null);
       setIsSubmitting(false);
     }
@@ -53,9 +57,21 @@ export function WorkSubmitDialog({
 
     setIsSubmitting(true);
     try {
-      const payload: { url: string; note?: string; fileId?: number } = { url };
+      let txHash: string | undefined;
+      
+      if (escrowId && isConnected) {
+        const result = await nopSanPham(escrowId, url);
+        if (!result) {
+          throw new Error("Không thể nộp sản phẩm");
+        }
+        txHash = result;
+      }
+
+      const payload: { url: string; note?: string; fileId?: number; txHash?: string } = { url };
       if (note.trim()) payload.note = note;
       if (fileId !== null) payload.fileId = fileId;
+      if (txHash) payload.txHash = txHash;
+      
       const response = await api.submitWork(jobId, payload);
       if (response.status === "SUCCESS") {
         toast.success("Đã nộp sản phẩm thành công! Chờ bên thuê duyệt.");
@@ -67,8 +83,12 @@ export function WorkSubmitDialog({
       } else {
         toast.error(response.message || "Có lỗi xảy ra");
       }
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi nộp sản phẩm");
+    } catch (error: any) {
+      if (error.message?.includes("User rejected")) {
+        toast.error("Bạn đã hủy thao tác");
+      } else {
+        toast.error(error.message || "Có lỗi xảy ra khi nộp sản phẩm");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -124,9 +144,9 @@ export function WorkSubmitDialog({
               Lưu ý:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-5">
-              <li>Bên thuê sẽ có 3 ngày để duyệt sản phẩm</li>
+              <li>Bên thuê sẽ có thời gian để duyệt sản phẩm</li>
               <li>Nếu không duyệt, hệ thống sẽ tự động thanh toán cho bạn</li>
-              <li>Cả hai bên sẽ được +1 điểm uy tín khi hoàn thành</li>
+              <li>Thanh toán được thực hiện qua smart contract</li>
             </ul>
           </div>
         </div>
@@ -158,6 +178,9 @@ interface WorkReviewDialogProps {
   onOpenChange: (open: boolean) => void;
   jobId: number;
   jobTitle: string;
+  escrowId?: number;
+  budget?: number;
+  currency?: string;
   onSuccess?: () => void;
 }
 
@@ -166,12 +189,16 @@ export function WorkReviewDialog({
   onOpenChange,
   jobId,
   jobTitle,
+  escrowId,
+  budget,
+  currency = "APT",
   onSuccess,
 }: WorkReviewDialogProps) {
+  const { isConnected, address, traTienNguoiLam, yeuCauChinhSua, connect, isConnecting, getAptosExplorerUrl } = useWallet();
   const [workSubmission, setWorkSubmission] = useState<JobApplication | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [revisionNote, setRevisionNote] = useState("");
+  const [revisionNote, setRevisionNote] = useState("Vui lòng chỉnh sửa các điểm sau:\n\n1. Bổ sung chức năng export PDF\n2. Sửa lỗi hiển thị trên mobile\n3. Cập nhật màu sắc theo brand guideline");
   const [showRevisionForm, setShowRevisionForm] = useState(false);
 
   useEffect(() => {
@@ -195,18 +222,42 @@ export function WorkReviewDialog({
   };
 
   const handleApprove = async () => {
+    if (!isConnected) {
+      const connected = await connect();
+      if (!connected) {
+        toast.error("Vui lòng kết nối ví để duyệt và thanh toán");
+        return;
+      }
+    }
+
+    if (!escrowId) {
+      toast.error("Không thể thực hiện thao tác");
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const response = await api.approveWork(jobId);
+      const txHash = await traTienNguoiLam(escrowId);
+      
+      if (!txHash) {
+        throw new Error("Không thể duyệt sản phẩm");
+      }
+
+      const response = await api.approveWork(jobId, txHash);
       if (response.status === "SUCCESS") {
-        toast.success("Đã duyệt sản phẩm và thanh toán cho người làm!");
+        toast.success("Đã duyệt sản phẩm thành công!");
         onOpenChange(false);
         onSuccess?.();
       } else {
         toast.error(response.message || "Có lỗi xảy ra");
       }
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi duyệt sản phẩm");
+    } catch (error: any) {
+      console.error("Error approving work:", error);
+      if (error.message?.includes("User rejected")) {
+        toast.error("Bạn đã hủy thao tác");
+      } else {
+        toast.error(error.message || "Có lỗi xảy ra khi duyệt sản phẩm");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -218,9 +269,28 @@ export function WorkReviewDialog({
       return;
     }
 
+    if (!isConnected) {
+      const connected = await connect();
+      if (!connected) {
+        toast.error("Vui lòng kết nối ví để yêu cầu chỉnh sửa");
+        return;
+      }
+    }
+
+    if (!escrowId) {
+      toast.error("Không thể thực hiện thao tác");
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const response = await api.requestRevision(jobId, revisionNote);
+      const txHash = await yeuCauChinhSua(escrowId);
+      
+      if (!txHash) {
+        throw new Error("Không thể gửi yêu cầu chỉnh sửa");
+      }
+
+      const response = await api.requestRevision(jobId, revisionNote, txHash);
       if (response.status === "SUCCESS") {
         toast.success("Đã gửi yêu cầu chỉnh sửa cho người làm!");
         setRevisionNote("");
@@ -230,8 +300,13 @@ export function WorkReviewDialog({
       } else {
         toast.error(response.message || "Có lỗi xảy ra");
       }
-    } catch (error) {
-      toast.error("Có lỗi xảy ra");
+    } catch (error: any) {
+      console.error("Error requesting revision:", error);
+      if (error.message?.includes("User rejected")) {
+        toast.error("Bạn đã hủy thao tác");
+      } else {
+        toast.error(error.message || "Có lỗi xảy ra khi yêu cầu chỉnh sửa");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -266,6 +341,35 @@ export function WorkReviewDialog({
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Wallet Status */}
+            <div className={`p-3 rounded-lg border ${isConnected ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon 
+                    name={isConnected ? "check_circle" : "account_balance_wallet"} 
+                    size={18} 
+                    className={isConnected ? "text-green-600" : "text-amber-600"} 
+                  />
+                  <span className={`text-sm font-medium ${isConnected ? "text-green-800" : "text-amber-800"}`}>
+                    {isConnected 
+                      ? `Ví: ${address?.slice(0, 6)}...${address?.slice(-4)}`
+                      : "Cần kết nối ví để thanh toán"
+                    }
+                  </span>
+                </div>
+                {!isConnected && (
+                  <Button
+                    size="sm"
+                    onClick={connect}
+                    disabled={isConnecting}
+                    className="bg-[#00b14f] hover:bg-[#009643]"
+                  >
+                    {isConnecting ? "Đang kết nối..." : "Kết nối ví"}
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Icon name="person" size={18} className="text-gray-500" />
@@ -353,13 +457,13 @@ export function WorkReviewDialog({
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-50 border border-gray-200 p-3 rounded-lg text-sm text-gray-600">
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm text-blue-700">
                 <p className="font-medium mb-1 flex items-center gap-1">
                   <Icon name="info" size={16} />
-                  Lưu ý khi duyệt sản phẩm:
+                  Khi duyệt sản phẩm:
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-5">
-                  <li>Tiền ký quỹ sẽ được chuyển cho người làm</li>
+                  <li>Số tiền <strong>{budget?.toFixed(4)} {currency}</strong> sẽ được chuyển cho freelancer qua blockchain</li>
                   <li>Cả hai bên sẽ được +1 điểm uy tín</li>
                   <li>Công việc sẽ được đánh dấu hoàn thành</li>
                 </ul>
@@ -385,7 +489,7 @@ export function WorkReviewDialog({
               </Button>
               <Button 
                 onClick={handleApprove} 
-                disabled={isProcessing}
+                disabled={isProcessing || !isConnected}
                 className="bg-[#00b14f] hover:bg-[#009643]"
               >
                 {isProcessing ? (

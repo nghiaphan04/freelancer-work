@@ -5,6 +5,7 @@ import { useParams, useRouter, notFound } from "next/navigation";
 import { toast } from "sonner";
 import { api, JobApplication } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useWallet } from "@/context/WalletContext";
 import { Job } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import JobDetailHeader from "./JobDetailHeader";
@@ -18,6 +19,7 @@ export default function JobDetail() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { isConnected: isWalletConnected, address: walletAddress, connect: connectWallet, isConnecting: isWalletConnecting } = useWallet();
   const jobId = Number(params.id);
 
   const [job, setJob] = useState<Job | null>(null);
@@ -25,7 +27,6 @@ export default function JobDetail() {
   const [error, setError] = useState<string | null>(null);
   const [isToggling, setIsToggling] = useState(false);
 
-  // Apply dialog
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [coverLetter, setCoverLetter] = useState(DEFAULT_COVER_LETTER);
   const [isApplying, setIsApplying] = useState(false);
@@ -86,6 +87,13 @@ export default function JobDetail() {
     }
   };
 
+  const handleConnectWallet = async () => {
+    const connected = await connectWallet();
+    if (!connected) {
+      toast.error("Vui lòng cài đặt và kết nối ví Petra để ứng tuyển");
+    }
+  };
+
   const handleApply = async () => {
     if (!user) {
       toast.error("Vui lòng đăng nhập để ứng tuyển");
@@ -93,10 +101,16 @@ export default function JobDetail() {
       return;
     }
 
+    if (!isWalletConnected || !walletAddress) {
+      toast.error("Vui lòng kết nối ví Aptos để ứng tuyển");
+      return;
+    }
+
     setIsApplying(true);
     try {
       const response = await api.applyJob(jobId, { 
-        coverLetter: coverLetter.trim() || undefined
+        coverLetter: coverLetter.trim() || undefined,
+        walletAddress: walletAddress,
       });
       if (response.status === "SUCCESS") {
         toast.success(response.message || "Ứng tuyển thành công!");
@@ -116,8 +130,10 @@ export default function JobDetail() {
     }
   };
 
-  // Utility functions
   const formatCurrency = (amount: number, currency: string) => {
+    if (currency === "APT") {
+      return `${amount.toFixed(4)} APT`;
+    }
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: currency,
@@ -208,6 +224,10 @@ export default function JobDetail() {
         onCoverLetterChange={setCoverLetter}
         onSubmit={handleApply}
         isLoading={isApplying}
+        walletAddress={walletAddress}
+        isWalletConnected={isWalletConnected}
+        onConnectWallet={handleConnectWallet}
+        isWalletConnecting={isWalletConnecting}
       />
     </div>
   );

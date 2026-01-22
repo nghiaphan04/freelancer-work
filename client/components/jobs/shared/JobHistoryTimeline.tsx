@@ -6,6 +6,7 @@ import { formatDateTime } from "@/lib/format";
 import { JobHistory, JOB_HISTORY_ACTION_CONFIG } from "@/types/job";
 import Icon from "@/components/ui/Icon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WalletAvatar from "@/components/ui/WalletAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -140,12 +141,22 @@ export default function JobHistoryTimeline({ jobId }: JobHistoryTimelineProps) {
 
               {/* User info */}
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <Avatar className="w-4 h-4 sm:w-5 sm:h-5 shrink-0">
-                  <AvatarImage src={item.user.avatarUrl} />
-                  <AvatarFallback className="text-[8px] sm:text-[10px] bg-gray-200">
-                    {item.user.fullName?.charAt(0) || "U"}
-                  </AvatarFallback>
-                </Avatar>
+                {item.user.avatarUrl ? (
+                  <Avatar className="w-4 h-4 sm:w-5 sm:h-5 shrink-0">
+                    <AvatarImage src={item.user.avatarUrl} />
+                    <AvatarFallback className="text-[8px] sm:text-[10px] bg-gray-200">
+                      {item.user.fullName?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : item.user.walletAddress ? (
+                  <WalletAvatar address={item.user.walletAddress} size={20} className="shrink-0" />
+                ) : (
+                  <Avatar className="w-4 h-4 sm:w-5 sm:h-5 shrink-0">
+                    <AvatarFallback className="text-[8px] sm:text-[10px] bg-gray-200">
+                      {item.user.fullName?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
                 <span className="text-[10px] sm:text-xs text-gray-600 truncate max-w-[120px] sm:max-w-none">
                   {item.user.fullName}
                 </span>

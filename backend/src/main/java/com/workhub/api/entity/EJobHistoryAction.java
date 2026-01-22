@@ -2,9 +2,9 @@ package com.workhub.api.entity;
 
 public enum EJobHistoryAction {
     // Employer actions
-    JOB_CREATED,           // Tạo job
+    JOB_CREATED,           // Tạo job (escrow đã tạo trên blockchain)
     JOB_UPDATED,           // Cập nhật job
-    JOB_SUBMITTED,         // Gửi duyệt
+    JOB_SUBMITTED,         // Gửi job để admin duyệt
     JOB_OPENED,            // Mở tuyển
     JOB_CLOSED,            // Đóng tuyển
     APPLICATION_ACCEPTED,  // Duyệt ứng viên
@@ -37,9 +37,13 @@ public enum EJobHistoryAction {
     EMPLOYER_TIMEOUT,      // Employer không review đúng hạn
     JOB_REOPENED,          // Job được mở lại
     AUTO_APPROVED,         // Tự động duyệt do timeout
+    JOB_EXPIRED,           // Hết hạn ứng tuyển - hoàn tiền cho poster
 
     // Dispute actions (TH3)
-    DISPUTE_CREATED,       // Employer tạo khiếu nại
-    DISPUTE_RESPONSE_SUBMITTED,  // Freelancer phản hồi
-    DISPUTE_RESOLVED       // Admin quyết định tranh chấp
+    DISPUTE_CREATED,
+    DISPUTE_RESPONSE_SUBMITTED,
+    DISPUTE_ROUND_VOTED,
+    DISPUTE_RESOLVED,
+    DISPUTE_TIMEOUT,           // Freelancer không phản hồi trong deadline
+    DISPUTE_REFUND_CLAIMED     // Winner đã claim tiền hoàn trả
 }

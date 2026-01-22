@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WalletAvatar from "@/components/ui/WalletAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -114,12 +115,22 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
 
         <div className="px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="relative -mt-12 sm:-mt-16 mb-3 sm:mb-4 w-fit">
-            <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-white shadow-lg">
-              <AvatarImage src={user.avatarUrl} alt={user.fullName} />
-              <AvatarFallback className="bg-[#00b14f] text-white text-2xl sm:text-3xl">
-                {user.fullName?.charAt(0)?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
+            {user.avatarUrl ? (
+              <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-white shadow-lg">
+                <AvatarImage src={user.avatarUrl} alt={user.fullName} />
+                <AvatarFallback className="bg-[#00b14f] text-white text-2xl sm:text-3xl">
+                  {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+            ) : user.walletAddress ? (
+              <WalletAvatar address={user.walletAddress} size={128} className="border-4 border-white shadow-lg" />
+            ) : (
+              <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-white shadow-lg">
+                <AvatarFallback className="bg-[#00b14f] text-white text-2xl sm:text-3xl">
+                  {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+            )}
             <ImageUploadButton
               onUpload={handleAvatarUpload}
               usage="AVATAR"
@@ -153,18 +164,14 @@ export default function ProfileCard({ user, onUpdate, isLoading }: ProfileCardPr
               )}
             </div>
 
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1">
-                <Icon name="verified" size={16} className="text-green-600" />
-                <span className="text-sm font-medium text-green-700">
-                  {user.trustScore ?? 0} UT
-                </span>
+            <div className="flex items-center gap-4 mt-2 text-sm">
+              <div className="flex items-center gap-1 text-green-700">
+                <Icon name="verified" size={16} />
+                Tín nhiệm: {user.trustScore ?? 0}
               </div>
-              <div className="flex items-center gap-1">
-                <Icon name="dangerous" size={16} className="text-red-500" />
-                <span className="text-sm font-medium text-red-600">
-                  {user.untrustScore ?? 0} KUT
-                </span>
+              <div className="flex items-center gap-1 text-red-600">
+                <Icon name="dangerous" size={16} />
+                Bất tín nhiệm: {user.untrustScore ?? 0}
               </div>
             </div>
 

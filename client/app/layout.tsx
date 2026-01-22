@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lexend } from "next/font/google";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/context/AuthContext";
+import { WalletProvider } from "@/context/WalletContext";
 import FloatingSupport from "@/components/layout/FloatingSupport";
 import UnreadMessageTitle from "@/components/layout/UnreadMessageTitle";
 import "./globals.css";
@@ -49,9 +50,11 @@ export default function RootLayout({
         className={`${lexend.variable} ${lexend.className} antialiased overflow-x-hidden w-full`}
       >
         <AuthProvider>
-          <UnreadMessageTitle />
-          {children}
-          <FloatingSupport />
+          <WalletProvider>
+            <UnreadMessageTitle />
+            {children}
+            <FloatingSupport />
+          </WalletProvider>
         </AuthProvider>
         <Toaster position="bottom-right" richColors />
       </body>

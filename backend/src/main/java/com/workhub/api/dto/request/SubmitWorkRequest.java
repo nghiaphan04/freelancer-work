@@ -11,4 +11,6 @@ public class SubmitWorkRequest {
     private String note;
 
     private Long fileId;
+    
+    private String txHash;
 }

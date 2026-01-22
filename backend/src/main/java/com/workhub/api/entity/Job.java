@@ -22,31 +22,27 @@ public class Job {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    
     @Column(nullable = false, length = 200)
     private String title;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
-    
     @Column(columnDefinition = "TEXT")
-    private String context;             // Bối cảnh dự án/công ty
+    private String context;
 
     @Column(columnDefinition = "TEXT")
-    private String requirements;        // Yêu cầu cụ thể
+    private String requirements;
 
     @Column(columnDefinition = "TEXT")
-    private String deliverables;        // Sản phẩm bàn giao
+    private String deliverables;
 
-    
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "job_skills", joinColumns = @JoinColumn(name = "job_id"))
     @Column(name = "skill", length = 100)
     @Builder.Default
     private Set<String> skills = new HashSet<>();
 
-    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -62,33 +58,62 @@ public class Job {
     @Builder.Default
     private EWorkType workType = EWorkType.PART_TIME;
 
-    
     @Column(precision = 15, scale = 2)
     private BigDecimal budget;
 
     @Column(name = "escrow_amount", precision = 15, scale = 2)
-    private BigDecimal escrowAmount;  // Số tiền đã giữ (budget + fee)
+    private BigDecimal escrowAmount;
 
     @Column(length = 10)
     @Builder.Default
-    private String currency = "VND";
+    private String currency = "APT";
 
-    
+    @Column(name = "escrow_id")
+    private Long escrowId;
+
+    @Column(name = "employer_wallet_address", length = 66)
+    private String employerWalletAddress;
+
+    @Column(name = "freelancer_wallet_address", length = 66)
+    private String freelancerWalletAddress;
+
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
+    @Column(name = "contract_signed_at")
+    private LocalDateTime contractSignedAt;
+
+    @Column(name = "work_submitted_at")
+    private LocalDateTime workSubmittedAt;
+
+    @Column(name = "escrow_tx_hash", length = 66)
+    private String escrowTxHash;
+
+    @Column(name = "payment_tx_hash", length = 66)
+    private String paymentTxHash;
+
+    @Column(name = "refund_tx_hash", length = 66)
+    private String refundTxHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pending_blockchain_action", length = 30)
+    @Builder.Default
+    private EPendingBlockchainAction pendingBlockchainAction = EPendingBlockchainAction.NONE;
+
     @Column(name = "application_deadline")
-    private LocalDateTime applicationDeadline;  // Hạn nộp hồ sơ
+    private LocalDateTime applicationDeadline;
 
     @Column(name = "expected_start_date")
-    private LocalDateTime expectedStartDate;    // Ngày dự kiến bắt đầu
+    private LocalDateTime expectedStartDate;
 
     @Column(name = "submission_days")
     @Builder.Default
-    private Integer submissionDays = 1; // Số ngày nộp sản phẩm (từ lúc duyệt freelancer)
+    private Integer submissionDays = 1;
 
     @Column(name = "review_days")
     @Builder.Default
-    private Integer reviewDays = 2; // Số ngày employer phải review sau khi nộp
+    private Integer reviewDays = 2;
 
-    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -106,15 +131,11 @@ public class Job {
     @Builder.Default
     private Integer applicationCount = 0;
 
-    @Column(name = "rejection_reason", columnDefinition = "TEXT")
-    private String rejectionReason;  // Lý do từ chối (nếu bị reject)
-
-    // Deadline fields cho TH2 timeout
     @Column(name = "work_submission_deadline")
-    private LocalDateTime workSubmissionDeadline;  // Hạn nộp sản phẩm (set khi accept freelancer)
+    private LocalDateTime workSubmissionDeadline;
 
     @Column(name = "work_review_deadline")
-    private LocalDateTime workReviewDeadline;  // Hạn review sản phẩm (set khi freelancer nộp)
+    private LocalDateTime workReviewDeadline;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -123,7 +144,6 @@ public class Job {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
 
     public void update(String title, String description, String context,
                        String requirements, String deliverables, Set<String> skills,
@@ -137,9 +157,15 @@ public class Job {
         if (description != null && !description.isBlank()) {
             this.description = description;
         }
-        this.context = context;
-        this.requirements = requirements;
-        this.deliverables = deliverables;
+        if (context != null) {
+            this.context = context;
+        }
+        if (requirements != null) {
+            this.requirements = requirements;
+        }
+        if (deliverables != null) {
+            this.deliverables = deliverables;
+        }
         if (skills != null) {
             this.skills = skills;
         }
@@ -158,7 +184,9 @@ public class Job {
         if (currency != null && !currency.isBlank()) {
             this.currency = currency;
         }
-        this.applicationDeadline = applicationDeadline;
+        if (applicationDeadline != null) {
+            this.applicationDeadline = applicationDeadline;
+        }
         if (submissionDays != null && submissionDays >= 1) {
             this.submissionDays = submissionDays;
         }
@@ -171,38 +199,6 @@ public class Job {
         if (this.status == EJobStatus.DRAFT || this.status == EJobStatus.CANCELLED) {
             this.status = EJobStatus.OPEN;
         }
-    }
-
-    // Submit job for approval
-    public void submitForApproval() {
-        if (this.status == EJobStatus.DRAFT || this.status == EJobStatus.REJECTED) {
-            this.status = EJobStatus.PENDING_APPROVAL;
-            this.rejectionReason = null;
-        }
-    }
-
-    // Admin approves job
-    public void approve() {
-        if (this.status == EJobStatus.PENDING_APPROVAL) {
-            this.status = EJobStatus.OPEN;
-            this.rejectionReason = null;
-        }
-    }
-
-    // Admin rejects job
-    public void reject(String reason) {
-        if (this.status == EJobStatus.PENDING_APPROVAL) {
-            this.status = EJobStatus.REJECTED;
-            this.rejectionReason = reason;
-        }
-    }
-
-    public boolean isPendingApproval() {
-        return this.status == EJobStatus.PENDING_APPROVAL;
-    }
-
-    public boolean isRejected() {
-        return this.status == EJobStatus.REJECTED;
     }
 
     public void close() {
@@ -246,7 +242,6 @@ public class Job {
         this.status = status;
     }
 
-    // Deadline methods
     public void setWorkSubmissionDeadline(LocalDateTime deadline) {
         this.workSubmissionDeadline = deadline;
     }
@@ -260,9 +255,6 @@ public class Job {
         this.workReviewDeadline = null;
     }
 
-    /**
-     * Mở lại job sau khi clear freelancer timeout
-     */
     public void reopenJob() {
         if (this.status == EJobStatus.IN_PROGRESS) {
             this.status = EJobStatus.OPEN;
@@ -281,11 +273,10 @@ public class Job {
             && LocalDateTime.now().isAfter(this.workReviewDeadline);
     }
 
-    // Dispute methods
     public void dispute() {
         if (this.status == EJobStatus.IN_PROGRESS) {
             this.status = EJobStatus.DISPUTED;
-            this.workReviewDeadline = null;  // Clear review deadline khi dispute
+            this.workReviewDeadline = null;
         }
     }
 
@@ -295,5 +286,82 @@ public class Job {
 
     public boolean isInProgress() {
         return this.status == EJobStatus.IN_PROGRESS;
+    }
+
+    public void setEscrowId(Long escrowId) {
+        this.escrowId = escrowId;
+    }
+
+    public void setEmployerWalletAddress(String address) {
+        this.employerWalletAddress = address;
+    }
+
+    public void setFreelancerWalletAddress(String address) {
+        this.freelancerWalletAddress = address;
+    }
+
+    public String getEmployerWalletAddress() {
+        return this.employerWalletAddress;
+    }
+
+    public String getFreelancerWalletAddress() {
+        return this.freelancerWalletAddress;
+    }
+
+    public LocalDateTime getAcceptedAt() {
+        return this.acceptedAt;
+    }
+
+    public void setAcceptedAt(LocalDateTime acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public LocalDateTime getContractSignedAt() {
+        return this.contractSignedAt;
+    }
+
+    public void setContractSignedAt(LocalDateTime contractSignedAt) {
+        this.contractSignedAt = contractSignedAt;
+    }
+
+    public LocalDateTime getWorkSubmittedAt() {
+        return this.workSubmittedAt;
+    }
+
+    public void setWorkSubmittedAt(LocalDateTime workSubmittedAt) {
+        this.workSubmittedAt = workSubmittedAt;
+    }
+
+    public void setEscrowTxHash(String txHash) {
+        this.escrowTxHash = txHash;
+    }
+
+    public void setPaymentTxHash(String txHash) {
+        this.paymentTxHash = txHash;
+    }
+
+    public String getRefundTxHash() {
+        return refundTxHash;
+    }
+
+    public void setRefundTxHash(String txHash) {
+        this.refundTxHash = txHash;
+    }
+
+    public void setEscrowAmount(BigDecimal amount) {
+        this.escrowAmount = amount;
+    }
+
+    public void setPendingBlockchainAction(EPendingBlockchainAction action) {
+        this.pendingBlockchainAction = action;
+    }
+
+    public void clearPendingBlockchainAction() {
+        this.pendingBlockchainAction = EPendingBlockchainAction.NONE;
+    }
+
+    public boolean hasPendingBlockchainAction() {
+        return this.pendingBlockchainAction != null 
+            && this.pendingBlockchainAction != EPendingBlockchainAction.NONE;
     }
 }

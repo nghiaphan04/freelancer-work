@@ -14,19 +14,19 @@ public class UserSearchResponse {
 
     private Long id;
     private String fullName;
-    private String email;
+    private String walletAddress;
     private String avatarUrl;
-    private Boolean canSendRequest; // true nếu có thể gửi yêu cầu kết bạn
-    private String relationStatus;  // NONE, PENDING, ACCEPTED, BLOCKED, REJECTED
-    private Long conversationId;    // ID của conversation nếu có
-    private Integer trustScore;     // Điểm uy tín (UT)
-    private Integer untrustScore;   // Điểm không uy tín (KUT)
+    private Boolean canSendRequest;
+    private String relationStatus;
+    private Long conversationId;
+    private Integer trustScore;
+    private Integer untrustScore;
 
     public static UserSearchResponse fromEntity(User user, boolean canSendRequest, String relationStatus, Long conversationId) {
         return UserSearchResponse.builder()
                 .id(user.getId())
                 .fullName(user.getFullName())
-                .email(user.getEmail())
+                .walletAddress(user.getWalletAddress())
                 .avatarUrl(user.getAvatarUrl())
                 .canSendRequest(canSendRequest)
                 .relationStatus(relationStatus)

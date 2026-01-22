@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Job, JOB_DURATION_CONFIG } from "@/types/job";
+import { Job } from "@/types/job";
 import { JobApplication } from "@/lib/api";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WalletAvatar from "@/components/ui/WalletAvatar";
 
 const APPLICATION_STATUS_CONFIG = {
   PENDING: { label: "Đang chờ duyệt", color: "text-gray-600" },
@@ -41,12 +42,22 @@ export default function JobDetailSidebar({
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Bên thuê</h2>
         <div className="flex items-center gap-3 mb-4">
-          <Avatar className="w-12 h-12">
-            <AvatarImage src={job.employer.avatarUrl} alt={job.employer.fullName} />
-            <AvatarFallback className="bg-[#00b14f] text-white">
-              {job.employer.fullName?.charAt(0)?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
+          {job.employer.avatarUrl ? (
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={job.employer.avatarUrl} alt={job.employer.fullName} />
+              <AvatarFallback className="bg-[#00b14f] text-white">
+                {job.employer.fullName?.charAt(0)?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+          ) : job.employer.walletAddress ? (
+            <WalletAvatar address={job.employer.walletAddress} size={48} />
+          ) : (
+            <Avatar className="w-12 h-12">
+              <AvatarFallback className="bg-[#00b14f] text-white">
+                {job.employer.fullName?.charAt(0)?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <div>
             <p className="font-medium text-gray-900 flex items-center gap-1">
               {job.employer.fullName}
@@ -58,12 +69,14 @@ export default function JobDetailSidebar({
               <p className="text-sm text-gray-500">{job.employer.title}</p>
             )}
             {/* Trust Score */}
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 rounded">
-                UT: {job.employer.trustScore ?? 0}
+            <div className="flex items-center gap-2 mt-1 text-xs">
+              <span className="flex items-center gap-1 text-green-700">
+                <Icon name="verified" size={12} />
+                Tín nhiệm: {job.employer.trustScore ?? 0}
               </span>
-              <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-700 rounded">
-                KUT: {job.employer.untrustScore ?? 0}
+              <span className="flex items-center gap-1 text-red-600">
+                <Icon name="dangerous" size={12} />
+                Bất tín nhiệm: {job.employer.untrustScore ?? 0}
               </span>
             </div>
           </div>
@@ -95,15 +108,24 @@ export default function JobDetailSidebar({
               </div>
             </div>
           )}
-          <div className="flex items-start gap-3">
-            <Icon name="hourglass_empty" size={20} className="text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-sm text-gray-500">Thời hạn dự án</p>
-              <p className="font-medium text-gray-900">
-                {JOB_DURATION_CONFIG[job.duration]?.label} ({JOB_DURATION_CONFIG[job.duration]?.description})
-              </p>
+          {job.submissionDays && (
+            <div className="flex items-start gap-3">
+              <Icon name="upload_file" size={20} className="text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Thời gian nộp sản phẩm</p>
+                <p className="font-medium text-gray-900">{job.submissionDays} ngày</p>
+              </div>
             </div>
-          </div>
+          )}
+          {job.reviewDays && (
+            <div className="flex items-start gap-3">
+              <Icon name="rate_review" size={20} className="text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Thời gian nghiệm thu</p>
+                <p className="font-medium text-gray-900">{job.reviewDays} ngày</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -145,7 +167,7 @@ export default function JobDetailSidebar({
 
       {/* Apply Button - For non-owners */}
       {!isOwner && job.status === "OPEN" && (
-        hasApplied && myApplication ? (
+        myApplication && myApplication.status !== "REJECTED" && myApplication.status !== "WITHDRAWN" ? (
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center gap-2 mb-2">
               <Icon name="check_circle" size={20} className="text-[#00b14f]" />
@@ -159,13 +181,25 @@ export default function JobDetailSidebar({
             </p>
           </div>
         ) : (
-          <Button
-            onClick={onApply}
-            className="w-full bg-[#00b14f] hover:bg-[#009643] text-white py-3"
-          >
-            <Icon name="send" size={20} />
-            Ứng tuyển ngay
-          </Button>
+          <div className="space-y-2">
+            {myApplication && (myApplication.status === "REJECTED" || myApplication.status === "WITHDRAWN") && (
+              <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+                <p className="font-medium mb-1">
+                  {myApplication.status === "REJECTED" ? "Đơn trước đã bị từ chối" : "Bạn đã rút đơn trước đó"}
+                </p>
+                <p className="text-xs">Bạn có thể ứng tuyển lại công việc này.</p>
+              </div>
+            )}
+            <Button
+              onClick={onApply}
+              className="w-full bg-[#00b14f] hover:bg-[#009643] text-white py-3"
+            >
+              <Icon name="send" size={20} />
+              {myApplication && (myApplication.status === "REJECTED" || myApplication.status === "WITHDRAWN")
+                ? "Ứng tuyển lại"
+                : "Ứng tuyển ngay"}
+            </Button>
+          </div>
         )
       )}
 

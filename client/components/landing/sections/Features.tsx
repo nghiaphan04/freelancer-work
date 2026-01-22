@@ -5,7 +5,7 @@ import { stats } from "@/constant/landing";
 
 export default function Features() {
   return (
-    <section className="relative bg-gradient-to-br from-[#0d3d2e] via-[#0a4a37] to-[#063d2d] py-16 overflow-hidden">
+    <section className="relative bg-[#0a4a37] py-16 overflow-hidden">
       {/* Background Circuit Pattern */}
       <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
         {/* Horizontal lines */}

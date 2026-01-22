@@ -76,6 +76,7 @@ public class JobHistoryService {
                         .id(user.getId())
                         .fullName(user.getFullName())
                         .avatarUrl(user.getAvatarUrl())
+                        .walletAddress(user.getWalletAddress())
                         .role(role)
                         .build())
                 .createdAt(history.getCreatedAt())

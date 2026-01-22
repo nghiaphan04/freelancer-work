@@ -38,7 +38,7 @@ public class NotificationResponse {
         return switch (type) {
             case APPLICATION_ACCEPTED -> "Đơn ứng tuyển được duyệt";
             case APPLICATION_REJECTED -> "Đơn ứng tuyển bị từ chối";
-            case NEW_APPLICATION -> "Có ứng viên mới";
+            case NEW_APPLICATION -> "Có người ứng tuyển mới";
             case JOB_APPROVED -> "Công việc được duyệt";
             case JOB_REJECTED -> "Công việc bị từ chối";
             case WITHDRAWAL_REQUESTED -> "Có yêu cầu rút/hủy";
@@ -50,14 +50,25 @@ public class NotificationResponse {
             case WORK_REVISION_REQUESTED -> "Yêu cầu chỉnh sửa";
             case PAYMENT_RELEASED -> "Đã nhận thanh toán";
             case JOB_COMPLETED -> "Công việc hoàn thành";
+            case CONTRACT_SIGNING_TIMEOUT -> "Quá hạn ký hợp đồng";
             case WORK_SUBMISSION_TIMEOUT -> "Quá hạn nộp sản phẩm";
             case WORK_REVIEW_TIMEOUT -> "Quá hạn duyệt sản phẩm";
             case JOB_REOPENED -> "Công việc được mở lại";
+            case JOB_EXPIRED -> "Hết hạn ứng tuyển";
+            case ADMIN_VOTE_TIMEOUT -> "Hết thời gian vote";
+            case BLOCKCHAIN_FAILED -> "Lỗi blockchain";
             case DISPUTE_CREATED -> "Có khiếu nại mới";
             case DISPUTE_RESPONSE_REQUESTED -> "Yêu cầu phản hồi khiếu nại";
             case DISPUTE_RESPONSE_SUBMITTED -> "Đã có phản hồi khiếu nại";
             case DISPUTE_RESOLVED_WIN -> "Bạn thắng tranh chấp";
             case DISPUTE_RESOLVED_LOSE -> "Bạn thua tranh chấp";
+            case ADMIN_SELECTED_FOR_DISPUTE -> "Bạn được chọn vote tranh chấp";
+            case SIGNATURE_REQUIRED -> "Yêu cầu ký xác nhận";
+            case SIGNATURES_COLLECTED -> "Đã thu thập đủ chữ ký";
+            case PENDING_BLOCKCHAIN_ACTION -> "Cần xử lý hệ thống";
+            case DISPUTE_CAN_CLAIM -> "Có thể nhận tiền tranh chấp";
+            case CAN_REMOVE_FREELANCER -> "Có thể xóa freelancer";
+            case CAN_CLAIM_PAYMENT -> "Có thể nhận thanh toán";
             case CHAT_REQUEST_RECEIVED -> "Có yêu cầu kết bạn mới";
             case CHAT_REQUEST_ACCEPTED -> "Yêu cầu kết bạn được chấp nhận";
             case CHAT_REQUEST_REJECTED -> "Yêu cầu kết bạn bị từ chối";

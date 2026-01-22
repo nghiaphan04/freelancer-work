@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import Icon from "@/components/ui/Icon";
 import { useAuth } from "@/context/AuthContext";
+import { useWallet } from "@/context/WalletContext";
 import { useProfile } from "@/hooks/useProfile";
 import { api } from "@/lib/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WalletAvatar from "@/components/ui/WalletAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +20,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   toolsMenu,
   careerMenuLeft,
@@ -33,8 +44,19 @@ export default function Header() {
   const [expandedMobileNav, setExpandedMobileNav] = useState<string | null>(null);
   const [isBecomingEmployer, setIsBecomingEmployer] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const { user, isAuthenticated, isHydrated, logout } = useAuth();
+  const { user, isAuthenticated, isHydrated, logout, loginWithWallet } = useAuth();
+  const { isConnected: isWalletConnected, address: walletAddress, publicKey, isConnecting: isWalletConnecting, connect: connectWallet, signMessage } = useWallet();
   const { becomeEmployer } = useProfile();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [inputName, setInputName] = useState("");
+  const pendingSignDataRef = useRef<{ signature: string; fullMessage: string } | null>(null);
+
+  // Format wallet address for display
+  const formatAddress = (addr: string) => {
+    if (!addr) return "";
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
 
   // Fetch unread messages count
   const fetchUnreadCount = useCallback(async () => {
@@ -72,10 +94,104 @@ export default function Header() {
     }
   };
 
+  const [pendingWalletLogin, setPendingWalletLogin] = useState(false);
+
+  useEffect(() => {
+    const performWalletLogin = async () => {
+      if (!pendingWalletLogin || !isWalletConnected || !walletAddress || !publicKey || isAuthenticated) {
+        return;
+      }
+
+      setIsLoggingIn(true);
+      setPendingWalletLogin(false);
+
+      try {
+        const message = `Đăng nhập vào Freelancer\nTimestamp: ${Date.now()}`;
+        const signResult = await signMessage(message);
+        
+        if (!signResult) {
+          toast.error("Không thể ký xác thực");
+          setIsLoggingIn(false);
+          return;
+        }
+
+        const result = await loginWithWallet(
+          walletAddress,
+          publicKey,
+          signResult.signature,
+          signResult.fullMessage
+        );
+
+        if (result.success) {
+          toast.success("Đăng nhập thành công!");
+        } else if (result.needName) {
+          pendingSignDataRef.current = signResult;
+          setShowNameDialog(true);
+        } else {
+          toast.error(result.error || "Đăng nhập thất bại");
+        }
+      } catch (error) {
+        console.error("Wallet login error:", error);
+        toast.error("Có lỗi xảy ra");
+      } finally {
+        setIsLoggingIn(false);
+      }
+    };
+
+    performWalletLogin();
+  }, [pendingWalletLogin, isWalletConnected, walletAddress, publicKey, isAuthenticated, signMessage, loginWithWallet]);
+
+  const handleNameSubmit = async () => {
+    if (!inputName.trim() || !walletAddress || !publicKey || !pendingSignDataRef.current) {
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      const result = await loginWithWallet(
+        walletAddress,
+        publicKey,
+        pendingSignDataRef.current.signature,
+        pendingSignDataRef.current.fullMessage,
+        inputName.trim()
+      );
+
+      if (result.success) {
+        toast.success("Đăng ký và đăng nhập thành công!");
+        setShowNameDialog(false);
+        setInputName("");
+        pendingSignDataRef.current = null;
+      } else {
+        toast.error(result.error || "Đăng ký thất bại");
+      }
+    } catch (error) {
+      console.error("Name submit error:", error);
+      toast.error("Có lỗi xảy ra");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleWalletLogin = async () => {
+    if (isWalletConnected && walletAddress && publicKey) {
+      setPendingWalletLogin(true);
+    } else {
+      const connected = await connectWallet();
+      if (!connected) {
+        toast.info("Vui lòng cài đặt Petra Wallet để kết nối");
+        return;
+      }
+      setPendingWalletLogin(true);
+    }
+  };
+
   return (
-    <header className="bg-white text-gray-800 border-b border-gray-200 w-full md:sticky md:top-0 z-[9999]">
-      <div className="w-full px-4 md:px-8 lg:px-12">
-        <div className="flex items-center justify-between h-16">
+    <>
+      {/* Spacer for fixed header on desktop */}
+      <div className="hidden md:block h-16" />
+      <header className="bg-white text-gray-800 border-b border-gray-200 w-full md:fixed md:top-0 md:left-0 md:right-0 z-40">
+        <div className="w-full px-4 md:px-8 lg:px-12">
+          <div className="flex items-center justify-between h-16">
           
           {/* Left: Logo + Nav */}
           <div className="flex items-center gap-2 md:gap-3">
@@ -170,7 +286,7 @@ export default function Header() {
 
                   {/* Công cụ Dropdown */}
                   {item.dropdownId === "tools" && activeDropdown === "tools" && (
-                    <div className="absolute top-full left-0 z-[9999] w-[550px]">
+                    <div className="absolute top-full left-0 z-40 w-[550px]">
                       <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f]">
                         <div className="py-4 px-5">
                         <h4 className="text-xs font-semibold text-gray-500 mb-3">
@@ -209,7 +325,7 @@ export default function Header() {
 
                   {/* Cẩm nang nghề nghiệp Dropdown */}
                   {item.dropdownId === "career" && activeDropdown === "career" && (
-                    <div className="absolute top-full left-0 z-[9999] w-[750px]">
+                    <div className="absolute top-full left-0 z-40 w-[750px]">
                       <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f]">
                         <div className="flex">
                         {/* Left Column - Categories */}
@@ -299,7 +415,7 @@ export default function Header() {
                     />
                   </button>
                   {activeDropdown === "my-jobs" && (
-                    <div className="absolute top-full left-0 z-[9999] w-[280px]">
+                    <div className="absolute top-full left-0 z-40 w-[280px]">
                       <div className="bg-white rounded-b-xl shadow-xl border border-gray-200 border-t-2 border-t-[#00b14f] py-2">
                         {user?.roles?.includes("ROLE_FREELANCER") && (
                           <Link 
@@ -378,33 +494,52 @@ export default function Header() {
                   <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors outline-none">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatarUrl} alt={user.fullName} />
-                        <AvatarFallback className="bg-[#00b14f] text-white text-sm">
-                          {user.fullName?.charAt(0)?.toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
+                      {user.avatarUrl ? (
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatarUrl} alt={user.fullName} />
+                          <AvatarFallback className="bg-[#00b14f] text-white text-sm">
+                            {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : walletAddress ? (
+                        <WalletAvatar address={walletAddress} size={32} />
+                      ) : (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-[#00b14f] text-white text-sm">
+                            {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                       <span className="text-sm font-medium text-gray-700 max-w-[120px] truncate">
                         {user.fullName}
                       </span>
                       <Icon name="expand_more" size={16} className="text-gray-400" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-64">
                     <DropdownMenuLabel className="border-b border-gray-100 pb-2">
                       <p className="truncate">{user.fullName}</p>
-                      <p className="text-xs text-gray-500 font-normal truncate">{user.email}</p>
+                      {user.email && <p className="text-xs text-gray-500 font-normal truncate">{user.email}</p>}
                     </DropdownMenuLabel>
+                    {isWalletConnected && walletAddress && (
+                      <>
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(walletAddress).then(() => toast.success("Đã sao chép địa chỉ"))}>
+                          <Icon name="content_copy" size={18} />
+                          Sao chép địa chỉ ví
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <a href={`https://explorer.aptoslabs.com/account/${walletAddress}?network=testnet`} target="_blank" rel="noopener noreferrer">
+                            <Icon name="open_in_new" size={18} />
+                            Xem trên Explorer
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     <DropdownMenuItem asChild className={isActive("/profile") ? "bg-[#00b14f]/5 text-[#00b14f]" : ""}>
                       <Link href="/profile">
                         <Icon name="person" size={20} />
                         Hồ sơ của tôi
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className={isActive("/wallet") ? "bg-[#00b14f]/5 text-[#00b14f]" : ""}>
-                      <Link href="/wallet">
-                        <Icon name="account_balance_wallet" size={20} />
-                        Ví của tôi
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className={isActive("/settings") ? "bg-[#00b14f]/5 text-[#00b14f]" : ""}>
@@ -422,20 +557,20 @@ export default function Header() {
                 </DropdownMenu>
                 </>
               ) : (
-                <>
-                  <Link
-                    href="/register"
-                    className="flex items-center px-3 py-1.5 text-sm font-semibold text-[#00b14f] border border-[#00b14f] rounded hover:bg-[#00b14f] hover:text-white transition-colors whitespace-nowrap"
-                  >
-                    Đăng ký
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="flex items-center px-3 py-1.5 text-sm font-semibold text-white bg-[#00b14f] rounded hover:bg-[#009643] transition-colors whitespace-nowrap"
-                  >
-                    Đăng nhập
-                  </Link>
-                </>
+                <button
+                  onClick={handleWalletLogin}
+                  disabled={isLoggingIn || isWalletConnecting}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#00b14f] rounded hover:bg-[#009643] transition-colors whitespace-nowrap disabled:opacity-50"
+                >
+                  {isLoggingIn || isWalletConnecting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                    </svg>
+                  )}
+                  <span>{isLoggingIn ? "Đang đăng nhập..." : "Kết nối ví"}</span>
+                </button>
               )}
             </div>
 
@@ -475,7 +610,7 @@ export default function Header() {
 
       {/* Mobile Menu Overlay - Full screen */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[9999] bg-white">
+        <div className="md:hidden fixed inset-0 z-40 bg-white">
           {/* Mobile Menu Header */}
           <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200 bg-white sticky top-0">
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex flex-col items-start shrink-0">
@@ -502,15 +637,25 @@ export default function Header() {
             {isAuthenticated && user && (
               <div className="p-4 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={user.avatarUrl} alt={user.fullName} />
-                    <AvatarFallback className="bg-[#00b14f] text-white">
-                      {user.fullName?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                  {user.avatarUrl ? (
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={user.avatarUrl} alt={user.fullName} />
+                      <AvatarFallback className="bg-[#00b14f] text-white">
+                        {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : walletAddress ? (
+                    <WalletAvatar address={walletAddress} size={48} />
+                  ) : (
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback className="bg-[#00b14f] text-white">
+                        {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-800 truncate">{user.fullName}</p>
-                    <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                    {user.email && <p className="text-sm text-gray-500 truncate">{user.email}</p>}
                   </div>
                 </div>
               </div>
@@ -634,18 +779,6 @@ export default function Header() {
                     <Icon name="notifications" size={20} className={isActive("/notifications") ? "text-[#00b14f]" : "text-gray-400"} />
                     <span>Thông báo</span>
                   </Link>
-                  <Link
-                    href="/wallet"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
-                      isActive("/wallet") 
-                        ? "bg-[#00b14f]/5 text-[#00b14f]" 
-                        : "text-gray-700 hover:bg-gray-50 hover:text-[#00b14f]"
-                    }`}
-                  >
-                    <Icon name="account_balance_wallet" size={20} className={isActive("/wallet") ? "text-[#00b14f]" : "text-gray-400"} />
-                    <span>Ví của tôi</span>
-                  </Link>
                   {user.roles?.includes("ROLE_FREELANCER") && (
                     <Link
                       href="/my-accepted-jobs"
@@ -709,20 +842,23 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="p-4">
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block w-full py-3 text-center text-white bg-[#00b14f] rounded-lg font-semibold hover:bg-[#009643] transition-colors mb-3"
+                  <button
+                    onClick={async () => {
+                      await handleWalletLogin();
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={isLoggingIn || isWalletConnecting}
+                    className="flex items-center justify-center gap-2 w-full py-3 text-white bg-[#00b14f] rounded-lg font-semibold hover:bg-[#009643] transition-colors disabled:opacity-50"
                   >
-                    Đăng nhập
-                  </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block w-full py-3 text-center text-[#00b14f] border border-[#00b14f] rounded-lg font-semibold hover:bg-[#00b14f] hover:text-white transition-colors"
-                  >
-                    Đăng ký
-                  </Link>
+                    {isLoggingIn || isWalletConnecting ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                      </svg>
+                    )}
+                    <span>{isLoggingIn ? "Đang đăng nhập..." : "Kết nối ví Aptos"}</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -730,5 +866,53 @@ export default function Header() {
         </div>
       )}
     </header>
+
+    {/* Name Input Dialog for new wallet users */}
+    <Dialog open={showNameDialog} onOpenChange={(open) => {
+      if (!open) {
+        setShowNameDialog(false);
+        setInputName("");
+        pendingSignDataRef.current = null;
+      }
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Chào mừng bạn đến với Freelancer!</DialogTitle>
+          <DialogDescription>
+            Vui lòng nhập tên của bạn để hoàn tất đăng ký tài khoản.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label htmlFor="fullName" className="text-sm font-medium text-gray-700">
+              Họ và tên
+            </label>
+            <Input
+              id="fullName"
+              placeholder="Nhập họ và tên của bạn"
+              value={inputName}
+              onChange={(e) => setInputName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && inputName.trim()) {
+                  handleNameSubmit();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <Button
+            onClick={handleNameSubmit}
+            disabled={!inputName.trim() || isLoggingIn}
+            className="w-full bg-[#00b14f] hover:bg-[#009643]"
+          >
+            {isLoggingIn ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+            ) : null}
+            {isLoggingIn ? "Đang xử lý..." : "Hoàn tất đăng ký"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

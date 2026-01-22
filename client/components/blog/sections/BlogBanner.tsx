@@ -17,7 +17,7 @@ export default function BlogBanner() {
         
         {/* Content */}
         <div className="absolute inset-0 flex flex-col justify-center items-start px-8 md:px-12">
-          <p className="text-white/80 text-sm mb-1">MBTI by WorkHub</p>
+          <p className="text-white/80 text-sm mb-1">MBTI by Freelancer</p>
           <h2 className="text-2xl md:text-4xl font-bold text-white mb-4">
             TRẮC NGHIỆM<br />TÍNH CÁCH MBTI
           </h2>

@@ -31,7 +31,7 @@ export default function Hero() {
   );
 
   return (
-    <section className="relative bg-gradient-to-br from-[#0d3d2e] via-[#0a4a37] to-[#063d2d] py-6 z-10">
+    <section className="relative bg-[#0a4a37] py-6 z-10">
       {/* Background Circuit Pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <svg className="w-full h-full opacity-20" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">

@@ -19,7 +19,7 @@ export default function ListHeader({ searchQuery, onSearchChange }: ListHeaderPr
           <Icon name="search" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input
             type="text"
-            placeholder="Tìm theo tên hoặc email..."
+            placeholder="Tìm theo tên hoặc địa chỉ ví..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 rounded-full bg-gray-100 border-0 focus-visible:ring-[#00b14f] h-10"

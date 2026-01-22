@@ -31,7 +31,7 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const [formData, setFormData] = useState({ fullName: "", email: initialEmail, password: "", confirmPassword: "" });
+  const [formData, setFormData] = useState({ fullName: "Nguyễn Văn Test", email: initialEmail || "test@example.com", password: "Test@123", confirmPassword: "Test@123" });
   const [otpCode, setOtpCode] = useState("");
   const [otpTimer, setOtpTimer] = useState(AUTH_CONSTANTS.OTP_EXPIRES_IN);
   const [canResend, setCanResend] = useState(false);

@@ -38,7 +38,6 @@ public class JobApplication {
     @Builder.Default
     private EApplicationStatus status = EApplicationStatus.PENDING;
 
-    // Work submission fields
     @Enumerated(EnumType.STRING)
     @Column(name = "work_status", length = 20)
     @Builder.Default
@@ -56,6 +55,12 @@ public class JobApplication {
     @Column(name = "work_revision_note", columnDefinition = "TEXT")
     private String workRevisionNote;
 
+    @Column(name = "wallet_address", length = 66)
+    private String walletAddress;
+
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -66,6 +71,7 @@ public class JobApplication {
 
     public void accept() {
         this.status = EApplicationStatus.ACCEPTED;
+        this.acceptedAt = LocalDateTime.now();
     }
 
     public void reject() {
@@ -85,6 +91,14 @@ public class JobApplication {
         return this.status == EApplicationStatus.WITHDRAWN;
     }
 
+    public boolean isRejected() {
+        return this.status == EApplicationStatus.REJECTED;
+    }
+
+    public boolean canReapply() {
+        return this.status == EApplicationStatus.WITHDRAWN || this.status == EApplicationStatus.REJECTED;
+    }
+
     public boolean isPending() {
         return this.status == EApplicationStatus.PENDING;
     }
@@ -98,7 +112,6 @@ public class JobApplication {
                 && this.job.getEmployer().getId().equals(userId);
     }
 
-    // Work submission methods
     public void startWork() {
         if (this.status == EApplicationStatus.ACCEPTED && this.workStatus == EWorkStatus.NOT_STARTED) {
             this.workStatus = EWorkStatus.IN_PROGRESS;
@@ -145,14 +158,15 @@ public class JobApplication {
         this.status = status;
     }
 
-    /**
-     * Clear work submission data (dùng khi freelancer bị timeout)
-     */
     public void clearWorkSubmission() {
         this.workStatus = EWorkStatus.NOT_STARTED;
         this.workSubmissionUrl = null;
         this.workSubmissionNote = null;
         this.workSubmittedAt = null;
         this.workRevisionNote = null;
+    }
+
+    public void setWalletAddress(String walletAddress) {
+        this.walletAddress = walletAddress;
     }
 }

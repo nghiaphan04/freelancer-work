@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { useWallet } from "@/context/WalletContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +22,7 @@ interface CreateDisputeDialogProps {
   onOpenChange: (open: boolean) => void;
   jobId: number;
   jobTitle: string;
+  escrowId?: number;
   onSuccess?: () => void;
 }
 
@@ -29,8 +31,10 @@ export default function CreateDisputeDialog({
   onOpenChange,
   jobId,
   jobTitle,
+  escrowId,
   onSuccess,
 }: CreateDisputeDialogProps) {
+  const { isConnected, connect, isConnecting, moTranhChap, getAptosExplorerUrl, account } = useWallet();
   const [description, setDescription] = useState("");
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceMeta | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,13 +49,77 @@ export default function CreateDisputeDialog({
       return;
     }
 
+    if (!isConnected) {
+      const connected = await connect();
+      if (!connected) {
+        toast.error("Vui lòng kết nối ví để tạo khiếu nại");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
+      let blockchainTxHash: string | undefined;
+      
+      // Blockchain call is REQUIRED
+      if (!escrowId) {
+        toast.error("Không tìm thấy escrow ID");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (!isConnected) {
+        toast.error("Vui lòng kết nối ví trước");
+        setIsSubmitting(false);
+        return;
+      }
+
+      let blockchainDisputeId: number | undefined;
+      
+      try {
+        toast.info("Đang mở tranh chấp trên blockchain...");
+        const result = await moTranhChap(escrowId);
+        if (!result) {
+          toast.error("Không thể tạo tranh chấp trên blockchain");
+          setIsSubmitting(false);
+          return;
+        }
+        blockchainTxHash = result.txHash;
+        blockchainDisputeId = result.disputeId;
+        
+        toast.success(
+          <div>
+            <p>Đã mở tranh chấp trên blockchain! (ID: {blockchainDisputeId})</p>
+            <a 
+              href={getAptosExplorerUrl(result.txHash)} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-500 underline text-sm"
+            >
+              Xem giao dịch
+            </a>
+          </div>
+        );
+        
+      } catch (e: any) {
+        console.error("Blockchain dispute error:", e);
+        if (e.message?.includes("User rejected")) {
+          toast.error("Bạn đã hủy thao tác");
+        } else {
+          toast.error("Lỗi blockchain: " + (e.message || "Không thể tạo tranh chấp"));
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
       const response = await api.createDispute(
         jobId,
         description,
         selectedEvidence?.url ?? "",
-        selectedEvidence?.fileId
+        selectedEvidence?.fileId,
+        blockchainTxHash,
+        account?.address,
+        blockchainDisputeId
       );
       if (response.status === "SUCCESS") {
         toast.success("Đã tạo khiếu nại thành công. Chờ admin xử lý.");
@@ -83,6 +151,28 @@ export default function CreateDisputeDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Wallet Status */}
+          {!isConnected && (
+            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon name="warning" size={18} className="text-amber-600" />
+                  <span className="text-sm text-amber-800">
+                    Cần kết nối ví để mở tranh chấp trên blockchain
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={connect}
+                  disabled={isConnecting}
+                  className="bg-[#00b14f] hover:bg-[#009643]"
+                >
+                  {isConnecting ? "Đang kết nối..." : "Kết nối ví"}
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Mô tả sai phạm <span className="text-red-500">*</span>
@@ -133,8 +223,9 @@ export default function CreateDisputeDialog({
             </p>
             <ul className="list-disc list-inside space-y-1 ml-5">
               <li>Công việc sẽ bị khóa cho đến khi quản trị viên giải quyết</li>
-              <li>Tiền ký quỹ sẽ được giữ lại</li>
+              <li>Tiền ký quỹ sẽ được giữ lại trên smart contract</li>
               <li>Người làm sẽ được thông báo và có cơ hội phản hồi</li>
+              <li>Admin sẽ quyết định và các bên cần ký xác nhận trên blockchain</li>
             </ul>
           </div>
         </div>
@@ -145,7 +236,7 @@ export default function CreateDisputeDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isConnected}
             className="bg-gray-600 hover:bg-gray-700"
           >
             {isSubmitting ? "Đang xử lý..." : "Gửi khiếu nại"}

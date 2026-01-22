@@ -20,9 +20,6 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final OnlineStatusService onlineStatusService;
 
-    /**
-     * Get all ACCEPTED conversations for user
-     */
     @Transactional(readOnly = true)
     public List<ConversationResponse> getConversations(Long userId) {
         List<Conversation> conversations = conversationRepository.findAcceptedByUserId(userId);
@@ -36,9 +33,6 @@ public class ConversationService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get pending chat requests (user là receiver)
-     */
     @Transactional(readOnly = true)
     public List<ConversationResponse> getPendingRequests(Long userId) {
         List<Conversation> requests = conversationRepository.findPendingRequestsForUser(userId);
@@ -52,9 +46,6 @@ public class ConversationService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get sent requests (user là initiator)
-     */
     @Transactional(readOnly = true)
     public List<ConversationResponse> getSentRequests(Long userId) {
         List<Conversation> requests = conversationRepository.findSentRequestsByUser(userId);
@@ -68,9 +59,6 @@ public class ConversationService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get counts
-     */
     public Map<String, Long> getCounts(Long userId) {
         return Map.of(
                 "unreadMessages", conversationRepository.countUnreadConversations(userId),

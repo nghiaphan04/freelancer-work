@@ -13,10 +13,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ChatService - Facade that delegates to specialized services
- * Keeps backward compatibility with existing controllers
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,10 +23,8 @@ public class ChatService {
     private final ConversationService conversationService;
     private final OnlineStatusService onlineStatusService;
 
-    // ==================== FRIEND OPERATIONS ====================
-
-    public List<UserSearchResponse> searchUsersByEmail(Long currentUserId, String email) {
-        return friendService.searchUsersByEmail(currentUserId, email);
+    public List<UserSearchResponse> searchUsersByName(Long currentUserId, String name) {
+        return friendService.searchUsersByName(currentUserId, name);
     }
 
     public ConversationResponse sendChatRequest(Long senderId, ChatRequestDto request) {
@@ -57,8 +51,6 @@ public class ChatService {
         return friendService.unblockUser(conversationId, userId);
     }
 
-    // ==================== MESSAGE OPERATIONS ====================
-
     public ChatMessageResponse sendMessage(Long senderId, SendMessageRequest request) {
         return messageService.sendMessage(senderId, request);
     }
@@ -83,8 +75,6 @@ public class ChatService {
         messageService.markAsRead(conversationId, userId);
     }
 
-    // ==================== CONVERSATION OPERATIONS ====================
-
     public List<ConversationResponse> getConversations(Long userId) {
         return conversationService.getConversations(userId);
     }
@@ -100,8 +90,6 @@ public class ChatService {
     public Map<String, Long> getCounts(Long userId) {
         return conversationService.getCounts(userId);
     }
-
-    // ==================== ONLINE STATUS OPERATIONS ====================
 
     public void userConnected(Long userId) {
         onlineStatusService.userConnected(userId);

@@ -34,31 +34,61 @@ public class AdminSeeder implements CommandLineRunner {
     @Value("${app.admin.full-name}")
     private String adminFullName;
     
+    // 4 extra admins (total 5 with main admin) for multi-round voting
+    private static final String[][] EXTRA_ADMINS = {
+        {"admin2@gmail.com", "Admin 02"},
+        {"admin3@gmail.com", "Admin 03"},
+        {"admin4@gmail.com", "Admin 04"},
+        {"admin5@gmail.com", "Admin 05"},
+    };
+    
     @Override
     public void run(String... args) {
         logger.info("Starting Admin Seeder...");
         
-        if (userRepository.existsByEmail(adminEmail)) {
-            logger.info("Admin user already exists: {}", adminEmail);
-            return;
-        }
-        
         Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
                 .orElseThrow(() -> new RuntimeException("Admin role not found. Please run RoleSeeder first."));
         
-        User admin = User.builder()
-                .email(adminEmail)
-                .password(passwordEncoder.encode(adminPassword))
-                .fullName(adminFullName)
-                .emailVerified(true)
-                .enabled(true)
-                .build();
+        // Create main admin
+        if (!userRepository.existsByEmail(adminEmail)) {
+            User admin = User.builder()
+                    .email(adminEmail)
+                    .password(passwordEncoder.encode(adminPassword))
+                    .fullName(adminFullName)
+                    .emailVerified(true)
+                    .enabled(true)
+                    .build();
+            
+            admin.assignRole(adminRole);
+            userRepository.save(admin);
+            logger.info("Admin user created: {}", adminEmail);
+        } else {
+            logger.info("Admin user already exists: {}", adminEmail);
+        }
         
-        admin.assignRole(adminRole);
+        // Create extra admins for multi-round voting
+        for (String[] adminData : EXTRA_ADMINS) {
+            String email = adminData[0];
+            String fullName = adminData[1];
+            
+            if (!userRepository.existsByEmail(email)) {
+                User extraAdmin = User.builder()
+                        .email(email)
+                        .password(passwordEncoder.encode(adminPassword))
+                        .fullName(fullName)
+                        .emailVerified(true)
+                        .enabled(true)
+                        .build();
+                
+                extraAdmin.assignRole(adminRole);
+                userRepository.save(extraAdmin);
+                logger.info("Extra admin created: {} - {}", email, fullName);
+            } else {
+                logger.info("Extra admin already exists: {}", email);
+            }
+        }
         
-        userRepository.save(admin);
-        logger.info("Admin user created successfully: {}", adminEmail);
-        
-        logger.info("Admin Seeder completed.");
+        long adminCount = userRepository.countByRole(ERole.ROLE_ADMIN);
+        logger.info("Admin Seeder completed. Total admins: {}", adminCount);
     }
 }

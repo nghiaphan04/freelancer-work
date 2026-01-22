@@ -38,9 +38,9 @@ public class ChatController {
     @GetMapping("/users/search")
     public ResponseEntity<ApiResponse<List<UserSearchResponse>>> searchUsers(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam String email) {
+            @RequestParam String name) {
         
-        List<UserSearchResponse> users = chatService.searchUsersByEmail(userDetails.getId(), email);
+        List<UserSearchResponse> users = chatService.searchUsersByName(userDetails.getId(), name);
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 
@@ -140,7 +140,6 @@ public class ChatController {
                         "message", ex.getMessage()
                     )
                 );
-                log.warn("Rate limit exceeded for user {} via WebSocket", userDetails.getId());
             }
         }
     }

@@ -3,7 +3,7 @@
 
 export default function AppDownload() {
   return (
-    <section className="py-12 lg:py-16 bg-gradient-to-br from-gray-50 to-white overflow-hidden">
+    <section className="py-12 lg:py-16 bg-gray-50 overflow-hidden">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
           
@@ -15,7 +15,7 @@ export default function AppDownload() {
               {/* Main Phone */}
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-[420px] bg-white rounded-[2.5rem] shadow-2xl border-8 border-gray-800 overflow-hidden z-20">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-gray-800 rounded-b-2xl"></div>
-                <div className="w-full h-full bg-gradient-to-b from-[#00b14f] to-[#009643] p-4 pt-8">
+                <div className="w-full h-full bg-[#00b14f] p-4 pt-8">
                   <div className="bg-white/20 rounded-xl p-3 mb-3">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 bg-white rounded-full"></div>

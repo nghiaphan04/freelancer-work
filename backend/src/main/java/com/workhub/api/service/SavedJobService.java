@@ -32,7 +32,6 @@ public class SavedJobService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new JobNotFoundException("Không tìm thấy công việc"));
 
-        // Check if already saved
         if (savedJobRepository.existsByJobIdAndUserId(jobId, userId)) {
             return ApiResponse.error("Công việc đã được lưu trước đó");
         }
@@ -105,6 +104,7 @@ public class SavedJobService {
                         .company(employer.getCompany())
                         .location(employer.getLocation())
                         .avatarUrl(employer.getAvatarUrl())
+                        .walletAddress(employer.getWalletAddress())
                         .build())
                 .savedAt(savedJob.getCreatedAt())
                 .build();

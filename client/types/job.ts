@@ -1,5 +1,5 @@
 // Enums matching backend
-export type JobStatus = "DRAFT" | "PENDING_APPROVAL" | "OPEN" | "REJECTED" | "IN_PROGRESS" | "DISPUTED" | "COMPLETED" | "CLOSED" | "CANCELLED";
+export type JobStatus = "DRAFT" | "OPEN" | "PENDING_SIGNATURE" | "IN_PROGRESS" | "DISPUTED" | "COMPLETED" | "CLOSED" | "CANCELLED" | "SIGNING_TIMEOUT" | "WORK_TIMEOUT" | "REVIEW_TIMEOUT" | "EXPIRED";
 export type JobComplexity = "ENTRY" | "INTERMEDIATE" | "EXPERT";
 export type JobDuration = "SHORT_TERM" | "MEDIUM_TERM" | "LONG_TERM";
 export type WorkType = "PART_TIME" | "FULL_TIME";
@@ -10,6 +10,7 @@ export interface JobEmployer {
   id: number;
   fullName: string;
   avatarUrl?: string;
+  walletAddress?: string;
   title?: string;
   company?: string;
   location?: string;
@@ -37,7 +38,6 @@ export interface Job {
   submissionDays?: number;
   reviewDays?: number;
   status: JobStatus;
-  rejectionReason?: string;  // Lý do từ chối (nếu REJECTED)
   workSubmissionDeadline?: string;  // Hạn nộp sản phẩm
   workReviewDeadline?: string;      // Hạn review sản phẩm
   viewCount: number;
@@ -49,6 +49,25 @@ export interface Job {
   workSubmissionUrl?: string;
   workSubmissionNote?: string;
   workSubmittedAt?: string;
+  escrowId?: number;
+  walletAddress?: string;
+  pendingBlockchainAction?: string;
+  freelancerWalletAddress?: string;
+  txHash?: string;
+  paymentTxHash?: string;
+  refundTxHash?: string;
+  acceptedAt?: string;
+  signDeadline?: string;
+  contractSignedAt?: string;
+  jobWorkSubmittedAt?: string;
+  // Dispute info (for DISPUTED status)
+  disputeInfo?: {
+    id: number;
+    status: string;
+    evidenceDeadline?: string;
+    hasFreelancerEvidence: boolean;
+    currentRound?: number;
+  };
 }
 
 // Request DTOs
@@ -67,7 +86,18 @@ export interface CreateJobRequest {
   applicationDeadline?: string;
   submissionDays?: number;
   reviewDays?: number;
+  escrowId?: number;
+  walletAddress?: string;
+  txHash?: string;
+  saveAsDraft?: boolean;
 }
+
+export interface ContractTerm {
+  title: string;
+  content: string;
+}
+
+export type TimeUnit = "minutes" | "days";
 
 export interface UpdateJobRequest {
   title?: string;
@@ -82,8 +112,20 @@ export interface UpdateJobRequest {
   budget?: number;
   currency?: string;
   applicationDeadline?: string;
+  applicationDeadlineValue?: number;
+  applicationDeadlineUnit?: TimeUnit;
+  submissionValue?: number;
+  submissionUnit?: TimeUnit;
   submissionDays?: number;
+  reviewValue?: number;
+  reviewUnit?: TimeUnit;
   reviewDays?: number;
+  terms?: ContractTerm[];
+  txHash?: string;
+  escrowId?: number;
+  walletAddress?: string;
+  status?: "DRAFT" | "OPEN";
+  contractHash?: string;
 }
 
 // Paginated response
@@ -101,14 +143,17 @@ export interface Page<T> {
 // UI Config
 export const JOB_STATUS_CONFIG = {
   DRAFT: { label: "Bản nháp", color: "bg-gray-100 text-gray-600" },
-  PENDING_APPROVAL: { label: "Chờ duyệt", color: "bg-gray-100 text-gray-600" },
-  OPEN: { label: "Đang tuyển", color: "bg-gray-100 text-gray-600" },
-  REJECTED: { label: "Đã từ chối", color: "bg-gray-100 text-gray-600" },
+  OPEN: { label: "Đang tuyển", color: "bg-green-100 text-green-600" },
+  PENDING_SIGNATURE: { label: "Chờ ký hợp đồng", color: "bg-green-100 text-green-600" },
   IN_PROGRESS: { label: "Đang thực hiện", color: "bg-gray-100 text-gray-600" },
-  DISPUTED: { label: "Đang tranh chấp", color: "bg-gray-100 text-gray-600" },
-  COMPLETED: { label: "Hoàn thành", color: "bg-gray-100 text-gray-600" },
+  DISPUTED: { label: "Đang tranh chấp", color: "bg-gray-200 text-gray-700" },
+  COMPLETED: { label: "Hoàn thành", color: "bg-green-100 text-green-600" },
   CLOSED: { label: "Đã đóng", color: "bg-gray-100 text-gray-600" },
   CANCELLED: { label: "Đã hủy", color: "bg-gray-100 text-gray-600" },
+  SIGNING_TIMEOUT: { label: "Hết hạn ký", color: "bg-orange-100 text-orange-600" },
+  WORK_TIMEOUT: { label: "Hết hạn nộp", color: "bg-orange-100 text-orange-600" },
+  REVIEW_TIMEOUT: { label: "Hết hạn duyệt", color: "bg-orange-100 text-orange-600" },
+  EXPIRED: { label: "Hết hạn ứng tuyển", color: "bg-orange-100 text-orange-600" },
 } as const;
 
 export const JOB_COMPLEXITY_CONFIG = {
@@ -132,7 +177,6 @@ export const WORK_TYPE_CONFIG = {
 export type JobHistoryAction =
   | "JOB_CREATED"
   | "JOB_UPDATED"
-  | "JOB_SUBMITTED"
   | "JOB_OPENED"
   | "JOB_CLOSED"
   | "APPLICATION_ACCEPTED"
@@ -145,8 +189,6 @@ export type JobHistoryAction =
   | "WORK_STARTED"
   | "WORK_SUBMITTED"
   | "WORK_REVISED"
-  | "JOB_APPROVED"
-  | "JOB_REJECTED"
   | "JOB_COMPLETED"
   | "JOB_CANCELLED"
   | "WITHDRAWAL_REQUESTED"
@@ -157,6 +199,7 @@ export type JobHistoryAction =
   | "EMPLOYER_TIMEOUT"
   | "JOB_REOPENED"
   | "AUTO_APPROVED"
+  | "JOB_EXPIRED"
   | "DISPUTE_CREATED"
   | "DISPUTE_RESPONSE_SUBMITTED"
   | "DISPUTE_RESOLVED";
@@ -165,6 +208,7 @@ export interface JobHistoryUser {
   id: number;
   fullName: string;
   avatarUrl?: string;
+  walletAddress?: string;
   role: "ADMIN" | "EMPLOYER" | "FREELANCER" | "USER";
 }
 
@@ -190,7 +234,6 @@ export interface JobHistoryFileAttachment {
 export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string; icon: string; color: string }> = {
   JOB_CREATED: { label: "Tạo công việc", icon: "add_circle", color: "text-blue-600" },
   JOB_UPDATED: { label: "Cập nhật", icon: "edit", color: "text-gray-600" },
-  JOB_SUBMITTED: { label: "Gửi duyệt", icon: "send", color: "text-orange-600" },
   JOB_OPENED: { label: "Mở tuyển", icon: "visibility", color: "text-green-600" },
   JOB_CLOSED: { label: "Đóng tuyển", icon: "visibility_off", color: "text-gray-600" },
   APPLICATION_ACCEPTED: { label: "Duyệt ứng viên", icon: "check_circle", color: "text-green-600" },
@@ -203,8 +246,6 @@ export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string
   WORK_STARTED: { label: "Bắt đầu làm", icon: "play_circle", color: "text-blue-600" },
   WORK_SUBMITTED: { label: "Nộp sản phẩm", icon: "upload_file", color: "text-purple-600" },
   WORK_REVISED: { label: "Nộp lại", icon: "refresh", color: "text-orange-600" },
-  JOB_APPROVED: { label: "Admin duyệt", icon: "verified", color: "text-green-600" },
-  JOB_REJECTED: { label: "Admin từ chối", icon: "block", color: "text-red-600" },
   JOB_COMPLETED: { label: "Hoàn thành", icon: "done_all", color: "text-emerald-600" },
   JOB_CANCELLED: { label: "Đã hủy", icon: "cancel", color: "text-red-600" },
   WITHDRAWAL_REQUESTED: { label: "Yêu cầu rút/hủy", icon: "exit_to_app", color: "text-orange-600" },
@@ -215,6 +256,7 @@ export const JOB_HISTORY_ACTION_CONFIG: Record<JobHistoryAction, { label: string
   EMPLOYER_TIMEOUT: { label: "Employer quá hạn", icon: "schedule", color: "text-orange-600" },
   JOB_REOPENED: { label: "Mở lại công việc", icon: "refresh", color: "text-blue-600" },
   AUTO_APPROVED: { label: "Tự động duyệt", icon: "auto_awesome", color: "text-purple-600" },
+  JOB_EXPIRED: { label: "Hết hạn ứng tuyển", icon: "schedule", color: "text-orange-600" },
   DISPUTE_CREATED: { label: "Tạo khiếu nại", icon: "report_problem", color: "text-red-600" },
   DISPUTE_RESPONSE_SUBMITTED: { label: "Phản hồi khiếu nại", icon: "reply", color: "text-blue-600" },
   DISPUTE_RESOLVED: { label: "Giải quyết tranh chấp", icon: "gavel", color: "text-purple-600" },

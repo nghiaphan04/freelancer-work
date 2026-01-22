@@ -7,56 +7,82 @@ interface JobDetailContentProps {
 }
 
 export default function JobDetailContent({ job }: JobDetailContentProps) {
+  let sectionNumber = 0;
+  
   return (
-    <>
-      {/* Description */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Mô tả công việc</h2>
-        <div className="prose prose-gray max-w-none">
-          <p className="whitespace-pre-wrap text-gray-700">{job.description}</p>
-        </div>
+    <div className="bg-white rounded-lg shadow">
+      {/* Document Header */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h2 className="text-lg font-bold text-gray-900 uppercase">Thông tin chi tiết công việc</h2>
       </div>
+      
+      {/* Document Body */}
+      <div className="px-6 py-5 space-y-6">
+        {/* Section 1: Description */}
+        <section>
+          <h3 className="text-sm font-bold text-gray-800 mb-2">
+            {++sectionNumber}. Mô tả công việc
+          </h3>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-4">
+            {job.description}
+          </p>
+        </section>
 
-      {/* Context */}
-      {job.context && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Bối cảnh dự án</h2>
-          <p className="whitespace-pre-wrap text-gray-700">{job.context}</p>
-        </div>
-      )}
+        {/* Section 2: Context */}
+        {job.context && (
+          <section>
+            <h3 className="text-sm font-bold text-gray-800 mb-2">
+              {++sectionNumber}. Bối cảnh dự án
+            </h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-4">
+              {job.context}
+            </p>
+          </section>
+        )}
 
-      {/* Requirements */}
-      {job.requirements && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Yêu cầu</h2>
-          <p className="whitespace-pre-wrap text-gray-700">{job.requirements}</p>
-        </div>
-      )}
+        {/* Section 3: Requirements */}
+        {job.requirements && (
+          <section>
+            <h3 className="text-sm font-bold text-gray-800 mb-2">
+              {++sectionNumber}. Yêu cầu
+            </h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-4">
+              {job.requirements}
+            </p>
+          </section>
+        )}
 
-      {/* Deliverables */}
-      {job.deliverables && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Sản phẩm bàn giao</h2>
-          <p className="whitespace-pre-wrap text-gray-700">{job.deliverables}</p>
-        </div>
-      )}
+        {/* Section 4: Deliverables */}
+        {job.deliverables && (
+          <section>
+            <h3 className="text-sm font-bold text-gray-800 mb-2">
+              {++sectionNumber}. Sản phẩm bàn giao
+            </h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed pl-4">
+              {job.deliverables}
+            </p>
+          </section>
+        )}
 
-      {/* Skills */}
-      {job.skills && job.skills.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Kỹ năng yêu cầu</h2>
-          <div className="flex flex-wrap gap-2">
-            {job.skills.map((skill) => (
-              <span
-                key={skill}
-                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm"
-              >
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
+        {/* Section 5: Skills */}
+        {job.skills && job.skills.length > 0 && (
+          <section>
+            <h3 className="text-sm font-bold text-gray-800 mb-2">
+              {++sectionNumber}. Kỹ năng yêu cầu
+            </h3>
+            <div className="pl-4 flex flex-wrap gap-2">
+              {job.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
   );
 }

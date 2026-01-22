@@ -17,12 +17,12 @@ export default function AboutSection() {
           <Link href="/jobs" className="text-[#00b14f] font-semibold hover:underline">
             danh sách việc làm
           </Link>{" "}
-          trên đây, WorkHub mang đến cho bạn những cơ hội việc làm tại những môi trường làm việc năng động, chuyên nghiệp.
+          trên đây, Freelancer mang đến cho bạn những cơ hội việc làm tại những môi trường làm việc năng động, chuyên nghiệp.
         </p>
 
-        {/* Section: Vậy tại sao nên tìm việc tại WorkHub? */}
+        {/* Section: Vậy tại sao nên tìm việc tại Freelancer? */}
         <h3 className="text-base font-bold text-gray-900 mb-3">
-          Vậy tại sao nên tìm việc tại WorkHub?
+          Vậy tại sao nên tìm việc tại Freelancer?
         </h3>
 
         {/* Sub-section: Việc làm Chất lượng */}
@@ -50,9 +50,9 @@ export default function AboutSection() {
         <p className="text-gray-700 text-sm leading-relaxed">
           Tại{" "}
           <Link href="/" className="text-[#00b14f] font-semibold hover:underline">
-            WorkHub
+            Freelancer
           </Link>
-          , bạn có thể tìm thấy những tin tuyển dụng việc làm với mức lương vô cùng hấp dẫn. Những nhà tuyển dụng kết nối với WorkHub đều là những công ty lớn tại Việt Nam, nơi bạn có thể làm việc trong một môi trường chuyên nghiệp, năng động, trẻ trung. WorkHub là nền tảng tuyển dụng công nghệ cao giúp các nhà tuyển dụng và ứng viên kết nối với nhau. Nhanh tay tạo CV để ứng tuyển vào các vị trí việc làm mới nhất hấp dẫn tại{" "}
+          , bạn có thể tìm thấy những tin tuyển dụng việc làm với mức lương vô cùng hấp dẫn. Những nhà tuyển dụng kết nối với Freelancer đều là những công ty lớn tại Việt Nam, nơi bạn có thể làm việc trong một môi trường chuyên nghiệp, năng động, trẻ trung. Freelancer là nền tảng tuyển dụng công nghệ cao giúp các nhà tuyển dụng và ứng viên kết nối với nhau. Nhanh tay tạo CV để ứng tuyển vào các vị trí việc làm mới nhất hấp dẫn tại{" "}
           <Link href="/jobs?location=hanoi" className="text-[#00b14f] font-semibold hover:underline">
             việc làm mới nhất tại Hà Nội
           </Link>
@@ -60,7 +60,7 @@ export default function AboutSection() {
           <Link href="/jobs?location=hcm" className="text-[#00b14f] font-semibold hover:underline">
             việc làm mới nhất tại TP.HCM
           </Link>
-          {" "}ở WorkHub, bạn sẽ tìm thấy những{" "}
+          {" "}ở Freelancer, bạn sẽ tìm thấy những{" "}
           <span className="font-semibold">việc làm mới nhất</span> với mức lương tốt nhất!
         </p>
       </div>

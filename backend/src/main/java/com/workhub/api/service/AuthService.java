@@ -24,7 +24,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
+import org.bouncycastle.crypto.signers.Ed25519Signer;
+import org.bouncycastle.util.encoders.Hex;
+
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -97,15 +101,7 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
 
-        boolean dailyClaimed = user.claimDailyCredits();
-        if (dailyClaimed) {
-            userService.save(user);
-        }
-
-        String message = dailyClaimed 
-                ? "Đăng nhập thành công. Bạn đã nhận 10 credit hôm nay!" 
-                : "Đăng nhập thành công";
-        return buildAuthResponse(user, message);
+        return buildAuthResponse(user, "Đăng nhập thành công");
     }
 
     public ApiResponse<AuthResponse> refreshToken(RefreshTokenRequest req) {
@@ -188,19 +184,78 @@ public class AuthService {
 
             if (!user.getEmailVerified()) {
                 user.verifyEmail();
+                userService.save(user);
             }
 
-            boolean dailyClaimed = user.claimDailyCredits();
-            userService.save(user);
-
-            String message = dailyClaimed 
-                    ? "Đăng nhập Google thành công. Bạn đã nhận 10 credit hôm nay!" 
-                    : "Đăng nhập Google thành công";
-            return buildAuthResponse(user, message);
+            return buildAuthResponse(user, "Đăng nhập Google thành công");
         } catch (Exception e) {
             log.error("Google auth failed", e);
             return ApiResponse.error("Xác thực Google thất bại");
         }
+    }
+
+    @Transactional
+    public ApiResponse<AuthResponse> walletLogin(WalletLoginRequest req) {
+        try {
+            if (!verifyWalletSignature(req.getPublicKey(), req.getMessage(), req.getSignature())) {
+                return ApiResponse.error("Chữ ký không hợp lệ");
+            }
+
+            String walletAddress = req.getWalletAddress().toLowerCase();
+            
+            var existingUser = userService.findByWalletAddress(walletAddress);
+            
+            if (existingUser.isEmpty()) {
+                if (req.getFullName() == null || req.getFullName().trim().isEmpty()) {
+                    return ApiResponse.<AuthResponse>builder()
+                            .status("NEED_NAME")
+                            .message("Vui lòng nhập tên của bạn để hoàn tất đăng ký")
+                            .build();
+                }
+                User newUser = createWalletUser(walletAddress, req.getFullName().trim());
+                return buildAuthResponse(newUser, "Đăng ký và đăng nhập thành công");
+            }
+
+            return buildAuthResponse(existingUser.get(), "Đăng nhập bằng ví thành công");
+        } catch (Exception e) {
+            log.error("Wallet auth failed", e);
+            return ApiResponse.error("Xác thực ví thất bại: " + e.getMessage());
+        }
+    }
+
+    private boolean verifyWalletSignature(String publicKeyHex, String message, String signatureHex) {
+        try {
+            String cleanPublicKey = publicKeyHex.startsWith("0x") ? publicKeyHex.substring(2) : publicKeyHex;
+            String cleanSignature = signatureHex.startsWith("0x") ? signatureHex.substring(2) : signatureHex;
+
+            byte[] publicKeyBytes = Hex.decode(cleanPublicKey);
+            byte[] signatureBytes = Hex.decode(cleanSignature);
+            byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
+
+            Ed25519PublicKeyParameters publicKey = new Ed25519PublicKeyParameters(publicKeyBytes, 0);
+            Ed25519Signer verifier = new Ed25519Signer();
+            verifier.init(false, publicKey);
+            verifier.update(messageBytes, 0, messageBytes.length);
+
+            return verifier.verifySignature(signatureBytes);
+        } catch (Exception e) {
+            log.error("Signature verification failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private User createWalletUser(String walletAddress, String fullName) {
+        Role role = roleRepository.findByName(ERole.ROLE_FREELANCER)
+                .orElseThrow(() -> new RuntimeException("Role không tồn tại"));
+
+        User user = User.builder()
+                .walletAddress(walletAddress)
+                .fullName(fullName)
+                .emailVerified(true)
+                .enabled(true)
+                .build();
+        user.assignRole(role);
+        return userService.save(user);
     }
 
     private User createGoogleUser(String email, String fullName, String avatarUrl) {
@@ -224,7 +279,8 @@ public class AuthService {
                 .map(r -> r.getName().name())
                 .collect(Collectors.joining(","));
 
-        String accessToken = jwtUtils.generateTokenFromEmail(user.getEmail(), user.getId(), roles);
+        String subject = user.getEmail() != null ? user.getEmail() : user.getWalletAddress();
+        String accessToken = jwtUtils.generateTokenFromEmail(subject, user.getId(), roles);
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
         List<String> roleList = user.getRoles().stream()
@@ -249,11 +305,11 @@ public class AuthService {
                 .emailVerified(user.getEmailVerified())
                 .enabled(user.getEnabled())
                 .roles(roleList)
-                .credits(user.getCredits())
                 .balance(user.getBalance())
                 .bankAccountNumber(user.getBankAccountNumber())
                 .bankName(user.getBankName())
                 .hasBankInfo(user.hasBankInfo())
+                .walletAddress(user.getWalletAddress())
                 .build();
 
         AuthResponse authRes = AuthResponse.builder()

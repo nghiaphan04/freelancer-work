@@ -12,7 +12,6 @@ import com.workhub.api.repository.ConversationRepository;
 import com.workhub.api.repository.FileUploadRepository;
 import com.workhub.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageService {
@@ -67,7 +65,6 @@ public class MessageService {
         RateLimitInfo rateLimitInfo = rateLimitMap.computeIfAbsent(senderId, k -> new RateLimitInfo());
         if (!rateLimitInfo.tryAcquire()) {
             int remainingSeconds = rateLimitInfo.getRemainingSeconds();
-            log.warn("User {} is rate limited. Remaining wait: {} seconds", senderId, remainingSeconds);
             throw new MessageRateLimitException("Bạn đang gửi tin nhắn quá nhanh. Vui lòng thử lại sau " + remainingSeconds + " giây.");
         }
 
@@ -77,7 +74,6 @@ public class MessageService {
         User receiver = userRepository.findById(request.getReceiverId())
                 .orElseThrow(() -> new UserNotFoundException("Receiver not found"));
 
-        // Không cho phép nhắn tin với tài khoản admin
         if (receiver.isAdmin()) {
             throw new RuntimeException("Không thể gửi tin nhắn cho tài khoản quản trị viên");
         }
@@ -156,18 +152,16 @@ public class MessageService {
         ChatMessageResponse response = ChatMessageResponse.fromEntity(message);
 
         messagingTemplate.convertAndSendToUser(
-                receiver.getEmail(),
+                receiver.getIdentifier(),
                 "/queue/messages",
                 response
         );
 
         messagingTemplate.convertAndSendToUser(
-                receiver.getEmail(),
+                receiver.getIdentifier(),
                 "/queue/conversations",
                 ConversationResponse.fromEntity(conversation, receiver.getId())
         );
-
-        log.info("Message sent from {} to {} with status {}", sender.getEmail(), receiver.getEmail(), initialStatus);
 
         return response;
     }
@@ -221,12 +215,10 @@ public class MessageService {
 
         User otherUser = message.getConversation().getOtherUser(userId);
         messagingTemplate.convertAndSendToUser(
-                otherUser.getEmail(),
+                otherUser.getIdentifier(),
                 "/queue/message-updated",
                 response
         );
-
-        log.info("Message {} updated by user {}", messageId, userId);
 
         return response;
     }
@@ -261,24 +253,22 @@ public class MessageService {
         User otherUser = conversation.getOtherUser(userId);
         
         messagingTemplate.convertAndSendToUser(
-                otherUser.getEmail(),
+                otherUser.getIdentifier(),
                 "/queue/message-deleted",
                 response
         );
 
         messagingTemplate.convertAndSendToUser(
-                otherUser.getEmail(),
+                otherUser.getIdentifier(),
                 "/queue/conversations",
                 ConversationResponse.fromEntity(conversation, otherUser.getId())
         );
 
         messagingTemplate.convertAndSendToUser(
-                sender.getEmail(),
+                sender.getIdentifier(),
                 "/queue/conversations",
                 ConversationResponse.fromEntity(conversation, sender.getId())
         );
-
-        log.info("Message {} deleted by user {}", messageId, userId);
 
         return response;
     }
@@ -304,7 +294,7 @@ public class MessageService {
         conversationRepository.save(conversation);
 
         messagingTemplate.convertAndSendToUser(
-                otherUser.getEmail(),
+                otherUser.getIdentifier(),
                 "/queue/message-status",
                 Map.of(
                         "conversationId", conversationId,

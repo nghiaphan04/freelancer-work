@@ -31,7 +31,7 @@ export default function KnowledgeCard({ article }: KnowledgeCardProps) {
           {article.title}
         </h3>
         <div className="flex items-center gap-2 text-white/70 text-xs mb-2">
-          <span>WorkHub</span>
+          <span>Freelancer</span>
           <span>•</span>
           <span>{article.date}</span>
         </div>

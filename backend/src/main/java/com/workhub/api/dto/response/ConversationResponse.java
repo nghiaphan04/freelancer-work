@@ -41,6 +41,7 @@ public class ConversationResponse {
         private Long id;
         private String fullName;
         private String email;
+        private String walletAddress;
         private String avatarUrl;
         private Boolean online;
         private LocalDateTime lastActiveAt;
@@ -55,6 +56,7 @@ public class ConversationResponse {
                         .id(otherUser.getId())
                         .fullName(otherUser.getFullName())
                         .email(otherUser.getEmail())
+                        .walletAddress(otherUser.getWalletAddress())
                         .avatarUrl(otherUser.getAvatarUrl())
                         .online(false) // Will be updated by online status service
                         .lastActiveAt(otherUser.getLastActiveAt())

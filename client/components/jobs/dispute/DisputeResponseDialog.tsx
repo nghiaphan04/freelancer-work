@@ -54,7 +54,7 @@ export default function DisputeResponseDialog({
         selectedEvidence?.fileId
       );
       if (response.status === "SUCCESS") {
-        toast.success("Đã gửi phản hồi thành công. Chờ admin quyết định.");
+        toast.success("Da gui phan hoi thanh cong. Qua trinh voting se bat dau.");
         setDescription("");
         setSelectedEvidence(null);
         onOpenChange(false);
@@ -70,7 +70,7 @@ export default function DisputeResponseDialog({
   };
 
   const canRespond = dispute.status === "PENDING_FREELANCER_RESPONSE" &&
-    (!dispute.freelancerDeadline || new Date(dispute.freelancerDeadline) > new Date());
+    (!dispute.evidenceDeadline || new Date(dispute.evidenceDeadline) > new Date());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,10 +103,10 @@ export default function DisputeResponseDialog({
             {renderEvidenceCard(dispute.employerEvidenceFile, dispute.employerEvidenceUrl, "Bằng chứng bên thuê")}
           </div>
 
-          {dispute.freelancerDeadline && canRespond && (
+          {dispute.evidenceDeadline && canRespond && (
             <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600 border border-gray-200">
               <p className="font-medium">
-                Hạn phản hồi: {formatDateTime(dispute.freelancerDeadline)}
+                Han phan hoi: {formatDateTime(dispute.evidenceDeadline)}
               </p>
             </div>
           )}

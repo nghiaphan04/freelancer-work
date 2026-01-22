@@ -1,9 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WalletAvatar from "@/components/ui/WalletAvatar";
 import { cn } from "@/lib/utils";
 
 interface UserAvatarProps {
   src?: string;
   name: string;
+  walletAddress?: string;
   online?: boolean;
   size?: "sm" | "md" | "lg" | "xl";
   showOnlineStatus?: boolean;
@@ -15,6 +17,13 @@ const sizeClasses = {
   md: "w-10 h-10",
   lg: "w-12 h-12",
   xl: "w-14 h-14 md:w-12 md:h-12",
+};
+
+const sizePx = {
+  sm: 28,
+  md: 40,
+  lg: 48,
+  xl: 56,
 };
 
 const textSizeClasses = {
@@ -34,19 +43,40 @@ const onlineDotClasses = {
 export default function UserAvatar({ 
   src, 
   name, 
+  walletAddress,
   online = false,
   size = "md",
   showOnlineStatus = false,
   className,
 }: UserAvatarProps) {
-  return (
-    <div className={cn("relative shrink-0", className)}>
+  const renderAvatar = () => {
+    if (src) {
+      return (
+        <Avatar className={sizeClasses[size]}>
+          <AvatarImage src={src} />
+          <AvatarFallback className={cn("bg-gray-200 text-gray-600", textSizeClasses[size])}>
+            {name.charAt(0)}
+          </AvatarFallback>
+        </Avatar>
+      );
+    }
+    
+    if (walletAddress) {
+      return <WalletAvatar address={walletAddress} size={sizePx[size]} />;
+    }
+    
+    return (
       <Avatar className={sizeClasses[size]}>
-        <AvatarImage src={src} />
         <AvatarFallback className={cn("bg-gray-200 text-gray-600", textSizeClasses[size])}>
           {name.charAt(0)}
         </AvatarFallback>
       </Avatar>
+    );
+  };
+
+  return (
+    <div className={cn("relative shrink-0", className)}>
+      {renderAvatar()}
       {showOnlineStatus && online && (
         <span className={cn(
           "absolute bottom-0 right-0 bg-green-500 border-2 border-white rounded-full",

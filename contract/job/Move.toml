@@ -1,0 +1,14 @@
+[package]
+name = "marketplace"
+version = "1.0.0"
+authors = []
+license = "MIT"
+
+[addresses]
+job_work_board = "0x1a3539dd3832bd0cec0a4e311a343282916684c140828b2a7b7f3c2365e06268"
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "mainnet" }
+AptosStdlib = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-stdlib" }
+MoveStdlib = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/move-stdlib" }
+
+[dev-addresses]

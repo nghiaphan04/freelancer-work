@@ -24,6 +24,7 @@ public class UserDetailsImpl implements UserDetails {
     
     private Long id;
     private String email;
+    private String walletAddress;
     private String fullName;
     
     @JsonIgnore
@@ -41,6 +42,7 @@ public class UserDetailsImpl implements UserDetails {
         return UserDetailsImpl.builder()
                 .id(user.getId())
                 .email(user.getEmail())
+                .walletAddress(user.getWalletAddress())
                 .fullName(user.getFullName())
                 .password(user.getPassword())
                 .emailVerified(user.getEmailVerified())
@@ -61,7 +63,11 @@ public class UserDetailsImpl implements UserDetails {
     
     @Override
     public String getUsername() {
-        return email;
+        return email != null ? email : walletAddress;
+    }
+    
+    public String getIdentifier() {
+        return email != null ? email : walletAddress;
     }
     
     @Override
@@ -81,6 +87,9 @@ public class UserDetailsImpl implements UserDetails {
     
     @Override
     public boolean isEnabled() {
+        if (walletAddress != null && email == null) {
+            return enabled;
+        }
         return enabled && emailVerified;
     }
 }

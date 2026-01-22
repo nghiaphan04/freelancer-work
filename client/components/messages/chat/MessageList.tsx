@@ -97,7 +97,7 @@ export default function MessageList({
                 {!isMe && (
                   <div className="shrink-0 self-end mb-1 w-8">
                     {isLastInGroup && (
-                      <UserAvatar src={otherUser.avatarUrl} name={otherUser.fullName} size="sm" />
+                      <UserAvatar src={otherUser.avatarUrl} name={otherUser.fullName} walletAddress={otherUser.walletAddress} size="sm" />
                     )}
                   </div>
                 )}

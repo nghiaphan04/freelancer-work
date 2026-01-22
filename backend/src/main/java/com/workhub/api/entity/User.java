@@ -6,7 +6,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,7 +13,8 @@ import java.util.Set;
 @Entity
 @Table(name = "users",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = "email")
+                @UniqueConstraint(columnNames = "email"),
+                @UniqueConstraint(columnNames = "wallet_address")
         })
 @Getter
 @Builder
@@ -26,10 +26,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(unique = true, length = 100)
     private String email;
     
-    @Column(nullable = false)
     private String password;
     
     @Column(name = "full_name", nullable = false, length = 100)
@@ -84,22 +83,18 @@ public class User {
     @Builder.Default
     private Boolean enabled = true;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Integer credits = 20;  // 10 tạo tài khoản + 10 daily
-
     @Column(name = "balance", precision = 15, scale = 2, nullable = false)
     @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
-
-    @Column(name = "last_daily_credit_date")
-    private LocalDate lastDailyCreditDate;
 
     @Column(name = "bank_account_number", length = 50)
     private String bankAccountNumber;
 
     @Column(name = "bank_name", length = 100)
     private String bankName;
+
+    @Column(name = "wallet_address", unique = true, length = 66)
+    private String walletAddress;
 
     @Column(name = "trust_score", nullable = false)
     @Builder.Default
@@ -199,21 +194,6 @@ public class User {
         return hasRole(ERole.ROLE_ADMIN);
     }
 
-    public boolean hasEnoughCredits(int amount) {
-        return this.credits >= amount;
-    }
-
-    public void deductCredits(int amount) {
-        if (!hasEnoughCredits(amount)) {
-            throw new IllegalStateException("Không đủ credit");
-        }
-        this.credits -= amount;
-    }
-
-    public void addCredits(int amount) {
-        this.credits += amount;
-    }
-
     public boolean hasEnoughBalance(BigDecimal amount) {
         return this.balance.compareTo(amount) >= 0;
     }
@@ -235,16 +215,6 @@ public class User {
         this.balance = this.balance.add(amount);
     }
 
-    public boolean claimDailyCredits() {
-        LocalDate today = LocalDate.now();
-        if (this.lastDailyCreditDate == null || !this.lastDailyCreditDate.equals(today)) {
-            this.credits += 10;
-            this.lastDailyCreditDate = today;
-            return true;
-        }
-        return false;
-    }
-
     public boolean hasBankInfo() {
         return this.bankAccountNumber != null && !this.bankAccountNumber.isBlank()
                 && this.bankName != null && !this.bankName.isBlank();
@@ -264,5 +234,13 @@ public class User {
 
     public void updateLastActive() {
         this.lastActiveAt = LocalDateTime.now();
+    }
+
+    public void setWalletAddress(String walletAddress) {
+        this.walletAddress = walletAddress;
+    }
+
+    public String getIdentifier() {
+        return this.email != null ? this.email : this.walletAddress;
     }
 }

@@ -65,8 +65,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         
                         try {
                             if (jwtUtils.validateJwtToken(token)) {
-                                String email = jwtUtils.getEmailFromJwtToken(token);
-                                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                                String identifier = jwtUtils.getEmailFromJwtToken(token);
+                                UserDetails userDetails = userDetailsService.loadUserByUsername(identifier);
                                 
                                 UsernamePasswordAuthenticationToken authentication = 
                                     new UsernamePasswordAuthenticationToken(
@@ -75,11 +75,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                 
                                 SecurityContextHolder.getContext().setAuthentication(authentication);
                                 accessor.setUser(authentication);
-                                
-                                log.info("WebSocket authenticated for user: {}", email);
                             }
                         } catch (Exception e) {
-                            log.error("WebSocket authentication failed: {}", e.getMessage());
                         }
                     }
                 }

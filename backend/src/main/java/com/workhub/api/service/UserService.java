@@ -43,6 +43,10 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
+    public Optional<User> findByWalletAddress(String walletAddress) {
+        return userRepository.findByWalletAddress(walletAddress);
+    }
+
     public User save(User user) {
         return userRepository.save(user);
     }
@@ -112,22 +116,5 @@ public class UserService {
         
         user.assignRole(employerRole);
         return userRepository.save(user);
-    }
-
-    @Transactional
-    public User grantCredits(Long userId, int amount) {
-        User user = getById(userId);
-        user.addCredits(amount);
-        return userRepository.save(user);
-    }
-
-    @Transactional
-    public boolean claimDailyCredits(Long userId) {
-        User user = getById(userId);
-        boolean claimed = user.claimDailyCredits();
-        if (claimed) {
-            userRepository.save(user);
-        }
-        return claimed;
     }
 }

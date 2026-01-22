@@ -65,7 +65,6 @@ export default function JobsList() {
     fetchSavedJobIds();
   }, [currentPage, fetchJobs, fetchSavedJobIds]);
 
-  // Filter jobs by search keyword (client-side)
   const filteredJobs = jobs.filter((job) =>
     searchKeyword.trim() === "" ||
     job.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||

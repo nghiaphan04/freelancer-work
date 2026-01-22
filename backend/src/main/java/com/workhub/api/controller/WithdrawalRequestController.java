@@ -30,10 +30,11 @@ public class WithdrawalRequestController {
     @PreAuthorize("hasRole('FREELANCER')")
     public ResponseEntity<ApiResponse<WithdrawalRequestResponse>> createFreelancerWithdrawal(
             @PathVariable Long jobId,
+            @RequestParam(required = false) String txHash,
             @Valid @RequestBody CreateWithdrawalRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(withdrawalRequestService.createFreelancerWithdrawal(
-                jobId, userDetails.getId(), request));
+                jobId, userDetails.getId(), request, txHash));
     }
 
     /**

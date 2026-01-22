@@ -232,7 +232,7 @@ export const partners: Partner[] = [
   { id: 1, name: "Partner 1", logo: "/1-sao.png" },
   { id: 2, name: "Partner 2", logo: "/2-sao.png" },
   { id: 3, name: "Partner 3", logo: "/3-sao.png" },
-  { id: 4, name: "WorkHub", logo: "/logo.svg" },
+  { id: 4, name: "Freelancer", logo: "/logo.svg" },
   { id: 5, name: "Partner 5", logo: "/1-sao.png" },
   { id: 6, name: "Partner 6", logo: "/2-sao.png" },
   { id: 7, name: "Partner 7", logo: "/3-sao.png" },

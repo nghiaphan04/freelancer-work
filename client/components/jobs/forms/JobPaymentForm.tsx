@@ -16,7 +16,7 @@ export default function JobPaymentForm() {
         <div className="w-8 h-8 border-4 border-[#00b14f] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <p className="text-gray-600">Đang chuyển hướng...</p>
         <p className="text-sm text-gray-500 mt-2">
-          Thanh toán job giờ được thực hiện tự động từ số dư khi tạo.
+          Thanh toán được thực hiện qua ví Aptos khi tạo escrow trên blockchain.
         </p>
       </div>
     </div>

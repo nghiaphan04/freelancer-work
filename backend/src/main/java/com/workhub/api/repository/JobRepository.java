@@ -1,6 +1,7 @@
 package com.workhub.api.repository;
 
 import com.workhub.api.entity.EJobStatus;
+import com.workhub.api.entity.EPendingBlockchainAction;
 import com.workhub.api.entity.Job;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,18 +21,24 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     Page<Job> findByStatusOrderByCreatedAtDesc(EJobStatus status, Pageable pageable);
 
+    @Query("SELECT j FROM Job j WHERE j.status = :status AND (j.applicationDeadline IS NULL OR j.applicationDeadline > :now)")
+    Page<Job> findByStatusAndNotExpired(@Param("status") EJobStatus status, @Param("now") java.time.LocalDateTime now, Pageable pageable);
+
     Page<Job> findByEmployerIdAndStatus(Long employerId, EJobStatus status, Pageable pageable);
 
     @Query("SELECT j FROM Job j WHERE j.status = :status AND " +
+           "(j.applicationDeadline IS NULL OR j.applicationDeadline > :now) AND " +
            "(LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(j.description) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Job> searchJobs(@Param("keyword") String keyword, 
-                         @Param("status") EJobStatus status, 
+                         @Param("status") EJobStatus status,
+                         @Param("now") java.time.LocalDateTime now,
                          Pageable pageable);
 
-    @Query("SELECT DISTINCT j FROM Job j JOIN j.skills s WHERE s IN :skills AND j.status = :status")
+    @Query("SELECT DISTINCT j FROM Job j JOIN j.skills s WHERE s IN :skills AND j.status = :status AND (j.applicationDeadline IS NULL OR j.applicationDeadline > :now)")
     Page<Job> findBySkillsAndStatus(@Param("skills") List<String> skills, 
-                                     @Param("status") EJobStatus status, 
+                                     @Param("status") EJobStatus status,
+                                     @Param("now") java.time.LocalDateTime now,
                                      Pageable pageable);
 
     long countByEmployerId(Long employerId);
@@ -40,6 +47,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     // Count jobs by status (for admin)
     long countByStatus(EJobStatus status);
+
+    // List jobs by status (for scheduler)
+    List<Job> findByStatus(EJobStatus status);
 
     // Get all jobs with details for admin
     @Query("SELECT j FROM Job j JOIN FETCH j.employer ORDER BY j.createdAt DESC")
@@ -50,6 +60,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     Page<Job> findByStatusWithEmployer(@Param("status") EJobStatus status, Pageable pageable);
 
     // Timeout queries for scheduler
+    @Query("SELECT j FROM Job j WHERE j.status = :status AND j.applicationDeadline IS NOT NULL AND j.applicationDeadline < :deadline")
+    List<Job> findByStatusAndApplicationDeadlineBefore(@Param("status") EJobStatus status, @Param("deadline") java.time.LocalDateTime deadline);
+
     @Query("SELECT j FROM Job j WHERE j.status = :status AND j.workSubmissionDeadline IS NOT NULL AND j.workSubmissionDeadline < :deadline")
     List<Job> findByStatusAndWorkSubmissionDeadlineBefore(@Param("status") EJobStatus status, @Param("deadline") java.time.LocalDateTime deadline);
 
@@ -70,4 +83,12 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     // Sum earnings for completed jobs
     @Query("SELECT COALESCE(SUM(j.budget), 0) FROM Job j WHERE j.status = 'COMPLETED' AND EXISTS (SELECT a FROM JobApplication a WHERE a.job = j AND a.freelancer.id = :freelancerId AND a.status = 'ACCEPTED')")
     long sumEarningsByAcceptedFreelancerId(@Param("freelancerId") Long freelancerId);
+
+    // Find jobs with pending blockchain actions (for admin)
+    Page<Job> findByPendingBlockchainActionNot(EPendingBlockchainAction action, Pageable pageable);
+
+    @Query("SELECT j FROM Job j WHERE j.status = :status AND j.acceptedAt IS NOT NULL AND j.acceptedAt < :deadline")
+    List<Job> findByStatusAndAcceptedAtBefore(@Param("status") EJobStatus status, @Param("deadline") java.time.LocalDateTime deadline);
+
+    List<Job> findByPendingBlockchainAction(EPendingBlockchainAction action);
 }

@@ -50,8 +50,7 @@ export default function ConversationList({
   const [processingRequest, setProcessingRequest] = useState<number | null>(null);
   
   const filteredConversations = conversations.filter(conv =>
-    conv.otherUser.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.otherUser.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    conv.otherUser.fullName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const showUserSearchResults = searchQuery.length >= 3 && (searchResults.length > 0 || searchingUsers);
@@ -135,7 +134,7 @@ export default function ConversationList({
                 message={searchQuery ? "Không tìm thấy cuộc trò chuyện" : "Chưa có cuộc hội thoại nào"}
               >
                 {!searchQuery && (
-                  <p className="text-xs text-gray-400 mt-1">Tìm kiếm email để thêm bạn mới</p>
+                  <p className="text-xs text-gray-400 mt-1">Nhập tên để tìm và kết bạn</p>
                 )}
               </MessagesEmptyState>
             ) : (

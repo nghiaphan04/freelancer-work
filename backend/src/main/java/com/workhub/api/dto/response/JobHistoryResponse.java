@@ -25,6 +25,7 @@ public class JobHistoryResponse {
         private Long id;
         private String fullName;
         private String avatarUrl;
+        private String walletAddress;
         private String role;
     }
 
@@ -44,8 +45,8 @@ public class JobHistoryResponse {
             case JOB_SUBMITTED -> "Gửi duyệt";
             case JOB_OPENED -> "Mở tuyển dụng";
             case JOB_CLOSED -> "Đóng tuyển dụng";
-            case APPLICATION_ACCEPTED -> "Duyệt ứng viên";
-            case APPLICATION_REJECTED -> "Từ chối ứng viên";
+            case APPLICATION_ACCEPTED -> "Chấp nhận người làm";
+            case APPLICATION_REJECTED -> "Từ chối người làm";
             case WORK_APPROVED -> "Duyệt công việc";
             case WORK_REJECTED -> "Yêu cầu chỉnh sửa";
             case PAYMENT_RELEASED -> "Thanh toán";
@@ -66,9 +67,13 @@ public class JobHistoryResponse {
             case EMPLOYER_TIMEOUT -> "Employer quá hạn";
             case JOB_REOPENED -> "Mở lại công việc";
             case AUTO_APPROVED -> "Tự động duyệt";
+            case JOB_EXPIRED -> "Hết hạn ứng tuyển";
             case DISPUTE_CREATED -> "Tạo khiếu nại";
             case DISPUTE_RESPONSE_SUBMITTED -> "Phản hồi khiếu nại";
+            case DISPUTE_ROUND_VOTED -> "Admin vote round";
             case DISPUTE_RESOLVED -> "Giải quyết tranh chấp";
+            case DISPUTE_TIMEOUT -> "Quá hạn phản hồi tranh chấp";
+            case DISPUTE_REFUND_CLAIMED -> "Đã nhận tiền hoàn trả";
         };
     }
 }

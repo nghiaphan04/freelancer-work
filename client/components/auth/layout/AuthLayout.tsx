@@ -5,22 +5,10 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/ui/Icon";
-import { useAuth, useAuthLoading } from "@/context/AuthContext";
-import SocialLoginButtons from "../forms/SocialLoginButtons";
+import { useAuth } from "@/context/AuthContext";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
-}
-
-function AuthContent({ children }: { children: React.ReactNode }) {
-  const { isLoading } = useAuthLoading();
-
-  return (
-    <div className="w-full max-w-md sm:max-w-lg lg:max-w-2xl">
-      {children}
-      <SocialLoginButtons disabled={isLoading} />
-    </div>
-  );
 }
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
@@ -65,7 +53,9 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         </Link>
 
         <div className="flex-1 flex items-center justify-center">
-          <AuthContent>{children}</AuthContent>
+          <div className="w-full max-w-md sm:max-w-lg lg:max-w-2xl">
+            {children}
+          </div>
         </div>
       </div>
 
