@@ -46,27 +46,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fullName?: string
   ): Promise<WalletLoginResult> => {
     try {
-      console.log("Calling wallet-login API with:", { walletAddress, publicKey: publicKey?.slice(0, 20) + "...", messageLength: message?.length });
       const response = await api.walletLogin({ walletAddress, publicKey, signature, message, fullName });
-      console.log("Wallet-login API response:", { status: response.status, message: response.message, hasData: !!response.data });
       
       if (response.status === "NEED_NAME") {
-        console.log("User needs to provide name for registration");
         return { success: false, needName: true };
       }
       
       if (response.status === "SUCCESS" && response.data) {
         const data = response.data as { user: User; accessToken: string };
-        console.log("Login successful, saving auth data...", { userId: data.user?.id, hasToken: !!data.accessToken });
         saveAuthData({ user: data.user, accessToken: data.accessToken });
         setUser(data.user);
         return { success: true };
       }
       
-      console.error("Wallet login failed with response:", response);
       return { success: false, error: response.message };
     } catch (error) {
-      console.error("Wallet login exception:", error);
+      console.error("Wallet login error:", error);
       return { success: false, error: "Đăng nhập thất bại" };
     }
   }, []);

@@ -95,18 +95,6 @@ export default function Header() {
   };
 
   const [pendingWalletLogin, setPendingWalletLogin] = useState(false);
-  const [hasTriedAutoLogin, setHasTriedAutoLogin] = useState(false);
-  useEffect(() => {
-    if (hasTriedAutoLogin) return;
-    if (isHydrated && isWalletConnected && walletAddress && publicKey && !isAuthenticated && !isLoggingIn) {
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser) {
-        console.log("Wallet auto-connected, triggering login flow...");
-        setHasTriedAutoLogin(true);
-        setPendingWalletLogin(true);
-      }
-    }
-  }, [isHydrated, isWalletConnected, walletAddress, publicKey, isAuthenticated, isLoggingIn, hasTriedAutoLogin]);
 
   useEffect(() => {
     const performWalletLogin = async () => {
@@ -119,7 +107,6 @@ export default function Header() {
 
       try {
         const message = `Đăng nhập vào Freelancer\nTimestamp: ${Date.now()}`;
-        console.log("Requesting wallet signature for login...");
         const signResult = await signMessage(message);
         
         if (!signResult) {
@@ -128,7 +115,6 @@ export default function Header() {
           return;
         }
 
-        console.log("Signature received, calling wallet-login API...");
         const result = await loginWithWallet(
           walletAddress,
           publicKey,
@@ -138,13 +124,10 @@ export default function Header() {
 
         if (result.success) {
           toast.success("Đăng nhập thành công!");
-          window.location.reload();
-          return;
         } else if (result.needName) {
           pendingSignDataRef.current = signResult;
           setShowNameDialog(true);
         } else {
-          console.error("Wallet login failed:", result.error);
           toast.error(result.error || "Đăng nhập thất bại");
         }
       } catch (error) {
@@ -178,8 +161,6 @@ export default function Header() {
         setShowNameDialog(false);
         setInputName("");
         pendingSignDataRef.current = null;
-        window.location.reload();
-        return;
       } else {
         toast.error(result.error || "Đăng ký thất bại");
       }
