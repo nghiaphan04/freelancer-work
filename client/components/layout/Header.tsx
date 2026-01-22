@@ -95,6 +95,18 @@ export default function Header() {
   };
 
   const [pendingWalletLogin, setPendingWalletLogin] = useState(false);
+  const [hasTriedAutoLogin, setHasTriedAutoLogin] = useState(false);
+  useEffect(() => {
+    if (hasTriedAutoLogin) return;
+    if (isHydrated && isWalletConnected && walletAddress && publicKey && !isAuthenticated && !isLoggingIn) {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) {
+        console.log("Wallet auto-connected, triggering login flow...");
+        setHasTriedAutoLogin(true);
+        setPendingWalletLogin(true);
+      }
+    }
+  }, [isHydrated, isWalletConnected, walletAddress, publicKey, isAuthenticated, isLoggingIn, hasTriedAutoLogin]);
 
   useEffect(() => {
     const performWalletLogin = async () => {
@@ -107,14 +119,16 @@ export default function Header() {
 
       try {
         const message = `Đăng nhập vào Freelancer\nTimestamp: ${Date.now()}`;
+        console.log("Requesting wallet signature for login...");
         const signResult = await signMessage(message);
         
         if (!signResult) {
-          toast.error("Không thể ký xác thực");
+          toast.error("Không thể ký xác thực. Vui lòng thử lại.");
           setIsLoggingIn(false);
           return;
         }
 
+        console.log("Signature received, calling wallet-login API...");
         const result = await loginWithWallet(
           walletAddress,
           publicKey,
@@ -128,11 +142,12 @@ export default function Header() {
           pendingSignDataRef.current = signResult;
           setShowNameDialog(true);
         } else {
+          console.error("Wallet login failed:", result.error);
           toast.error(result.error || "Đăng nhập thất bại");
         }
       } catch (error) {
         console.error("Wallet login error:", error);
-        toast.error("Có lỗi xảy ra");
+        toast.error("Có lỗi xảy ra khi đăng nhập");
       } finally {
         setIsLoggingIn(false);
       }

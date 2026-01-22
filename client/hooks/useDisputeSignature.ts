@@ -12,8 +12,6 @@ export function useDisputeSignature(
   const { isConnected, connect, isConnecting, kyXacNhan } = useWallet();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Signature tracking not implemented in current Dispute type
-  // For now, assume user hasn't signed yet
   const alreadySigned = false;
 
   const handleSign = async () => {
