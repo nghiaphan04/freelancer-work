@@ -298,20 +298,17 @@ export default function UserProfileView({
             </div>
 
             <div className="w-full space-y-3 mt-2">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Giới thiệu</h3>
-                <ExpandableText 
-                  text={user.bio || "Chưa có thông tin giới thiệu"} 
-                  maxLines={3} 
-                />
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-gray-500 mb-3">Thông tin liên hệ</h3>
-                <div className="flex items-center gap-3">
-                  <Icon name="email" size={18} className="text-gray-400 shrink-0" />
-                  <span className="text-gray-700 text-sm truncate">{user.email}</span>
+              {user.walletAddress && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="text-sm font-medium text-gray-500 mb-3">Địa chỉ ví</h3>
+                  <div className="flex items-center gap-3">
+                    <Icon name="account_balance_wallet" size={18} className="text-gray-400 shrink-0" />
+                    <span className="text-gray-700 text-sm truncate font-mono">
+                      {user.walletAddress.slice(0, 10)}...{user.walletAddress.slice(-8)}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -387,20 +384,17 @@ export default function UserProfileView({
           </div>
 
           <div className="w-full space-y-3">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Giới thiệu</h3>
-              <ExpandableText 
-                text={user.bio || "Chưa có thông tin giới thiệu"} 
-                maxLines={3} 
-              />
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-3">Thông tin liên hệ</h3>
-              <div className="flex items-center gap-3">
-                <Icon name="email" size={20} className="text-gray-400 shrink-0" />
-                <span className="text-gray-700 text-sm truncate">{user.email}</span>
+            {user.walletAddress && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-500 mb-3">Địa chỉ ví</h3>
+                <div className="flex items-center gap-3">
+                  <Icon name="account_balance_wallet" size={20} className="text-gray-400 shrink-0" />
+                  <span className="text-gray-700 text-sm truncate font-mono">
+                    {user.walletAddress.slice(0, 10)}...{user.walletAddress.slice(-8)}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -452,23 +446,17 @@ export default function UserProfileView({
         {/* Right side - Info cards */}
         <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Giới thiệu</h3>
-              <ExpandableText 
-                text={user.bio || "Chưa có thông tin giới thiệu"} 
-                maxLines={4} 
-              />
-            </div>
-
-            <div className="bg-gray-50 rounded-xl p-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-3">Thông tin liên hệ</h3>
-              <div className="space-y-2">
+            {user.walletAddress && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-500 mb-3">Địa chỉ ví</h3>
                 <div className="flex items-center gap-3">
-                  <Icon name="email" size={18} className="text-gray-400 shrink-0" />
-                  <span className="text-gray-700 text-sm truncate">{user.email}</span>
+                  <Icon name="account_balance_wallet" size={18} className="text-gray-400 shrink-0" />
+                  <span className="text-gray-700 text-sm truncate font-mono">
+                    {user.walletAddress.slice(0, 10)}...{user.walletAddress.slice(-8)}
+                  </span>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
