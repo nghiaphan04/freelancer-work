@@ -6,6 +6,13 @@ export type WorkType = "PART_TIME" | "FULL_TIME";
 export type WorkStatus = "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "REVISION_REQUESTED" | "APPROVED";
 
 // Employer info in job response
+export interface JobFreelancer {
+  id: number;
+  fullName: string;
+  avatarUrl?: string;
+  walletAddress?: string;
+}
+
 export interface JobEmployer {
   id: number;
   fullName: string;
@@ -43,6 +50,7 @@ export interface Job {
   viewCount: number;
   applicationCount: number;
   employer: JobEmployer;
+  freelancer?: JobFreelancer;
   createdAt: string;
   updatedAt: string;
   workStatus?: WorkStatus;

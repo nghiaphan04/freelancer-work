@@ -15,7 +15,7 @@ interface JobHistoryTimelineProps {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
-  ADMIN: { label: "Quản trị viên", color: "bg-gray-100 text-gray-600" },
+  ADMIN: { label: "Trọng tài viên", color: "bg-gray-100 text-gray-600" },
   EMPLOYER: { label: "Bên thuê", color: "bg-gray-100 text-gray-600" },
   FREELANCER: { label: "Người làm", color: "bg-gray-100 text-gray-600" },
   USER: { label: "Người dùng", color: "bg-gray-100 text-gray-600" },

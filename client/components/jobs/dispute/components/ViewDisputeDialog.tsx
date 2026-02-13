@@ -160,7 +160,7 @@ export function ViewDisputeDialog({ open, onOpenChange, dispute }: ViewDisputeDi
 
           {dispute.adminNote && (
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-medium text-gray-800 mb-2">Ghi chú</h4>
+              <h4 className="font-medium text-gray-800 mb-2">Quyết định của trọng tài viên</h4>
               <p className="text-sm text-gray-600">{dispute.adminNote}</p>
               {dispute.resolvedBy && (
                 <p className="text-xs text-gray-500 mt-2">

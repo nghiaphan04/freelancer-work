@@ -407,7 +407,7 @@ export default function Header() {
                       ? "text-[#00b14f]"
                       : "text-gray-700 hover:text-[#00b14f]"
                   }`}>
-                    Quản lý công việc
+                    Quản lý các hợp đồng
                     <Icon 
                       name={activeDropdown === "my-jobs" ? "expand_less" : "expand_more"} 
                       size={16} 
@@ -425,7 +425,7 @@ export default function Header() {
                             }`}
                           >
                             <Icon name="work" size={20} className={isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f]" : "text-gray-500 group-hover:text-[#00b14f]"} />
-                            <span className={`text-sm ${isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f] font-medium" : "text-gray-700 group-hover:text-[#00b14f]"}`}>Việc đã nhận</span>
+                            <span className={`text-sm ${isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f] font-medium" : "text-gray-700 group-hover:text-[#00b14f]"}`}>Quản lý các hợp đồng</span>
                           </Link>
                         )}
                         {user?.roles?.includes("ROLE_EMPLOYER") ? (
@@ -790,7 +790,7 @@ export default function Header() {
                       }`}
                     >
                       <Icon name="work" size={20} className={isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f]" : "text-gray-400"} />
-                      <span>Việc đã nhận</span>
+                      <span>Quản lý các hợp đồng</span>
                     </Link>
                   )}
                   {user.roles?.includes("ROLE_EMPLOYER") ? (

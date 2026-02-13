@@ -852,8 +852,8 @@ export const DISPUTE_STATUS_CONFIG: Record<DisputeStatus, { label: string; color
 export type DisputeRoundStatus = "PENDING_ADMIN" | "ADMIN_TIMEOUT" | "VOTED";
 
 export const DISPUTE_ROUND_STATUS_CONFIG: Record<DisputeRoundStatus, { label: string; color: string }> = {
-  PENDING_ADMIN: { label: "Chờ admin vote", color: "text-orange-600" },
-  ADMIN_TIMEOUT: { label: "Admin timeout", color: "text-red-600" },
+  PENDING_ADMIN: { label: "Chờ trọng tài viên vote", color: "text-orange-600" },
+  ADMIN_TIMEOUT: { label: "Trọng tài viên timeout", color: "text-red-600" },
   VOTED: { label: "Đã vote", color: "text-green-600" },
 };
 

@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useWallet } from "@/context/WalletContext";
+import { useAuth } from "@/context/AuthContext";
 import SystemTermsDisplay from "@/components/jobs/forms/post-job/sections/SystemTermsDisplay";
 
 interface ContractTerm {
@@ -48,6 +49,7 @@ export default function SignContractDialog({
   onSign,
 }: SignContractDialogProps) {
   const { isConnected, connect, isConnecting } = useWallet();
+  const { user } = useAuth();
 
   const validTerms = contractData?.terms?.filter(t => t.title?.trim() || t.content?.trim()) || [];
   const jobTermsCount = 1 + (contractData?.deliverables ? 1 : 0) + validTerms.length;
@@ -99,6 +101,32 @@ export default function SignContractDialog({
               </div>
               
               <div className="px-5 py-4 max-h-96 overflow-y-auto text-sm leading-relaxed scrollbar-thin">
+                {/* Thông tin các bên */}
+                <div className="mb-6 space-y-3">
+                  <p className="text-center font-semibold text-gray-800 uppercase text-xs tracking-wide">
+                    Thông tin các bên trong hợp đồng
+                  </p>
+                  <div className="space-y-1 text-gray-700">
+                    <p className="font-semibold">Bên A – Bên thuê</p>
+                    <p className="text-xs text-gray-600">
+                      (Là tài khoản đã đăng công việc và nạp tiền ký quỹ trên nền tảng)
+                    </p>
+                  </div>
+                  <div className="space-y-1 text-gray-700">
+                    <p className="font-semibold">
+                      Bên B – Người làm
+                      {user?.fullName ? `: ${user.fullName}` : ""}
+                    </p>
+                    {user?.walletAddress && (
+                      <p>Địa chỉ ví: {user.walletAddress}</p>
+                    )}
+                  </div>
+                  <p className="text-justify text-gray-700">
+                    Hợp đồng này là căn cứ để hệ thống tự động xử lý thanh toán, phạt và tranh chấp cho công việc nói trên theo các điều
+                    khoản tại Phần A (Điều khoản công việc) và Phần B (Quy định hệ thống) dưới đây.
+                  </p>
+                </div>
+
                 {/* PHẦN A - ĐIỀU KHOẢN CÔNG VIỆC */}
                 <div className="mb-6">
                   <h4 className="font-bold text-center text-gray-800 mb-4 pb-2 border-b border-gray-300">
@@ -134,13 +162,13 @@ export default function SignContractDialog({
                   {/* Custom Terms */}
                   {validTerms.map((term, index) => (
                     <div key={index} className="mb-3">
-                      <p className="text-justify">
-                        <span className="font-semibold">
-                          Điều {(contractData.deliverables ? 2 : 1) + index + 1}. {term.title}
-                        </span>
-                        {": "}
-                        <span className="text-gray-700 whitespace-pre-line">{term.content}</span>
+                      <p className="font-semibold text-gray-900">
+                        Điều {(contractData.deliverables ? 2 : 1) + index + 1}. {term.title}
                       </p>
+                      <div
+                        className="text-gray-700 prose prose-sm max-w-none mt-1"
+                        dangerouslySetInnerHTML={{ __html: term.content }}
+                      />
                     </div>
                   ))}
                 </div>

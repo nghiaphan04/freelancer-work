@@ -12,6 +12,8 @@ interface ApprovedJob {
   budget?: number;
   currency?: string;
   workSubmissionUrl?: string;
+  workSubmissionDeadline?: string;
+  workSubmittedAt?: string;
   employer?: {
     fullName: string;
   };
@@ -52,11 +54,16 @@ export default function SubmittedTab({ jobs, isLoading }: SubmittedTabProps) {
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-600">
                   Hoàn thành
                 </span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  Đúng tiến độ
+                </span>
               </div>
               
               {job.employer && <p className="text-sm text-gray-600 mb-2">{job.employer.fullName}</p>}
               
-              <p className="text-sm text-gray-600 mb-3">{job.budget} {job.currency}</p>
+              <p className="text-sm text-gray-600 mb-3">
+                {job.budget} {job.currency}
+              </p>
 
               {job.workSubmissionUrl && (
                 <a

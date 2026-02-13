@@ -39,6 +39,8 @@
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "@tiptap/react": "^2.3.2",
+    "@tiptap/starter-kit": "^2.3.2",
     "react-hook-form": "^7.71.0",
     "sockjs-client": "^1.6.1",
     "sonner": "^2.0.7",

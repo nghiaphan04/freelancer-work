@@ -214,7 +214,7 @@ export default function MobileMenu({
               {user.roles?.includes("ROLE_FREELANCER") && (
                 <Link href="/my-accepted-jobs" onClick={onClose} className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${isActivePrefix("/my-accepted-jobs") ? "bg-[#00b14f]/5 text-[#00b14f]" : "text-gray-700 hover:bg-gray-50"}`}>
                   <Icon name="work" size={20} className={isActivePrefix("/my-accepted-jobs") ? "text-[#00b14f]" : "text-gray-400"} />
-                  <span>Việc đã nhận</span>
+                  <span>Quản lý các hợp đồng</span>
                 </Link>
               )}
               {user.roles?.includes("ROLE_EMPLOYER") ? (

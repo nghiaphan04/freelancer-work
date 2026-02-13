@@ -12,7 +12,9 @@ interface ReviewTabProps {
 }
 
 export default function ReviewTab({ jobs, formatBudget }: ReviewTabProps) {
-  const approvedJobs = jobs.filter(j => j.workStatus === "APPROVED");
+  const approvedJobs = jobs.filter(
+    (j) => j.workStatus === "APPROVED" || j.status === "COMPLETED"
+  );
 
   if (approvedJobs.length === 0) {
     return (
@@ -37,7 +39,16 @@ export default function ReviewTab({ jobs, formatBudget }: ReviewTabProps) {
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-600">
                   Hoàn thành
                 </span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  Đúng tiến độ
+                </span>
               </div>
+              
+              {job.freelancer && (
+                <p className="text-sm text-gray-600 mb-2">
+                  Người làm: {job.freelancer.fullName}
+                </p>
+              )}
               
               <p className="text-sm text-gray-600 mb-3">{formatBudget(job.budget, job.currency)}</p>
 

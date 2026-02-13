@@ -2,8 +2,8 @@
 
 import Icon from "@/components/ui/Icon";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import RichTextEditor from "@/components/ui/RichTextEditor";
 import { ContractTerm } from "@/hooks/useContractTerms";
 
 interface ContractTermsSectionProps {
@@ -63,11 +63,10 @@ export default function ContractTermsSection({
                 <Icon name="delete" size={18} />
               </button>
             </div>
-            <Textarea
+            <RichTextEditor
               value={term.content}
-              onChange={(e) => onUpdateTerm(index, "content", e.target.value)}
+              onChange={(html) => onUpdateTerm(index, "content", html)}
               placeholder="Nội dung điều khoản..."
-              rows={2}
             />
           </div>
         ))}

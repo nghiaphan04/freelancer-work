@@ -135,13 +135,13 @@ export function DisputeResponseDialog({
 
           {!canRespond && !dispute.freelancerDescription && (
             <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
-              <p>Đã hết thời hạn phản hồi hoặc khiếu nại đang chờ quản trị viên quyết định.</p>
+              <p>Đã hết thời hạn phản hồi hoặc khiếu nại đang chờ trọng tài viên quyết định.</p>
             </div>
           )}
 
           {dispute.adminNote && (
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <h4 className="font-medium text-gray-800 mb-2">Quyết định của quản trị viên</h4>
+              <h4 className="font-medium text-gray-800 mb-2">Quyết định của trọng tài viên</h4>
               <p className="text-sm text-gray-600">{dispute.adminNote}</p>
               {dispute.resolvedBy && (
                 <p className="text-xs text-gray-500 mt-2">

@@ -56,7 +56,7 @@ export default function SystemTermsDisplay({
     },
     {
       title: "Cơ chế tranh chấp",
-      content: `Bên A có quyền mở tranh chấp trong thời hạn nghiệm thu nếu không hài lòng với sản phẩm. Quy trình tranh chấp: (1) Cả hai bên nộp bằng chứng lên hệ thống trong 3 phút, (2) 3 admin được chọn ngẫu nhiên để vote, (3) Mỗi admin có 3 phút để vote, (4) Bên có 2/3 phiếu bầu sẽ thắng. Bên thắng nhận toàn bộ tiền ký quỹ.`
+      content: `Bên A có quyền mở tranh chấp trong thời hạn nghiệm thu nếu không hài lòng với sản phẩm. Quy trình tranh chấp: (1) Cả hai bên nộp bằng chứng lên hệ thống trong 3 phút, (2) 3 trọng tài viên là những chuyên gia trong lĩnh vực xây dựng được chọn ngẫu nhiên để vote, (3) Mỗi trọng tài viên có 3 phút để vote, (4) Bên có 2/3 phiếu bầu sẽ thắng. Bên thắng nhận toàn bộ tiền ký quỹ.`
     },
     {
       title: "Hệ thống điểm uy tín (Reputation)",
@@ -72,10 +72,11 @@ export default function SystemTermsDisplay({
     <>
       {systemTerms.map((term, index) => (
         <div key={index} className="mb-3">
-          <p className="text-justify">
-            <span className="font-semibold">Điều {startIndex + index + 1}. {term.title}</span>
-            {": "}
-            <span className="text-gray-700 whitespace-pre-line">{term.content}</span>
+          <p className="font-semibold text-gray-900">
+            Điều {startIndex + index + 1}. {term.title}
+          </p>
+          <p className="text-gray-700 text-justify mt-1 whitespace-pre-line">
+            {term.content}
           </p>
         </div>
       ))}

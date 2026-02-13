@@ -122,7 +122,7 @@ export default function CreateDisputeDialog({
         blockchainDisputeId
       );
       if (response.status === "SUCCESS") {
-        toast.success("Đã tạo khiếu nại thành công. Chờ admin xử lý.");
+        toast.success("Đã tạo khiếu nại thành công. Chờ trọng tài viên xử lý.");
         setDescription("");
         setSelectedEvidence(null);
         onOpenChange(false);
@@ -222,10 +222,10 @@ export default function CreateDisputeDialog({
               Lưu ý:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-5">
-              <li>Công việc sẽ bị khóa cho đến khi quản trị viên giải quyết</li>
+              <li>Công việc sẽ bị khóa cho đến khi trọng tài viên giải quyết</li>
               <li>Tiền ký quỹ sẽ được giữ lại trên smart contract</li>
               <li>Người làm sẽ được thông báo và có cơ hội phản hồi</li>
-              <li>Admin sẽ quyết định và các bên cần ký xác nhận trên blockchain</li>
+              <li>Trọng tài viên là những chuyên gia trong lĩnh vực xây dựng sẽ quyết định và các bên cần ký xác nhận trên blockchain</li>
             </ul>
           </div>
         </div>

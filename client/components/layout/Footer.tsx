@@ -16,7 +16,7 @@ export default function Footer() {
               {/* Logo */}
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2">Freelancer</h3>
-                <p className="text-sm text-gray-400">Nền tảng kết nối freelancer và khách hàng hàng đầu Việt Nam</p>
+                <p className="text-sm text-gray-400">Nền tảng kết nối freelancer quản lý xây dựng và khách hàng hàng đầu Việt Nam</p>
               </div>
 
               {/* Ứng dụng tải xuống */}
@@ -66,60 +66,60 @@ export default function Footer() {
                 
                 {/* Cột 1: Dành cho khách hàng */}
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-4">Dành cho khách hàng</h4>
+                  <h4 className="text-sm font-semibold text-white mb-4">Dành cho bên thuê</h4>
                   <ul className="space-y-2.5 text-sm">
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Cách thuê freelancer</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Talent Marketplace</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Project Catalog</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Thuê Agency</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Enterprise</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Payroll Services</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Direct Contracts</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Đăng công việc</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tìm kỹ sư QS</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Thuê Shopdrawing</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Lập dự toán</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Lập tiến độ</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tư vấn kỹ thuật</a></li>
                   </ul>
                 </div>
 
                 {/* Cột 2: Dành cho Freelancer */}
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-4">Dành cho Freelancer</h4>
+                  <h4 className="text-sm font-semibold text-white mb-4">Dành cho người làm</h4>
                   <ul className="space-y-2.5 text-sm">
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Cách tìm việc</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Direct Contracts</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tìm việc freelance</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tìm việc ở Việt Nam</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tìm việc toàn cầu</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Freelancer Plus</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tìm việc remote</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Quản lý hợp đồng</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Xây dựng hồ sơ năng lực</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Chứng chỉ hành nghề</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Hướng dẫn tranh chấp</a></li>
                   </ul>
 
                   <h4 className="text-sm font-semibold text-white mb-4 mt-6">Tài nguyên</h4>
                   <ul className="space-y-2.5 text-sm">
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Trung tâm trợ giúp</a></li>
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Blog & Tin tức</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Cộng đồng</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Affiliate Program</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Cộng đồng kỹ sư</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tiêu chuẩn kỹ thuật</a></li>
                   </ul>
                 </div>
 
                 {/* Cột 3: Danh mục phổ biến */}
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-4">Danh mục phổ biến</h4>
+                  <h4 className="text-sm font-semibold text-white mb-4">Loại công việc</h4>
                   <ul className="space-y-2.5 text-sm">
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Phát triển Web</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Phát triển Mobile</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Thiết kế & Sáng tạo</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Viết lách & Dịch thuật</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Dịch vụ AI</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Marketing & Sales</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Hành chính & Hỗ trợ</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Bóc tách khối lượng (QS)</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Lập dự toán</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Shopdrawing</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Lập tiến độ thi công</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">BIM Modeling</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Thiết kế kết cấu</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tư vấn giám sát</a></li>
                   </ul>
                 </div>
 
                 {/* Cột 4: Về chúng tôi */}
                 <div>
-                  <h4 className="text-sm font-semibold text-white mb-4">Về Freelancer</h4>
+                  <h4 className="text-sm font-semibold text-white mb-4">Về nền tảng</h4>
                   <ul className="space-y-2.5 text-sm">
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Về chúng tôi</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Đội ngũ lãnh đạo</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Nhà đầu tư</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Cơ chế bảo vệ</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Giải quyết tranh chấp</a></li>
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tuyển dụng</a></li>
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Liên hệ</a></li>
                   </ul>
@@ -128,8 +128,8 @@ export default function Footer() {
                   <ul className="space-y-2.5 text-sm">
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Điều khoản dịch vụ</a></li>
                     <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Chính sách bảo mật</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Cookie Settings</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Accessibility</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Quy định hợp đồng</a></li>
+                    <li><a href="#" className="text-gray-400 hover:text-[#00b14f] transition-colors">Tiêu chuẩn kỹ thuật</a></li>
                   </ul>
                 </div>
 

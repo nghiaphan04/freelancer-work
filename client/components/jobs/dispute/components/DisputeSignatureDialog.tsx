@@ -38,7 +38,7 @@ export function DisputeSignatureDialog({
     handleSign,
   } = useDisputeSignature(dispute, userRole, onSuccess, () => onOpenChange(false));
 
-  const roleLabel = userRole === "employer" ? "người thuê" : userRole === "freelancer" ? "người làm" : "quản trị viên";
+  const roleLabel = userRole === "employer" ? "người thuê" : userRole === "freelancer" ? "người làm" : "trọng tài viên";
 
   const isEmployerWinner = dispute.employerWins || 
     dispute.finalWinnerWallet === dispute.employer.walletAddress ||

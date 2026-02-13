@@ -275,7 +275,7 @@ export default function EmployerJobCard({
             {job.status === "DISPUTED" && (
               <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-100 px-3 py-2 rounded-lg">
                 <Icon name="gavel" size={16} />
-                <span>Đang có tranh chấp → Chờ Admin xử lý</span>
+                <span>Đang có tranh chấp → Chờ trọng tài viên xử lý</span>
               </div>
             )}
 

@@ -110,7 +110,7 @@ export default function PostedJobsList() {
   useEffect(() => {
     if (isHydrated && isAuthenticated && hasAccess) {
       if (isHistoryTab) fetchJobs({ status: "IN_PROGRESS" as JobStatus });
-      else if (isReviewTab) fetchJobs({});
+      else if (isReviewTab) fetchJobs({ size: 1000 });
       else if (jobFilter === "all") fetchJobs({});
       else fetchJobs({ status: jobFilter as JobStatus });
     }
@@ -366,7 +366,7 @@ export default function PostedJobsList() {
       )}
 
       {/* Pagination */}
-      {!isHistoryTab && page && page.totalPages > 1 && (
+      {!isHistoryTab && !isReviewTab && page && page.totalPages > 1 && (
         <div className="mt-6 flex justify-center gap-2">
           <Button
             variant="outline"

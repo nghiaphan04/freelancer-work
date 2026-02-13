@@ -130,7 +130,7 @@ export function CreateDisputeDialog({
               <li>Cong viec se bi khoa cho den khi giai quyet tranh chap</li>
               <li>Tien ky quy se duoc giu lai tren smart contract</li>
               <li>Nguoi lam co 3 phut de gui bang chung phan hoi</li>
-              <li>3 admin se duoc chon ngau nhien de vote (2/3 thang)</li>
+              <li>3 trọng tài viên là những chuyên gia trong lĩnh vực xây dựng sẽ được chọn ngẫu nhiên để vote (2/3 thắng)</li>
             </ul>
           </div>
         </div>

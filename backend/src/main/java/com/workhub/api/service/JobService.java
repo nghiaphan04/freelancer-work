@@ -542,6 +542,31 @@ public class JobService {
             }
         }
 
+        // Get work submission info from accepted application
+        EWorkStatus workStatus = null;
+        String workSubmissionUrl = null;
+        String workSubmissionNote = null;
+        java.time.LocalDateTime workSubmittedAt = null;
+        JobResponse.FreelancerResponse freelancerResponse = null;
+        var acceptedAppOpt = jobApplicationRepository.findFirstByJobIdAndStatus(job.getId(), EApplicationStatus.ACCEPTED);
+        if (acceptedAppOpt.isPresent()) {
+            var application = acceptedAppOpt.get();
+            workStatus = application.getWorkStatus();
+            workSubmissionUrl = application.getWorkSubmissionUrl();
+            workSubmissionNote = application.getWorkSubmissionNote();
+            workSubmittedAt = application.getWorkSubmittedAt();
+            
+            var freelancer = application.getFreelancer();
+            if (freelancer != null) {
+                freelancerResponse = JobResponse.FreelancerResponse.builder()
+                        .id(freelancer.getId())
+                        .fullName(freelancer.getFullName())
+                        .avatarUrl(freelancer.getAvatarUrl())
+                        .walletAddress(freelancer.getWalletAddress())
+                        .build();
+            }
+        }
+
         return JobResponse.builder()
                 .id(job.getId())
                 .title(job.getTitle())
@@ -565,6 +590,7 @@ public class JobService {
                 .viewCount(job.getViewCount())
                 .applicationCount(job.getApplicationCount())
                 .employer(employerResponse)
+                .freelancer(freelancerResponse)
                 .createdAt(job.getCreatedAt())
                 .updatedAt(job.getUpdatedAt())
                 .escrowId(job.getEscrowId())
@@ -579,6 +605,10 @@ public class JobService {
                 .signDeadline(job.getAcceptedAt() != null ? job.getAcceptedAt().plusSeconds(90) : null)
                 .contractSignedAt(job.getContractSignedAt())
                 .jobWorkSubmittedAt(job.getWorkSubmittedAt())
+                .workStatus(workStatus)
+                .workSubmissionUrl(workSubmissionUrl)
+                .workSubmissionNote(workSubmissionNote)
+                .workSubmittedAt(workSubmittedAt)
                 .disputeInfo(disputeInfo)
                 .build();
     }

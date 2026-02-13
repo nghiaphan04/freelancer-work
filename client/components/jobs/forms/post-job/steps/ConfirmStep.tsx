@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FormData, TimeUnit } from "@/hooks/usePostJobForm";
 import { ContractTerm } from "@/hooks/useContractTerms";
 import SystemTermsDisplay from "../sections/SystemTermsDisplay";
+import { useAuth } from "@/context/AuthContext";
 
 function toMinutes(value: number, unit: TimeUnit): number {
   return unit === "days" ? value * 24 * 60 : value;
@@ -31,6 +32,7 @@ export default function ConfirmStep({
   onBack,
   onSubmit,
 }: ConfirmStepProps) {
+  const { user } = useAuth();
   const validTerms = contractTerms.filter(t => t.title.trim() || t.content.trim());
   const jobTermsCount = 1 + (formData.deliverables ? 1 : 0) + validTerms.length;
   
@@ -96,6 +98,34 @@ export default function ConfirmStep({
             
             {/* Document Body */}
             <div className="px-5 py-4 max-h-96 overflow-y-auto text-sm leading-relaxed scrollbar-thin">
+              {/* Thông tin các bên */}
+              <div className="mb-6 space-y-3">
+                <p className="text-center font-semibold text-gray-800 uppercase text-xs tracking-wide">
+                  Thông tin các bên trong hợp đồng
+                </p>
+                <div className="space-y-1 text-gray-700">
+                  <p className="font-semibold">
+                    Bên A – Bên thuê
+                    {user?.fullName ? `: ${user.fullName}` : ""}
+                  </p>
+                  {user?.walletAddress && (
+                    <p>Địa chỉ ví: {user.walletAddress}</p>
+                  )}
+                </div>
+                <div className="space-y-1 text-gray-700">
+                  <p className="font-semibold">
+                    Bên B – Người làm
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    (Là tài khoản được Bên A lựa chọn sau khi ứng tuyển và ký chấp nhận công việc trên nền tảng)
+                  </p>
+                </div>
+                <p className="text-justify text-gray-700">
+                  Hai bên thống nhất sử dụng hợp đồng điện tử này để ghi nhận việc Bên B thực hiện công việc cho Bên A theo nội dung mô tả
+                  ở trên và các điều khoản chi tiết tại Phần A (Điều khoản công việc) và Phần B (Quy định hệ thống) dưới đây.
+                </p>
+              </div>
+
               {/* PHẦN A - ĐIỀU KHOẢN CÔNG VIỆC */}
               <div className="mb-6">
                 <h4 className="font-bold text-center text-gray-800 mb-4 pb-2 border-b border-gray-300">
@@ -131,13 +161,13 @@ export default function ConfirmStep({
                 {/* Custom Terms */}
                 {validTerms.map((term, index) => (
                   <div key={index} className="mb-3">
-                    <p className="text-justify">
-                      <span className="font-semibold">
-                        Điều {(formData.deliverables ? 2 : 1) + index + 1}. {term.title}
-                      </span>
-                      {": "}
-                      <span className="text-gray-700 whitespace-pre-line">{term.content}</span>
+                    <p className="font-semibold text-gray-900">
+                      Điều {(formData.deliverables ? 2 : 1) + index + 1}. {term.title}
                     </p>
+                    <div
+                      className="text-gray-700 prose prose-sm max-w-none mt-1"
+                      dangerouslySetInnerHTML={{ __html: term.content }}
+                    />
                   </div>
                 ))}
               </div>

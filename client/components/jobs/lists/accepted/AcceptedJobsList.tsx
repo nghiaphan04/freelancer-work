@@ -181,7 +181,7 @@ export default function AcceptedJobsList() {
   return (
     <div className="max-w-7xl mx-auto px-4">
       {/* Page Header */}
-      <JobsPageHeader title="Quản lý công việc đã nhận" subtitle="Theo dõi và cập nhật tiến độ các công việc của bạn">
+      <JobsPageHeader title="Quản lý các hợp đồng" subtitle="Theo dõi và cập nhật tiến độ các công việc của bạn">
         <Link href="/jobs">
           <Button variant="outline" className="border-[#00b14f] text-[#00b14f] hover:bg-[#00b14f] hover:text-white w-full sm:w-auto">
             <Icon name="search" size={20} />

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Job, JOB_STATUS_CONFIG, WorkStatus } from "@/types/job";
 import { api } from "@/lib/api";
 import { useWallet } from "@/context/WalletContext";
+import { useAuth } from "@/context/AuthContext";
 import Icon from "@/components/ui/Icon";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ interface FreelancerJobCardProps {
 
 export default function FreelancerJobCard({ job, onSubmitWork, onViewDispute, onRequestWithdraw, onSignSuccess }: FreelancerJobCardProps) {
   const { isConnected, kyHopDong, tuChoiHopDong, connect, isConnecting } = useWallet();
+  const { user } = useAuth();
   const [contractExpanded, setContractExpanded] = useState(false);
   const [contractData, setContractData] = useState<any>(null);
   const [isLoadingContract, setIsLoadingContract] = useState(false);
@@ -354,7 +356,7 @@ export default function FreelancerJobCard({ job, onSubmitWork, onViewDispute, on
                   )}
                 </div>
               ) : job.disputeInfo?.status?.includes("VOTING") ? (
-                <span>Đang vote Round {job.disputeInfo?.currentRound || 1} - Chờ admin quyết định</span>
+                <span>Đang vote Round {job.disputeInfo?.currentRound || 1} - Chờ trọng tài viên quyết định</span>
               ) : (
                 <span>Tranh chấp đã được giải quyết</span>
               )}
@@ -469,6 +471,36 @@ export default function FreelancerJobCard({ job, onSubmitWork, onViewDispute, on
                     </div>
                     
                     <div className="px-4 py-3 max-h-[500px] overflow-y-auto text-sm leading-relaxed scrollbar-thin">
+                      {/* Thông tin các bên */}
+                      <div className="mb-4 space-y-3">
+                        <p className="text-center font-semibold text-gray-800 uppercase text-xs tracking-wide">
+                          Thông tin các bên
+                        </p>
+                        <div className="space-y-1 text-gray-700">
+                          <p className="font-semibold">
+                            Bên A – Bên thuê
+                            {job.employer?.fullName ? `: ${job.employer.fullName}` : ""}
+                          </p>
+                          {job.employer?.walletAddress && (
+                            <p>Địa chỉ ví: {job.employer.walletAddress}</p>
+                          )}
+                        </div>
+                        <div className="space-y-1 text-gray-700">
+                          <p className="font-semibold">
+                            Bên B – Người làm
+                            {user?.fullName ? `: ${user.fullName}` : ""}
+                          </p>
+                          {user?.walletAddress && (
+                            <p>Địa chỉ ví: {user.walletAddress}</p>
+                          )}
+                        </div>
+                        <p className="text-justify text-gray-700">
+                          Hai bên thống nhất sử dụng hợp đồng điện tử này để ghi nhận việc Bên B thực hiện công việc cho Bên A theo nội
+                          dung mô tả công việc đã đăng và các điều khoản chi tiết tại Phần A (Điều khoản công việc) và Phần B (Quy định
+                          hệ thống) dưới đây.
+                        </p>
+                      </div>
+
                       {/* PHẦN A */}
                       <div className="mb-4">
                         <h4 className="font-semibold text-center text-gray-800 mb-3 pb-1.5 border-b border-gray-300 text-xs uppercase">
@@ -476,11 +508,18 @@ export default function FreelancerJobCard({ job, onSubmitWork, onViewDispute, on
                         </h4>
                         {validTerms.length > 0 ? (
                           validTerms.map((term: any, index: number) => (
-                            <div key={index} className="mb-2">
+                            <div key={index} className="mb-3">
                               <p className="text-justify text-gray-700">
-                                <span className="font-medium text-gray-900">Điều {index + 1}. {term.title}: </span>
-                                <span className="whitespace-pre-line">{term.content}</span>
+                                <span className="font-medium text-gray-900">
+                                  Điều {index + 1}. {term.title}
+                                </span>
                               </p>
+                              {term.content && (
+                                <div
+                                  className="prose prose-sm max-w-none text-gray-700 mt-1"
+                                  dangerouslySetInnerHTML={{ __html: term.content }}
+                                />
+                              )}
                             </div>
                           ))
                         ) : (

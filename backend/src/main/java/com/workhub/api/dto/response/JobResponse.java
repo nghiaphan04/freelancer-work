@@ -43,6 +43,7 @@ public class JobResponse {
     private Integer viewCount;
     private Integer applicationCount;
     private EmployerResponse employer;
+    private FreelancerResponse freelancer;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -94,5 +95,16 @@ public class JobResponse {
         private Boolean isVerified;
         private Integer trustScore;
         private Integer untrustScore;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FreelancerResponse {
+        private Long id;
+        private String fullName;
+        private String avatarUrl;
+        private String walletAddress;
     }
 }

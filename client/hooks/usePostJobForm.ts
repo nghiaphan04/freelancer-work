@@ -52,20 +52,24 @@ export function usePostJobForm(onSuccess?: () => void) {
   const [step, setStep] = useState<"form" | "confirm" | "processing">("form");
 
   const [formData, setFormData] = useState<FormData>(() => ({
-    title: "Thiết kế website bán hàng responsive",
-    description: "Cần thiết kế website bán hàng với giao diện hiện đại, responsive trên mọi thiết bị. Website cần có các trang: Trang chủ, Sản phẩm, Chi tiết sản phẩm, Giỏ hàng, Thanh toán, Liên hệ.",
-    context: "Dự án cho cửa hàng thời trang online, phục vụ khách hàng trẻ từ 18-35 tuổi.",
-    requirements: "- Có kinh nghiệm với React/Next.js\n- Biết sử dụng Tailwind CSS\n- Có portfolio về website thương mại điện tử",
-    deliverables: "- Source code hoàn chỉnh\n- File thiết kế Figma\n- Hướng dẫn cài đặt",
-    skills: ["React", "Next.js", "Tailwind CSS", "Figma"],
-    budget: 0.1,
+    title: "Freelancer Kỹ sư bóc tách khối lượng & shopdrawing (Remote)",
+    description:
+      "Tuyển Freelancer Kỹ sư bóc tách khối lượng và triển khai shopdrawing làm việc hoàn toàn từ xa theo từng dự án, thanh toán qua ký quỹ trên nền tảng. Công việc bao gồm đọc bản vẽ thiết kế, bóc tách khối lượng, lập BOQ/dự toán sơ bộ và triển khai bản vẽ shopdrawing chi tiết cho các hạng mục được giao.",
+    context:
+      "Dự án thi công hệ thống cơ điện/ELV và hạng mục xây dựng dân dụng (nhà cao tầng, nhà xưởng hoặc khối văn phòng). Bên thuê cần kỹ sư hỗ trợ ngắn hạn theo từng gói công việc, toàn bộ trao đổi và bàn giao hồ sơ được thực hiện online, không yêu cầu có mặt tại công trình.",
+    requirements:
+      "- Tối thiểu 01 năm kinh nghiệm bóc tách khối lượng, lập BOQ hoặc triển khai shopdrawing cho công trình thực tế.\n- Thành thạo AutoCAD; biết sử dụng phần mềm dự toán (G8/Eta/khác) là lợi thế.\n- Đọc hiểu tốt bản vẽ kiến trúc, kết cấu, M&E/ELV; nắm cơ bản các tiêu chuẩn và định mức áp dụng.\n- Có máy tính, Internet ổn định; quen làm việc qua email, chat, video call và chia sẻ file.\n- Ưu tiên có portfolio các dự án tương tự (PDF/bản vẽ/bảng khối lượng).",
+    deliverables:
+      "- File Excel bóc tách khối lượng chi tiết theo từng hạng mục/cấu kiện.\n- File Excel BOQ/dự toán sơ bộ (hoặc theo mẫu Bên thuê cung cấp).\n- Bộ bản vẽ shopdrawing/bố trí mặt bằng và chi tiết liên quan (DWG + PDF xuất kèm).\n- Ghi chú rõ giả định, tiêu chuẩn, định mức và bộ đơn giá sử dụng.",
+    skills: ["QS", "BoQ", "AutoCAD", "Shopdrawing", "Dự toán"],
+    budget: 1,
     currency: "APT",
-    applicationDeadlineValue: 2,
-    applicationDeadlineUnit: "minutes",
-    submissionValue: 2,
-    submissionUnit: "minutes",
-    reviewValue: 2,
-    reviewUnit: "minutes",
+    applicationDeadlineValue: 3,
+    applicationDeadlineUnit: "days",
+    submissionValue: 7,
+    submissionUnit: "days",
+    reviewValue: 3,
+    reviewUnit: "days",
   }));
 
   const escrowAmount = formData.budget * (1 + PLATFORM_FEE_PERCENT / 100);
