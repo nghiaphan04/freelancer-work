@@ -1,72 +1,72 @@
 export const jobCategories = [
   {
-    title: "Hành chính & hỗ trợ",
+    title: "Thi công & hiện trường",
     items: [
-      "Nhân viên telesales",
-      "Kiểm duyệt nội dung",
-      "Chuyên viên tạo khách hàng tiềm năng",
-      "Trợ lý cá nhân",
-      "Trợ lý ảo",
+      "Chỉ huy trưởng công trình",
+      "Giám sát thi công",
+      "Kỹ sư hiện trường",
+      "Đội trưởng thi công",
+      "Thợ điện nước (MEP)",
     ]
   },
   {
-    title: "Thiết kế & sáng tạo",
+    title: "Thiết kế kiến trúc",
     items: [
-      "Thiết kế đồ họa",
-      "Họa sĩ minh họa",
-      "Thiết kế logo",
-      "Thiết kế UX",
-      "Thiết kế web",
+      "Thiết kế nhà phố",
+      "Thiết kế biệt thự",
+      "Triển khai bản vẽ kỹ thuật",
+      "Thiết kế nội thất",
+      "Render Lumion/Enscape",
     ]
   },
   {
-    title: "Marketing",
+    title: "BIM & Triển khai bản vẽ",
     items: [
-      "Digital Marketing",
-      "Email Marketing",
-      "Chuyên gia Google Ads",
-      "Chuyên gia SEO",
-      "Quản lý mạng xã hội",
+      "Dựng mô hình Revit",
+      "Shop drawing",
+      "Tekla Structures",
+      "Clash detection Navisworks",
+      "Bóc tách khối lượng 5D",
     ]
   },
   {
-    title: "Viết lách & nội dung",
+    title: "Dự toán & hồ sơ thầu",
     items: [
-      "Biên tập viên",
-      "Viết nội dung",
-      "Copywriter",
-      "Email copywriter",
-      "Ghostwriter",
+      "Kỹ sư dự toán",
+      "Bóc tách khối lượng",
+      "Lập hồ sơ dự thầu",
+      "Thanh toán khối lượng",
+      "Hồ sơ hoàn công",
     ]
   },
   {
-    title: "AI & công nghệ mới",
+    title: "Vật liệu & cung ứng",
     items: [
-      "Kỹ sư tự động hóa",
-      "Phát triển chatbot",
-      "Kỹ sư thị giác máy tính",
-      "Ethical hacker",
-      "Kỹ sư Machine Learning",
+      "Thu mua vật tư",
+      "Báo giá vật liệu",
+      "Quản lý kho công trình",
+      "Điều phối giao hàng",
+      "Nhà cung cấp bê tông/thép",
     ]
   },
   {
-    title: "Phát triển & công nghệ",
+    title: "MEP & kỹ thuật",
     items: [
-      "Phát triển ứng dụng di động",
-      "Lập trình viên Python",
-      "Lập trình viên phần mềm",
-      "Lập trình viên Web",
-      "Lập trình viên WordPress",
+      "Thiết kế điện",
+      "Thiết kế cấp thoát nước",
+      "Thiết kế HVAC",
+      "Thiết kế PCCC",
+      "Giám sát MEP",
     ]
   },
   {
-    title: "Video, âm thanh & hoạt hình",
+    title: "Quản lý dự án",
     items: [
-      "Animator",
-      "Biên tập âm thanh",
-      "Nhà sản xuất âm nhạc",
-      "Biên tập video",
-      "Diễn viên lồng tiếng",
+      "Kế hoạch tiến độ",
+      "QA/QC công trình",
+      "An toàn lao động (HSE)",
+      "Quản lý hợp đồng",
+      "Báo cáo công trường",
     ]
   },
 ];
@@ -78,73 +78,73 @@ export const jobMenuActions = [
 
 export const findWorkCategories = [
   {
-    title: "Việc hành chính & hỗ trợ",
+    title: "Việc thi công & hiện trường",
     items: [
-      "Việc hỗ trợ chat",
-      "Việc telesales",
-      "Việc kiểm duyệt nội dung",
-      "Việc tạo khách hàng tiềm năng",
-      "Việc trợ lý ảo",
+      "Việc chỉ huy trưởng công trình",
+      "Việc giám sát thi công",
+      "Việc kỹ sư hiện trường",
+      "Việc đội trưởng thi công",
+      "Việc thợ điện nước (MEP)",
     ]
   },
   {
-    title: "Việc thiết kế & sáng tạo",
+    title: "Việc thiết kế kiến trúc",
     items: [
-      "Việc Canva",
-      "Việc thiết kế đồ họa",
-      "Việc minh họa",
-      "Việc thiết kế logo",
-      "Việc thiết kế web",
+      "Việc thiết kế nhà phố",
+      "Việc thiết kế biệt thự",
+      "Việc triển khai bản vẽ kỹ thuật",
+      "Việc thiết kế nội thất",
+      "Việc render Lumion/Enscape",
     ]
   },
   {
-    title: "Việc Marketing",
+    title: "Việc BIM & triển khai bản vẽ",
     items: [
-      "Việc Digital Marketing",
-      "Việc Email Marketing",
-      "Việc Google Ads",
-      "Việc SEO",
-      "Việc quản lý mạng xã hội",
+      "Việc dựng mô hình Revit",
+      "Việc shop drawing",
+      "Việc Tekla Structures",
+      "Việc clash detection Navisworks",
+      "Việc bóc tách khối lượng 5D",
     ]
   },
   {
-    title: "Việc viết lách & nội dung",
+    title: "Việc dự toán & hồ sơ thầu",
     items: [
-      "Việc biên tập sách",
-      "Việc viết nội dung",
-      "Việc copywriting",
-      "Việc email copywriting",
-      "Việc ghostwriting",
+      "Việc kỹ sư dự toán",
+      "Việc bóc tách khối lượng",
+      "Việc lập hồ sơ dự thầu",
+      "Việc thanh toán khối lượng",
+      "Việc hồ sơ hoàn công",
     ]
   },
   {
-    title: "Việc AI & công nghệ mới",
+    title: "Việc vật liệu & cung ứng",
     items: [
-      "Việc phát triển ứng dụng AI",
-      "Việc phát triển chatbot",
-      "Việc ethical hacking",
-      "Việc machine learning",
-      "Việc OpenAI",
+      "Việc thu mua vật tư",
+      "Việc báo giá vật liệu",
+      "Việc quản lý kho công trình",
+      "Việc điều phối giao hàng",
+      "Việc nhà cung cấp bê tông/thép",
     ]
   },
   {
-    title: "Việc phát triển & công nghệ",
+    title: "Việc MEP & kỹ thuật",
     items: [
-      "Việc phát triển app mobile",
-      "Việc Python",
-      "Việc phát triển phần mềm",
-      "Việc phát triển web",
-      "Việc WordPress",
+      "Việc thiết kế điện",
+      "Việc thiết kế cấp thoát nước",
+      "Việc thiết kế HVAC",
+      "Việc thiết kế PCCC",
+      "Việc giám sát MEP",
     ]
   },
   {
-    title: "Việc video, âm thanh & hoạt hình",
+    title: "Việc quản lý dự án",
     items: [
-      "Việc animation",
-      "Việc chỉnh sửa âm thanh",
-      "Việc sản xuất âm nhạc",
-      "Việc chỉnh sửa video",
-      "Việc lồng tiếng",
+      "Việc kế hoạch tiến độ",
+      "Việc QA/QC công trình",
+      "Việc an toàn lao động (HSE)",
+      "Việc quản lý hợp đồng",
+      "Việc báo cáo công trường",
     ]
   },
 ];

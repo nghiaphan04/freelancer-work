@@ -42,132 +42,382 @@ export interface Partner {
 export const jobCategories: JobCategory[] = [
   { 
     id: 1, 
-    name: "Phát triển & CNTT",
+    name: "Thi công & Xây dựng",
     popular: [
-      "Lập trình viên Ada", "Kiểm thử Blockchain", "Lập trình Backend Amazon", 
-      "Lập trình viên Yeoman", "Lập trình viên nghiên cứu", "Lập trình viên Twitter API",
-      "Lập trình viên UI", "Lập trình viên Schema", "Lập trình viên từ xa", "Kỹ sư Java"
+      "Chỉ huy trưởng công trình",
+      "Giám sát thi công",
+      "Kỹ sư hiện trường",
+      "Đội trưởng thi công",
+      "Thợ xây",
+      "Thợ sắt",
+      "Thợ cốp pha",
+      "Thợ điện nước (MEP)",
+      "Thợ hàn",
+      "Vận hành máy xúc/máy ủi"
     ],
     subCategories: [
-      { name: "Web & Mobile", tags: ["Lập trình viên Web", "Lập trình viên Web Ấn Độ", "Lập trình Game 2D", "Lập trình viên phần mềm", "Lập trình viên Google API"] },
-      { name: "Hệ thống & Cloud", tags: ["Lập trình viên Chrome OS", "Chuyên gia BLOOM", "Chuyên gia GPT Neo", "Tư vấn đổi mới", "Kỹ sư Big Data"] },
+      {
+        name: "Thi công phần thô",
+        tags: [
+          "Thi công móng",
+          "Thi công cột/dầm/sàn",
+          "Xây tô",
+          "Lắp dựng cốt thép",
+          "Lắp dựng cốp pha"
+        ]
+      },
+      {
+        name: "Thi công hoàn thiện",
+        tags: [
+          "Ốp lát",
+          "Sơn bả",
+          "Trần thạch cao",
+          "Nhôm kính",
+          "Chống thấm"
+        ]
+      },
     ]
   },
   { 
     id: 2, 
-    name: "Thiết kế & Sáng tạo",
+    name: "Thiết kế kiến trúc",
     popular: [
-      "Thiết kế tài nguyên Game 2D", "Thiết kế Game 2D", "Thiết kế trang sức thủ công",
-      "Thiết kế trang phục", "Thiết kế hoa", "Biên kịch hành động",
-      "Thiết kế đánh giá", "Thiết kế Marketing", "Thiết kế đồ họa", "Chuyên gia Adobe Photoshop"
+      "Kiến trúc sư",
+      "Thiết kế nhà phố",
+      "Thiết kế biệt thự",
+      "Thiết kế mặt bằng",
+      "Thiết kế phối cảnh 3D",
+      "Triển khai bản vẽ kỹ thuật",
+      "Thiết kế nội thất",
+      "Thiết kế cảnh quan",
+      "Dựng 3D SketchUp",
+      "Render Lumion/Enscape"
     ],
     subCategories: [
-      { name: "Video & Âm thanh", tags: ["Biên tập video Youtube", "Chuyên gia Final Cut Pro X", "Biên tập video", "Kỹ sư âm thanh", "Kỹ sư mixing"] },
-      { name: "Thiết kế & Minh họa", tags: ["Thiết kế Logo", "Họa sĩ nền 2D Animation", "Họa sĩ minh họa 2D", "Quản lý âm nhạc", "Chuyên gia Adobe Illustrator"] },
+      {
+        name: "Kiến trúc",
+        tags: [
+          "Thiết kế concept",
+          "Thiết kế mặt đứng",
+          "Thiết kế mặt cắt",
+          "Bố trí công năng",
+          "Triển khai hồ sơ xin phép"
+        ]
+      },
+      {
+        name: "Nội thất & cảnh quan",
+        tags: [
+          "Thiết kế nội thất",
+          "Bóc tách vật liệu nội thất",
+          "Thiết kế tủ bếp",
+          "Thiết kế shop/văn phòng",
+          "Thiết kế sân vườn"
+        ]
+      },
     ]
   },
   { 
     id: 3, 
-    name: "Dịch vụ AI",
+    name: "BIM & Mô phỏng",
     popular: [
-      "Lập trình viên OpenAI", "Lập trình viên AI Agent", "Kỹ sư trí tuệ nhân tạo",
-      "Kỹ sư Machine Learning", "Nhà khoa học dữ liệu", "Lập trình OpenAI trên AWS",
-      "Chuyên gia Deep Learning", "Lập trình viên Pandas", "Kỹ sư thị giác máy tính", "Kỹ sư NLP"
+      "Dựng mô hình Revit",
+      "Triển khai BIM",
+      "Phối hợp BIM",
+      "Dynamo/Revit API",
+      "Dựng kết cấu Tekla",
+      "Shop drawing BIM",
+      "Clash detection Navisworks",
+      "Lập tiến độ 4D",
+      "Bóc tách khối lượng 5D",
+      "Family Revit"
     ],
     subCategories: [
-      { name: "Framework & Tools", tags: ["Lập trình viên TensorFlow", "Freelancer PyTorch", "Chuyên gia Scikit-Learn", "Lập trình viên OpenCV", "Lập trình viên thuật toán"] },
-      { name: "Chuyên sâu", tags: ["Freelancer Keras", "Chuyên gia Jupyter", "Lập trình Deep Neural Networks", "Chuyên gia phân tích dự đoán", "Freelancer phân tích chuỗi thời gian"] },
+      {
+        name: "Modeling & Drawing",
+        tags: [
+          "Revit Architecture",
+          "Revit Structure",
+          "Revit MEP",
+          "Triển khai shop drawing",
+          "Xuất bản vẽ & thống kê"
+        ]
+      },
+      {
+        name: "Coordination",
+        tags: [
+          "Navisworks",
+          "BIM 360/ACC",
+          "Clash report",
+          "Thiết lập template",
+          "Chuẩn hóa LOD"
+        ]
+      },
     ]
   },
   { 
     id: 4, 
-    name: "Bán hàng & Marketing",
+    name: "Vật liệu & Cung ứng",
     popular: [
-      "Phân tích viên Sales", "Tư vấn Marketing thương hiệu", "Tư vấn phân tích Marketing",
-      "Chuyên gia mạng xã hội", "Chuyên viên mạng xã hội", "Chuyên viên SEM",
-      "Tư vấn Marketing", "Quản lý SEO", "Tư vấn Marketing doanh nghiệp nhỏ", "Tư vấn chiến lược Marketing"
+      "Thu mua vật tư",
+      "Kế hoạch vật tư",
+      "Quản lý kho công trình",
+      "Báo giá vật liệu",
+      "Nhà cung cấp bê tông",
+      "Nhà cung cấp thép",
+      "Thiết bị MEP",
+      "Đồ hoàn thiện",
+      "Logistics công trường",
+      "Điều phối giao hàng"
     ],
     subCategories: [
-      { name: "Tư vấn chuyên ngành", tags: ["Tư vấn Marketing luật", "Tư vấn Marketing y tế", "Tư vấn Marketing Google", "Tư vấn chiến lược Digital Marketing", "Tư vấn Marketing nha khoa"] },
-      { name: "Digital Marketing", tags: ["Tư vấn Marketing doanh nghiệp", "Marketer theo ngành dọc", "Digital Marketer", "Chuyên gia tạo khách hàng tiềm năng", "Marketer tạo nhu cầu"] },
+      {
+        name: "Vật tư phần thô",
+        tags: [
+          "Bê tông thương phẩm",
+          "Cốt thép",
+          "Gạch/đá/cát",
+          "Phụ gia bê tông",
+          "Giàn giáo & coppha"
+        ]
+      },
+      {
+        name: "Vật tư hoàn thiện",
+        tags: [
+          "Sơn & bột bả",
+          "Gạch ốp lát",
+          "Thiết bị vệ sinh",
+          "Cửa & nhôm kính",
+          "Đèn & thiết bị điện"
+        ]
+      },
     ]
   },
   { 
     id: 5, 
-    name: "Viết lách & Dịch thuật",
+    name: "Dự toán & Hồ sơ thầu",
     popular: [
-      "Người đánh giá sách", "Nhà văn", "Chuyên gia bản tin",
-      "Chuyên gia bản thảo", "Nhà văn tạp chí", "Viết CV",
-      "Viết nội dung", "Viết kế hoạch kinh doanh", "Nhà văn chuyên nghiệp", "Biên dịch viên"
+      "Kỹ sư dự toán",
+      "QS",
+      "Bóc tách khối lượng",
+      "Lập hồ sơ thầu",
+      "Chào giá",
+      "Định mức & đơn giá",
+      "Thanh toán khối lượng",
+      "Quyết toán công trình",
+      "Hồ sơ nghiệm thu",
+      "Hồ sơ hoàn công"
     ],
     subCategories: [
-      { name: "Dịch thuật", tags: ["Chuyên gia dịch tài liệu", "Dịch bài viết", "Dịch sách", "Viết luận văn", "Copywriter"] },
-      { name: "Viết chuyên ngành", tags: ["Nhà văn khoa học viễn tưởng", "Viết về ẩm thực", "Biên tập viên", "Freelancer ngữ pháp", "Nhà văn Anime"] },
+      {
+        name: "Dự toán",
+        tags: [
+          "Bóc tách theo bản vẽ",
+          "Dự toán phần thô",
+          "Dự toán hoàn thiện",
+          "Dự toán MEP",
+          "Dự toán cải tạo"
+        ]
+      },
+      {
+        name: "Hồ sơ dự án",
+        tags: [
+          "Hồ sơ mời thầu",
+          "Hồ sơ dự thầu",
+          "Hợp đồng & phụ lục",
+          "Biên bản nghiệm thu",
+          "Hồ sơ hoàn công"
+        ]
+      },
     ]
   },
   { 
     id: 6, 
-    name: "Hành chính & Hỗ trợ",
+    name: "Quản lý dự án",
     popular: [
-      "Trợ lý ảo Amazon", "Lập trình viên hệ thống", "Trợ lý ảo Ebay",
-      "Chuyên viên nhập liệu", "Chuyên viên mã hóa dữ liệu", "Trợ lý ảo nhập liệu CRM",
-      "Trợ lý nhập liệu CRM", "Nhân viên nhập liệu", "Trợ lý ảo", "Dịch vụ thanh toán y tế Medical Mastermind"
+      "Project Manager (PM)",
+      "Site Engineer",
+      "Kế hoạch tiến độ",
+      "Quản lý chất lượng (QA/QC)",
+      "An toàn lao động (HSE)",
+      "Kiểm soát khối lượng",
+      "Quản lý hợp đồng",
+      "Điều phối nhà thầu",
+      "Báo cáo công trường",
+      "Quản lý vật tư"
     ],
     subCategories: [
-      { name: "Quản trị", tags: ["Lập trình Google Calendar", "Trợ lý biên tập", "Chuyên gia phần mềm đấu giá", "Trợ lý ảo bất động sản", "Chuyên gia Excel"] },
-      { name: "Hỗ trợ", tags: ["Đại diện chăm sóc khách hàng", "Trợ lý cá nhân", "Quản lý dự án kinh doanh", "Quản lý dự án", "Quản trị viên Microsoft 365 Enterprise"] },
+      {
+        name: "Kế hoạch & kiểm soát",
+        tags: [
+          "Lập tiến độ Primavera/MS Project",
+          "S-curve",
+          "Báo cáo tuần/tháng",
+          "Nhật ký công trình",
+          "Biên bản hiện trường"
+        ]
+      },
+      {
+        name: "Chất lượng & an toàn",
+        tags: [
+          "QA/QC công trình",
+          "Checklist nghiệm thu",
+          "HSE công trường",
+          "Đào tạo an toàn",
+          "Đánh giá rủi ro"
+        ]
+      },
     ]
   },
   { 
     id: 7, 
-    name: "Tài chính & Kế toán",
+    name: "Kế toán công trình",
     popular: [
-      "Tư vấn phần mềm kế toán", "Quản lý đầu tư", "Quản lý quỹ đầu cơ",
-      "Tư vấn kế toán", "Tư vấn CNTT", "Tư vấn tài chính",
-      "Kế toán viên", "Tư vấn thuế", "Gia sư kế toán", "Tư vấn giáo dục"
+      "Kế toán công trình",
+      "Kế toán nội bộ",
+      "Theo dõi chi phí công trình",
+      "Công nợ nhà thầu",
+      "Hóa đơn vật tư",
+      "Tạm ứng/hoàn ứng",
+      "Báo cáo dòng tiền",
+      "Quyết toán công trình",
+      "Kế toán thuế",
+      "Kế toán kho"
     ],
     subCategories: [
-      { name: "Tư vấn & Phân tích", tags: ["Tư vấn quản lý", "Chuyên viên đối chiếu ngân hàng", "Phân tích viên kinh doanh", "Freelancer kỹ năng giao tiếp", "Phân tích viên tài chính"] },
-      { name: "Kế toán chuyên môn", tags: ["Đại diện phát triển kinh doanh", "Tư vấn QuickBooks", "Chuyên gia Xero", "Chuyên viên đối chiếu tài khoản", "Chuyên viên lương"] },
+      {
+        name: "Chi phí & thanh toán",
+        tags: [
+          "Theo dõi chi phí theo hạng mục",
+          "Thanh toán nhà thầu",
+          "Đối chiếu công nợ",
+          "Bảng kê vật tư",
+          "Tổng hợp khối lượng"
+        ]
+      },
+      {
+        name: "Thuế & chứng từ",
+        tags: [
+          "Hóa đơn đầu vào/đầu ra",
+          "Thuế GTGT",
+          "Thuế TNDN",
+          "Quy trình tạm ứng",
+          "Hồ sơ quyết toán"
+        ]
+      },
     ]
   },
   { 
     id: 8, 
-    name: "Pháp lý",
+    name: "Pháp lý xây dựng",
     popular: [
-      "Soạn thảo hợp đồng", "Chuyên viên tuân thủ CNTT", "Chuyên viên tuân thủ",
-      "Luật sư hợp đồng", "Trợ lý pháp lý", "Nghiên cứu viên pháp lý",
-      "Trợ lý luật sư", "Tư vấn pháp lý", "Người đánh giá tài liệu", "Luật sư tài chính chứng khoán"
+      "Hợp đồng xây dựng",
+      "Phụ lục hợp đồng",
+      "Thanh quyết toán",
+      "Giải quyết tranh chấp",
+      "Bảo lãnh & bảo hành",
+      "Hồ sơ pháp lý dự án",
+      "Xin phép xây dựng",
+      "Pháp lý nhà thầu",
+      "Tuân thủ an toàn",
+      "Tư vấn điều khoản phạt"
     ],
     subCategories: [
-      { name: "Luật chuyên ngành", tags: ["Luật sư doanh nghiệp", "Freelancer luật kinh doanh", "Luật sư di trú", "Freelancer tuân thủ quy định", "Luật sư bản quyền"] },
-      { name: "Tố tụng & Lao động", tags: ["Luật sư sở hữu trí tuệ", "Luật sư dân sự", "Luật sư lao động", "Chuyên gia tố tụng", "Luật sư hình sự"] },
+      {
+        name: "Hợp đồng & thủ tục",
+        tags: [
+          "Soạn thảo hợp đồng EPC",
+          "Hợp đồng thi công",
+          "Hợp đồng cung ứng",
+          "Điều kiện thanh toán",
+          "Bảo lãnh thực hiện"
+        ]
+      },
+      {
+        name: "Pháp lý dự án",
+        tags: [
+          "Giấy phép xây dựng",
+          "Nghiệm thu PCCC",
+          "Hoàn công",
+          "Hồ sơ môi trường",
+          "Hồ sơ nghiệm thu"
+        ]
+      },
     ]
   },
   { 
     id: 9, 
-    name: "Nhân sự & Đào tạo",
+    name: "Nhân sự công trường",
     popular: [
-      "Quản lý tuyển dụng", "Nhà tuyển dụng", "Freelancer công nghệ",
-      "Quản lý nhân sự", "Chuyên gia quản lý nhân tài", "Chuyên gia đào tạo & phát triển",
-      "Nhà tuyển dụng LinkedIn", "Thiết kế hướng dẫn", "Phỏng vấn viên", "Chuyên gia e-Learning"
+      "Tuyển thợ/đội thi công",
+      "Chấm công công trường",
+      "C&B",
+      "Hợp đồng lao động",
+      "An toàn lao động",
+      "Đào tạo nội quy",
+      "Quản lý nhà thầu phụ",
+      "Điều phối nhân lực",
+      "Hồ sơ nhân sự",
+      "Quan hệ lao động"
     ],
     subCategories: [
-      { name: "Phát triển nhân sự", tags: ["Chuyên gia phát triển lãnh đạo", "Chuyên gia onboarding", "Freelancer tìm nguồn ứng viên", "Phát triển chương trình đào tạo", "Nhà tuyển dụng kỹ thuật"] },
-      { name: "Tư vấn HR", tags: ["Chuyên gia hệ thống quản lý học tập (LMS)", "Tư vấn phát triển tổ chức", "Freelancer thiết kế chương trình", "Tư vấn HR", "Chuyên gia gắn kết nhân viên"] },
+      {
+        name: "Tuyển dụng & điều phối",
+        tags: [
+          "Tuyển thợ xây",
+          "Tuyển thợ sắt",
+          "Tuyển thợ MEP",
+          "Tuyển giám sát",
+          "Điều phối ca kíp"
+        ]
+      },
+      {
+        name: "Hồ sơ & chế độ",
+        tags: [
+          "Chấm công",
+          "Tính lương công trình",
+          "Bảo hiểm",
+          "Kỷ luật an toàn",
+          "Hồ sơ nhân sự"
+        ]
+      },
     ]
   },
   { 
     id: 10, 
-    name: "Kỹ thuật & Kiến trúc",
+    name: "MEP & Kỹ thuật",
     popular: [
-      "Họa sĩ minh họa kiến trúc", "Kỹ sư thiết kế", "Chuyên gia AutoCAD",
-      "Chuyên gia Arduino", "Chuyên gia MATLAB", "Kỹ sư chuyên nghiệp",
-      "Kỹ sư tư vấn điện", "Kỹ sư Arduino", "Kỹ sư phần cứng", "Kỹ sư chiếu sáng"
+      "Kỹ sư điện",
+      "Kỹ sư cấp thoát nước",
+      "Kỹ sư HVAC",
+      "Thiết kế MEP",
+      "Shop drawing MEP",
+      "Giám sát MEP",
+      "PCCC",
+      "AutoCAD",
+      "Revit MEP",
+      "Commissioning"
     ],
     subCategories: [
-      { name: "Kỹ sư chuyên ngành", tags: ["Kỹ sư nông nghiệp", "Kỹ sư hàng không vũ trụ", "Kỹ sư địa kỹ thuật", "Họa sĩ 3D", "Tư vấn kỹ thuật"] },
-      { name: "Thiết kế & CAD", tags: ["Thiết kế sản phẩm", "Tư vấn AutoCAD", "Tư vấn an toàn", "Người dựng mô hình 3D", "Thiết kế CAD"] },
+      {
+        name: "Thiết kế & thi công MEP",
+        tags: [
+          "Thiết kế điện",
+          "Thiết kế cấp thoát nước",
+          "Thiết kế HVAC",
+          "Thiết kế PCCC",
+          "Triển khai shop drawing"
+        ]
+      },
+      {
+        name: "Kỹ thuật hiện trường",
+        tags: [
+          "Giám sát lắp đặt",
+          "Chạy thử & nghiệm thu",
+          "Bảo trì hệ thống",
+          "Đo bóc vật tư MEP",
+          "As-built MEP"
+        ]
+      },
     ]
   },
 ];
@@ -216,16 +466,16 @@ export const stats: Stat[] = [
 ];
 
 export const productCategories: ProductCategory[] = [
-  { id: 1, name: "Phát triển & CNTT", jobs: 7938, iconType: "dev" },
-  { id: 2, name: "Thiết kế & Sáng tạo", jobs: 5640, iconType: "design" },
-  { id: 3, name: "Dịch vụ AI", jobs: 2005, iconType: "ai" },
-  { id: 4, name: "Bán hàng & Marketing", jobs: 2465, iconType: "marketing" },
-  { id: 5, name: "Viết lách & Dịch thuật", jobs: 1892, iconType: "writing" },
-  { id: 6, name: "Hành chính & Hỗ trợ", jobs: 1283, iconType: "admin" },
-  { id: 7, name: "Tài chính & Kế toán", jobs: 4572, iconType: "finance" },
-  { id: 8, name: "Pháp lý", jobs: 343, iconType: "legal" },
-  { id: 9, name: "Nhân sự & Đào tạo", jobs: 1456, iconType: "hr" },
-  { id: 10, name: "Kỹ thuật & Kiến trúc", jobs: 2134, iconType: "engineering" },
+  { id: 1, name: "Thi công & Xây dựng", jobs: 7938, iconType: "dev" },
+  { id: 2, name: "Thiết kế kiến trúc", jobs: 5640, iconType: "design" },
+  { id: 3, name: "BIM & Mô phỏng", jobs: 2005, iconType: "ai" },
+  { id: 4, name: "Vật liệu & Cung ứng", jobs: 2465, iconType: "marketing" },
+  { id: 5, name: "Dự toán & Hồ sơ thầu", jobs: 1892, iconType: "writing" },
+  { id: 6, name: "Quản lý dự án", jobs: 1283, iconType: "admin" },
+  { id: 7, name: "Kế toán công trình", jobs: 4572, iconType: "finance" },
+  { id: 8, name: "Pháp lý xây dựng", jobs: 343, iconType: "legal" },
+  { id: 9, name: "Nhân sự công trường", jobs: 1456, iconType: "hr" },
+  { id: 10, name: "MEP & Kỹ thuật", jobs: 2134, iconType: "engineering" },
 ];
 
 export const partners: Partner[] = [

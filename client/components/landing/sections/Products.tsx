@@ -125,7 +125,7 @@ export default function Products() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-[#00b14f] mb-1">
-              Top ngành nghề nổi bật
+              Top lĩnh vực xây dựng nổi bật
             </h2>
             <p className="text-sm text-gray-600">
               Bạn muốn tìm việc mới? Xem danh sách việc làm{" "}
